@@ -1,0 +1,129 @@
+# ONBOARDING — Comece Aqui
+
+> Guia de entrada para analistas usando o fluxo multi-agent do playbook.
+> Leitura obrigatória antes: [DESENVOLVIMENTO-COM-IA.md](DESENVOLVIMENTO-COM-IA.md) (o porquê de tudo isso).
+
+---
+
+## 1. O que é este playbook
+
+Um padrão de desenvolvimento com IA baseado em **um time de agentes especializados** (1 orquestrador + 12 especialistas), com:
+
+- **Handoffs em disco:** cada agente grava seu trabalho completo em `tasks/{task_id}/artifacts/` e devolve só um ponteiro leve — nada se perde entre etapas.
+- **Gates obrigatórios:** nada é `done` sem review aprovado; tasks sensíveis passam também pelo gate de segurança; `main` é intocável.
+- **Travas mecânicas:** os limites são aplicados por configuração e hooks, não por confiança.
+- **Biblioteca de boas práticas:** critérios de decisão de mercado (clean code, clean architecture, monorepo, containers, EKS, DevSecOps…) em [`praticas/`](praticas/README.md), consultados pelos agentes e por você.
+
+---
+
+## 2. Setup (uma vez por máquina)
+
+1. Instale o [Claude Code](https://claude.com/claude-code) e autentique.
+2. Instale o [Node.js](https://nodejs.org) ≥ 18 (`brew install node` / `winget install OpenJS.NodeJS.LTS`) — os hooks são scripts Node e rodam idênticos em macOS, Linux e Windows, sem configuração por sistema.
+3. Clone o repo do projeto (que já contém a pasta `.claude/` deste playbook).
+4. Abra o Claude Code **na raiz do repo** — os agentes, travas e hooks carregam automaticamente no startup (os hooks usam caminho relativo; abrir fora da raiz os desativa).
+5. **(Tech Lead, uma vez por repo)** Ative **branch protection** em `main`/`master` no GitHub: PR obrigatório com ≥1 aprovação, status checks verdes, force push e deleção bloqueados (Settings → Branches, ou `gh api`). Os hooks locais do playbook são a segunda linha de defesa — a trava que não se contorna é a do servidor, e ela não vem no clone.
+
+Para adotar o playbook em um repo que ainda não o tem: copie `.claude/`, `multi-agents/`, `praticas/`, `tasks/_TEMPLATE/`, `GOVERNANCE.md`, `DESENVOLVIMENTO-COM-IA.md` e este arquivo para a raiz do repo.
+
+---
+
+## 3. Os 13 agentes e seus modelos
+
+| Agente | Modelo | Função | Quando entra |
+|---|---|---|---|
+| `orchestrator` | Fable 5 | Decompõe, delega, coordena, sintetiza | Sempre — ponto de entrada |
+| `architect` | Fable 5 | Design e decisões técnicas | Feature nova, refactor, decisão de stack |
+| `planner` | Sonnet 5 | Fatia design em tasks INVEST com critérios | Depois do Architect |
+| `coder` | Sonnet 5 | Implementa a spec | Depois do Planner |
+| `reviewer` | Fable 5 | **Gate de qualidade obrigatório** | Depois do Coder, sempre |
+| `tester` | Sonnet 5 | Testes e validação | Em paralelo ou após o Coder |
+| `debugger` | Sonnet 5 | Root cause de bugs | Teste falhou / bug reportado |
+| `documenter` | Haiku 4.5 | Docs técnicos | Após aprovação do Reviewer |
+| `devops` | Sonnet 5 | CI/CD, deploy, infra | Tasks de infra |
+| `spec-writer` | Sonnet 5 | Spec formal e verificável antes de arquitetura e código (SDD) | Primeiro passo de feature não-trivial |
+| `data-engineer` | Sonnet 5 | Schema Postgres, migrations expand-contract, RLS, pgvector | Camada de dados é o foco da task |
+| `ai-engineer` | Sonnet 5 | RAG, agentes, prompts, evals, guardrails | Task envolve subsistema de IA/LLM |
+| `security-sre` | Fable 5 | **Gate de segurança sistêmico** (threat model, supply chain, secrets, pipeline) + prontidão de produção | Task toca auth, dados pessoais, dinheiro, superfície externa ou infra |
+
+Por que esses modelos: [docs/ADR-001-modelos-por-agente.md](docs/ADR-001-modelos-por-agente.md), [docs/ADR-002-agente-security-sre.md](docs/ADR-002-agente-security-sre.md) e [docs/ADR-003-agentes-sdd-dados-ia.md](docs/ADR-003-agentes-sdd-dados-ia.md).
+
+---
+
+## 4. Como trabalhar no dia a dia
+
+### Peça pelo orchestrator
+
+Para qualquer task não-trivial, invoque o fluxo — por exemplo:
+
+> "Use o orchestrator: implementar endpoint de exportação CSV no serviço de relatórios, com paginação."
+
+O orchestrator classifica a complexidade e monta o fluxo:
+
+| Complexidade | Fluxo |
+|---|---|
+| Trivial (1 linha) | Coder → Reviewer (gate continua) |
+| Simples / média | Plan (architect+planner) → Coder → Reviewer |
+| Complexa | + Tester em paralelo; Debugger sob demanda |
+| Feature não-trivial (SDD) | Spec-Writer antes do Architect |
+| Dados / IA como foco | + Data-Engineer / AI-Engineer nos seus gatilhos |
+| Sensível (auth, dados, dinheiro, superfície externa, infra) | + Security-SRE antes do `done` |
+| Épica | Todos, em ciclos |
+
+### Anatomia de uma task
+
+```
+tasks/2026-07-31_export-csv/
+├── brief.md        # objetivo, escopo, critérios (Orchestrator)
+├── run-log.md      # linha do tempo append-only — auditoria da execução
+├── memory.md       # decisões da sessão
+└── artifacts/      # trabalho completo de cada agente
+    ├── architect.md
+    ├── planner.md
+    ├── coder.md
+    ├── reviewer.md      ← sem APROVADO aqui, a task não fecha
+    └── security-sre.md  ← obrigatório também, se a task for sensível
+```
+
+### Seu papel humano
+
+1. Descreva bem o objetivo (o brief nasce da sua descrição).
+2. Responda blockers quando um agente perguntar.
+3. **Leia o diff inteiro** do PR antes de marcar ready — a responsabilidade é sua.
+4. Merge é decisão humana, sempre via PR revisado.
+
+---
+
+## 5. Gates que você vai encontrar
+
+| Gate | O que exige | Quem verifica |
+|---|---|---|
+| **Reviewer gate** | `artifacts/reviewer.md` com `APROVADO` antes de `done` | Hook `check-reviewer-gate.mjs` + Orchestrator |
+| **Security gate** | Task sensível: `artifacts/security-sre.md` com `**Veredito:** APROVADO` antes de `done` | Hook `check-reviewer-gate.mjs` (quando o brief marca a task como sensível) + Orchestrator |
+| **Git gate** | Branch + draft PR; nunca push em `main`, force ou reset | Branch protection no GitHub (primária) + deny do `settings.json` + hook `block-dangerous-git.mjs` |
+| **Guardrail gate** | Agentes não alteram `GOVERNANCE.md`, `settings.json`, hooks | Deny + hook `protect-guardrails.mjs` |
+| **Skill gate** | Skill nova só com regra dos 3 + aprovação | Orchestrator/Tech Lead ([SKILLS-GOVERNANCE](multi-agents/SKILLS-GOVERNANCE.md)) |
+
+**Uma trava disparou?** A mensagem diz o caminho certo (ex.: push bloqueado → abra PR). Se parecer falso positivo, **não contorne** — reporte ao Tech Lead ([GOVERNANCE.md](GOVERNANCE.md) §6).
+
+---
+
+## 6. Erros comuns de quem está começando
+
+- **Pedir código direto ao Claude, fora do fluxo** → sem review, sem rastro. Use o orchestrator.
+- **Aceitar diff gigante** → peça para fatiar; PRs de ~200–400 linhas.
+- **Confiar no "está pronto" da IA** → pronto é: critérios atendidos + Reviewer APROVADO + você leu o diff.
+- **Editar o mesmo arquivo que um agente está editando** → um dono por arquivo ([GOVERNANCE.md](GOVERNANCE.md) §4).
+- **Reaproveitar sessão com hooks alterados** → hooks carregam no startup; reinicie a sessão.
+
+---
+
+## 7. Referências
+
+- [DESENVOLVIMENTO-COM-IA.md](DESENVOLVIMENTO-COM-IA.md) — riscos, cuidados e boas práticas (leitura nº 1)
+- [GOVERNANCE.md](GOVERNANCE.md) — a lei: papéis, git, gates, travas
+- [multi-agents/ARCHITECTURE.md](multi-agents/ARCHITECTURE.md) — doutrina completa
+- [multi-agents/HANDOFF-PROTOCOL.md](multi-agents/HANDOFF-PROTOCOL.md) — o protocolo na prática
+- [multi-agents/SKILLS-GOVERNANCE.md](multi-agents/SKILLS-GOVERNANCE.md) — reuso e criação de skills
+- [praticas/README.md](praticas/README.md) — biblioteca de boas práticas (decisão de arquitetura, código, infra, segurança)
+- `multi-agents/agents/NN-*.md` — manual completo de cada agente

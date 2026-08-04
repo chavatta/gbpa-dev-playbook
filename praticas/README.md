@@ -1,0 +1,42 @@
+# Biblioteca de Boas Práticas
+
+> Referência técnica da equipe. **Não é lei** — a lei é `GOVERNANCE.md`. Aqui vivem os critérios de decisão e padrões de mercado que os agentes e os devs consultam antes de decidir.
+>
+> Regra de uso: cada prática é **decision-oriented** — diz *quando sim, quando não e por quê*, não só "o que é". Se um documento não ajuda a decidir, ele não pertence a esta pasta.
+
+---
+
+## Índice
+
+| # | Prática | Pergunta que responde | Consultada principalmente por |
+|---|---------|----------------------|-------------------------------|
+| 00 | [Stack e Defaults GBPA](00-stack-e-defaults-gbpa.md) | Quais são as escolhas-padrão da casa? *(template — Tech Lead preenche)* | Todos os agentes |
+| 01 | [Clean Code](01-clean-code.md) | Como escrever código que o próximo dev entende? | Coder, Reviewer |
+| 02 | [Modularização](02-modularizacao.md) | Onde cortar o sistema em módulos? | Architect, Planner |
+| 03 | [Monorepo vs Multi-repo](03-monorepo-vs-multirepo.md) | Um repo ou vários? | Architect, Tech Lead |
+| 04 | [Containerização](04-containerizacao.md) | Quando containerizar — e quando não? | Architect, DevOps |
+| 05 | [Kubernetes / EKS](05-kubernetes-eks.md) | Quando escalar para orquestração — e quando é overkill? | Architect, DevOps |
+| 06 | [DevSecOps](06-devsecops.md) | Como embutir segurança no fluxo sem freá-lo? | Security-SRE, DevOps, Reviewer |
+| 07 | [Clean Architecture](07-clean-architecture.md) | Como isolar a regra de negócio de framework/banco/UI — e quando vale? | Architect, Coder |
+| 08 | [Design Funcional](08-design-funcional.md) | Como usar princípios funcionais para reduzir bugs, em qualquer linguagem? | Coder, Reviewer |
+| 09 | [Testes](09-testes.md) | O que testar, em que nível, e quando um teste vale o custo? | Tester, Coder, Debugger |
+
+---
+
+## Como os agentes usam esta pasta
+
+- **Todos** — 00 é o ponto de partida: os defaults da casa vencem preferência de agente; desvio vai para ADR.
+- **Architect** — consulta 02, 03, 04, 05, 07 ao tomar decisões de design; cita a prática no ADR quando ela fundamenta a decisão.
+- **Planner** — usa 02 ao fatiar tasks respeitando fronteiras de módulo (`files_changed` disjuntos).
+- **Coder** — segue 01 e 08 como padrão default de escrita, as fronteiras de 07 onde houver regra de negócio, e 09 para os testes que escreve junto com o código; padrões da codebase existente prevalecem em conflito.
+- **Tester** — usa 09 como método (pirâmide, FIRST, régua de mocks, cobertura).
+- **Debugger** — segue 09 na regra do teste de regressão por bug corrigido.
+- **Reviewer** — usa 01 e 08 como régua de manutenibilidade, 09 na dimensão de testes e 06 (camada de código) na dimensão de segurança do diff.
+- **DevOps** — usa 04, 05 e 06 (camadas de pipeline e runtime).
+- **Security-SRE** — usa 06 como método de auditoria (incl. seções LGPD e segurança de IA).
+
+## Manutenção
+
+- Mudança de conteúdo passa pelo Tech Lead (mesma lógica de `GOVERNANCE.md §1`).
+- Prática nova entra quando a **regra dos 3** se cumpre: o mesmo critério de decisão foi necessário em 3 tasks diferentes (`multi-agents/SKILLS-GOVERNANCE.md`).
+- Cada prática lista as fontes na base. Cadência de revisão: **trimestral** para 00, 04, 05 e 06 (cloud, ferramentas e segurança giram rápido) e **anual** para 01, 02, 03, 07, 08 e 09 (fundamentos estáveis) — ou quando o mercado mudar de consenso.

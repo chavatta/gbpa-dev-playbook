@@ -1,0 +1,17 @@
+# SO
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Editores
+.idea/
+.vscode/
+*.swp
+
+# Ambiente local (nunca versionar segredo — praticas/06-devsecops.md)
+.env
+.env.*
+!.env.example
+
+# Claude Code — estado local de sessão
+.claude/settings.local.json
