@@ -115,8 +115,8 @@ Documenter e DevOps entram só quando a task pede docs ou infra; Spec-Writer, Da
 Governança completa em `SKILLS-GOVERNANCE.md`. No handoff:
 
 - **Reuso primeiro:** Architect/Planner checam as 3 camadas (instaladas → playbook → projeto) e marcam no artifact qual skill o Coder deve usar.
-- **Candidate, não criação:** procedimento novo e recorrente (regra dos 3) vira um *skill candidate* registrado na seção `## Skill Candidates` do **próprio artifact** do agente que o detectou (respeitando o escritor único de `GOVERNANCE.md §4.3`) e listado no campo `skill_candidates` do ponteiro. Se houver candidates, o **Orchestrator** consolida em `tasks/{task_id}/artifacts/skill-candidates.md` (arquivo de escrita exclusiva dele, como `brief.md` e `run-log.md`). Nenhum agente cria skill no meio da task.
-- **Gate:** o Orchestrator decide; se aprovado, o `documenter` autora via `skill-creator`, nascendo no projeto.
+- **Candidate, não criação:** procedimento novo e recorrente (regra dos 3) vira um *skill candidate* registrado na seção `## Skill Candidates` do **próprio artifact** do agente que o detectou (respeitando o escritor único de `GOVERNANCE.md §4.3`) e listado no campo `skill_candidates` do ponteiro — sempre com **evidência com fonte** (padrão declarado em qual doc, ou em quais tasks se repetiu). Se houver candidates, o **Orchestrator** consolida no backlog do projeto, `docs/skill-backlog.md` (arquivo de escrita exclusiva dele; template em `multi-agents/templates/SKILL-BACKLOG.template.md`): candidate novo vira linha, candidate repetido incrementa o contador de ocorrências. Nenhum agente cria skill no meio da task.
+- **Gate:** o Orchestrator decide sobre o backlog; se aprovado, o `documenter` autora via `skill-creator`, nascendo no projeto.
 - O campo `skill_candidates` do ponteiro lista o que foi usado e/ou proposto.
 
 ---

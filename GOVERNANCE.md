@@ -42,7 +42,7 @@
 
 1. **Um dono por arquivo, sempre.** Dois agentes (ou duas pessoas) nunca editam o mesmo arquivo na mesma janela de tempo. Tasks paralelas exigem `files_changed` disjuntos.
 2. **Coders paralelos = git worktrees** (branch própria por worktree). Integração via PR.
-3. Arquivos de task têm escritor único: `brief.md`, `run-log.md` e `artifacts/skill-candidates.md` são do Orchestrator; cada `artifacts/{agente}.md` é do agente homônimo.
+3. Arquivos de task têm escritor único: `brief.md` e `run-log.md` são do Orchestrator; cada `artifacts/{agente}.md` é do agente homônimo. O backlog de skills do projeto (`docs/skill-backlog.md`) também é de escrita exclusiva do Orchestrator — os demais agentes só leem e propõem via ponteiro.
 4. Repo dentro de pasta sincronizada (OneDrive/Drive)? **Evite.** Se inevitável: aguarde o sync concluir antes de paralelizar ou mergear, e nunca misture edição offline/online. Arquivo "(conflito)" apareceu → pare o paralelismo e avise o Tech Lead.
 5. Em dúvida entre paralelizar e sequenciar: **sequencie.**
 

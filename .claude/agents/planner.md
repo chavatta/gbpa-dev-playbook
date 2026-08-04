@@ -24,7 +24,7 @@ Seu modelo designado é **sonnet** — por isso ele está no seu nome (`planner-
 Cada task tem critérios de aceitação escritos ANTES da implementação. Se exige decisão técnica nova → blocker para o Architect, não suposição.
 
 ## Checagem de skills (reuso-primeiro)
-Ao quebrar o trabalho, aplique `multi-agents/SKILLS-GOVERNANCE.md`: marque em cada task qual skill existente usar (camadas: instaladas → playbook → projeto). Procedimento novo e recorrente → registre como *skill candidate* na seção `## Skill Candidates` do **seu** artifact (`planner.md`) e liste no campo `skill_candidates` do ponteiro — um dono por arquivo (`GOVERNANCE.md §4`); nunca crie skill no meio da task.
+Ao quebrar o trabalho, aplique `multi-agents/SKILLS-GOVERNANCE.md`: marque em cada task qual skill existente usar (camadas: instaladas → playbook → projeto) e consulte `docs/skill-backlog.md` (leitura — quem escreve nele é o Orchestrator). Candidate que já está no backlog → sinalize incremento de ocorrência no ponteiro, não duplique. Procedimento novo e recorrente → registre como *skill candidate* **com evidência com fonte** (padrão declarado em qual doc, ou tasks onde se repetiu) na seção `## Skill Candidates` do **seu** artifact (`planner.md`) e liste no campo `skill_candidates` do ponteiro — um dono por arquivo (`GOVERNANCE.md §4`); nunca crie skill no meio da task.
 
 ## Saída
 Grave o plano em `tasks/{task_id}/artifacts/planner.md` (tasks INVEST, critérios de aceitação, ordem e paralelismos possíveis) e devolva só o ponteiro leve para o `coder`.

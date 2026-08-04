@@ -43,14 +43,24 @@ Se falhar qualquer uma → **não cria**. Só faz a tarefa e, no máximo, regist
 ## 4. Fluxo de detecção e criação
 
 ```
-Architect/Planner (durante a decomposição)
-  └─ checa as 3 camadas (§2)
+Architect (bootstrap do projeto — auditoria inicial)
+  └─ identifica os PADRÕES DECLARADOS da casa que merecem skill
+     (evidência = campo do 00-stack / prática que os declara)
+       └─ registra como SKILL CANDIDATES no artifact + ponteiro
+
+Architect/Planner (durante a decomposição de cada task)
+  └─ checa as 3 camadas (§2) e consulta docs/skill-backlog.md
        ├─ coberto  → USA a skill existente (registra no artifact qual)
        ├─ novo, one-off → só executa, não cria
+       ├─ candidate já no backlog → sinaliza no ponteiro para
+       │                            o Orchestrator incrementar a ocorrência
        └─ novo + repete (regra dos 3) → registra SKILL CANDIDATE
                                           (na seção do próprio artifact + campo
-                                           `skill_candidates` do ponteiro; o Orchestrator
-                                           consolida em tasks/{id}/artifacts/skill-candidates.md)
+                                           `skill_candidates` do ponteiro)
+                                              │
+                          Orchestrator consolida em docs/skill-backlog.md
+                          (backlog do projeto, escrita exclusiva dele —
+                           template: multi-agents/templates/SKILL-BACKLOG.template.md)
                                               │
                           Orchestrator/Tech Lead aprova o candidate (GATE)
                                               │
@@ -59,6 +69,10 @@ Architect/Planner (durante a decomposição)
                                               │
                           Skill nasce no NÍVEL PROJETO por padrão (§5)
 ```
+
+**Evidência, nunca opinião:** um candidate só entra no backlog com fonte — padrão declarado (cita o doc que o declara) ou repetição observada (cita as tasks). "Acho que vai precisar" não é evidência; é o Big Design Up Front que o manual do Architect proíbe.
+
+O backlog é **um por projeto** (`docs/skill-backlog.md`, versionado com o código) e é a fila única do gate: candidate que reaparece incrementa o contador de ocorrências em vez de virar registro solto — a regra dos 3 (§3) deixa de ser intuição e vira contagem.
 
 O agente **nunca cria a skill sozinho no meio da task** — ele registra o candidate e segue. Criação é passo separado, com aprovação.
 
@@ -84,7 +98,8 @@ O agente **nunca cria a skill sozinho no meio da task** — ele registra o candi
 
 ## 7. Manutenção (evitar skills mortas)
 
-- Em revisões periódicas, skill não usada há muito tempo ou desatualizada é **arquivada ou removida**.
+- Em revisões periódicas, skill não usada há muito tempo ou desatualizada é **arquivada ou removida** — e seu status atualizado no `docs/skill-backlog.md`.
+- Candidates parados no backlog sem nova ocorrência há muito tempo também são arquivados na mesma revisão.
 - Skill que conflita/sobrepõe outra → fundir.
 - Mudou o procedimento? Atualize a skill na mesma hora — skill desatualizada engana o agente.
 
@@ -93,7 +108,9 @@ O agente **nunca cria a skill sozinho no meio da task** — ele registra o candi
 ## 8. Checklist (cole antes de propor uma skill)
 
 - [ ] Checei as 3 camadas e nada cobre (§2)
+- [ ] Consultei `docs/skill-backlog.md` — se o candidate já existe, sinalizei incremento em vez de duplicar
 - [ ] Procedimento já se repetiu ~3x ou é padrão explícito (§3)
+- [ ] Tenho evidência com fonte (doc que declara o padrão, ou tasks onde se repetiu)
 - [ ] É procedural e estável (não é decisão única / domínio)
 - [ ] Registrei como *skill candidate*, não criei no meio da task
 - [ ] Aprovado no gate antes de autorar
