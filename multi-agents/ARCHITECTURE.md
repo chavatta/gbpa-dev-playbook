@@ -15,7 +15,7 @@ Agentes únicos têm limites: contexto limitado, raciocínio sequencial, e tend�
 - **Separação de concerns** — menos chance de um agente contaminar o raciocínio de outro
 - **Escalabilidade** — adicionar capacidade = adicionar agentes
 
-> Dado da Anthropic: um sistema multi-agent com Claude Opus como lead e Sonnet como subagentes superou um sistema single-agent em **90.2%** em tarefas de pesquisa complexas.
+> Dado da Anthropic: um sistema multi-agent com um modelo de topo como lead e Sonnet como subagentes superou um sistema single-agent em **90.2%** em tarefas de pesquisa complexas. (O estudo original usou Opus; no quadro atual do playbook o papel de lead é do **Fable 5** — ver `ADR-001`.)
 
 ---
 

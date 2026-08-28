@@ -50,6 +50,7 @@ A mensagem final do subagente ao Orchestrator deve conter **apenas** este bloco 
 
 ```yaml
 agent: coder
+model: sonnet            # modelo em que o agente REALMENTE rodou (ver ADR-001)
 task_id: 2026-06-29_auth-jwt
 status: completed        # completed | blocked | needs_review
 artifact_path: tasks/2026-06-29_auth-jwt/artifacts/coder.md
@@ -60,7 +61,9 @@ blockers: []             # se status=blocked, listar aqui o que trava
 skill_candidates: []     # skills existentes usadas e/ou candidatas a criar (ver §6.1)
 ```
 
-Campos obrigatórios: `agent`, `task_id`, `status`, `artifact_path`, `next_agent`, `context_for_next`, `blockers`, `skill_candidates`.
+Campos obrigatórios: `agent`, `model`, `task_id`, `status`, `artifact_path`, `next_agent`, `context_for_next`, `blockers`, `skill_candidates`.
+
+**Sobre `agent` e `model`:** `agent` é sempre o **nome-base** (`coder`, `reviewer`, …) — sem sufixo de modelo — porque os hooks e o `artifact_path` dependem dele. `model` é a família do modelo em que o subagente efetivamente rodou (`fable`, `sonnet`, `haiku`), verificada por ele no próprio system prompt. Se divergir do modelo designado no ADR-001, o subagente devolve `status: blocked` com o blocker `"modelo divergente: esperado {X}, rodando em {Y}"` em vez de seguir — assim o downgrade silencioso vira um bloqueio visível no `run-log.md`, não um resultado de qualidade menor passando por aprovado.
 
 ---
 
@@ -93,7 +96,7 @@ Isso materializa a seção "Observabilidade" do `ARCHITECTURE.md`: quem rodou, q
 
 ## 6. Fluxo enxuto (default)
 
-Não acione os 12 agentes por reflexo. Escale o esforço à complexidade (`ARCHITECTURE.md` → Scaling de Esforço):
+Não acione os 13 agentes por reflexo. Escale o esforço à complexidade (`ARCHITECTURE.md` → Scaling de Esforço):
 
 | Complexidade | Fluxo |
 |--------------|-------|
@@ -104,7 +107,7 @@ Não acione os 12 agentes por reflexo. Escale o esforço à complexidade (`ARCHI
 | Camada de dados como foco | + **Data-Engineer** entre Architect e Planner |
 | Subsistema de IA/LLM | + **AI-Engineer** (com Tester rodando as evals) |
 | Sensível (auth, dados pessoais, dinheiro, superfície externa, infra) | + **Security-SRE** antes do `done` (após Reviewer em feature; após DevOps em infra) |
-| Épica | Todos os 12, em ciclos |
+| Épica | Todos os 12 especialistas, em ciclos |
 
 Documenter e DevOps entram só quando a task pede docs ou infra; Spec-Writer, Data-Engineer, AI-Engineer e Security-SRE só nos seus gatilhos acima.
 
