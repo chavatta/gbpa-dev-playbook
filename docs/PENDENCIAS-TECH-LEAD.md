@@ -5,6 +5,6 @@
 ## O que resta (decisões, não patches)
 
 1. **Ativar branch protection** em `main`/`master` dos repos existentes no GitHub (PR obrigatório, ≥1 aprovação, status checks, force push/deleção bloqueados) — a regra do `GOVERNANCE.md §2.6` só vale se aplicada no servidor.
-2. **Preencher `praticas/00-stack-e-defaults-gbpa.md`** — cloud, linguagens, tooling, registry, política de dados em prompt. Enquanto template, agentes tratam cada campo como "perguntar ao Tech Lead".
+2. ~~**Preencher `praticas/00-stack-e-defaults-gbpa.md`**~~ — *resolvido como processo, não como pendência:* o 00 passou a ser preenchido **por projeto** (`ONBOARDING.md §2`, passo 6) e campo em branco é **decisão do Architect** em ADR, não blocker do Tech Lead. Resta ao Tech Lead apenas os campos que extrapolam o projeto: **política de dados pessoais em prompt e status do contrato/DPA com o provedor de LLM**.
 3. **Validar o alias `model: fable`** no frontmatter dos 4 agentes numa task real — se o harness não reconhecer, o fallback é silencioso; nesse caso trocar pelo id completo `claude-fable-5` (ADR-001, revisão trimestral).
 4. **Definir SLA de correção por severidade** para achados de segurança não-bloqueantes (`praticas/06-devsecops.md`, camada 2) — sem isso, "CRITICAL/HIGH explorável bloqueia" depende de interpretação.

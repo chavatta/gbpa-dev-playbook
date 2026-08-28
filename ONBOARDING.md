@@ -24,7 +24,13 @@ Um padrão de desenvolvimento com IA baseado em **um time de agentes especializa
 4. Abra o Claude Code **na raiz do repo** — os agentes, travas e hooks carregam automaticamente no startup (os hooks usam caminho relativo; abrir fora da raiz os desativa).
 5. **(Tech Lead, uma vez por repo)** Ative **branch protection** em `main`/`master` no GitHub: PR obrigatório com ≥1 aprovação, status checks verdes, force push e deleção bloqueados (Settings → Branches, ou `gh api`). Os hooks locais do playbook são a segunda linha de defesa — a trava que não se contorna é a do servidor, e ela não vem no clone.
 
-Para adotar o playbook em um repo que ainda não o tem: copie `.claude/`, `multi-agents/`, `praticas/`, `tasks/_TEMPLATE/`, `GOVERNANCE.md`, `DESENVOLVIMENTO-COM-IA.md` e este arquivo para a raiz do repo.
+6. **(uma vez por projeto)** Preencha [`praticas/00-stack-e-defaults-gbpa.md`](praticas/00-stack-e-defaults-gbpa.md) com os defaults **deste** projeto: cloud, região, linguagens e versões, banco, CI, secrets. O 00 é **por projeto, não global** — dois repos da GBPA podem ter stacks diferentes, e cada um carrega o seu. Preencher o que já estiver decidido; não trave o início do projeto tentando fechar todos os campos.
+
+**Campo em branco não bloqueia o trabalho — vira um menu.** Na primeira task que esbarrar num campo vazio, o Architect apresenta as **opções candidatas** daquele campo (o próprio 00 já traz uma coluna com elas, com um ponto de partida marcado ★), **uma recomendação com o porquê em uma linha**, e a opção explícita **"decida você, Architect"** — que é a resposta certa quando você não tem preferência e quer seguir sem parar a task. Escolhida a opção ou delegada ao Architect, a decisão vira ADR e o valor volta para o 00; a partir daí é default do projeto e ninguém re-decide. Campo já preenchido, ao contrário, **vence preferência de agente e de dev**: desviar dele exige ADR.
+
+Os campos marcados 🔒 no 00 escalam ao **Tech Lead**, não ao Architect — custo recorrente, contrato com terceiro, risco jurídico ou de dados pessoais não são decisão de projeto.
+
+Para adotar o playbook em um repo que ainda não o tem: copie `.claude/`, `multi-agents/`, `praticas/`, `tasks/_TEMPLATE/`, `GOVERNANCE.md`, `DESENVOLVIMENTO-COM-IA.md` e este arquivo para a raiz do repo — e preencha o `praticas/00` do projeto novo (passo 6), que não vem preenchido do repo de origem.
 
 ---
 

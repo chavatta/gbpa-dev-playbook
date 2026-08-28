@@ -10,7 +10,7 @@
 
 | # | Prática | Pergunta que responde | Consultada principalmente por |
 |---|---------|----------------------|-------------------------------|
-| 00 | [Stack e Defaults GBPA](00-stack-e-defaults-gbpa.md) | Quais são as escolhas-padrão da casa? *(template — Tech Lead preenche)* | Todos os agentes |
+| 00 | [Stack e Defaults do Projeto](00-stack-e-defaults-gbpa.md) | Quais são as escolhas-padrão deste projeto? *(por projeto; campo vazio = menu de opções, com "Architect decide" entre elas)* | Todos os agentes |
 | 01 | [Clean Code](01-clean-code.md) | Como escrever código que o próximo dev entende? | Coder, Reviewer |
 | 02 | [Modularização](02-modularizacao.md) | Onde cortar o sistema em módulos? | Architect, Planner |
 | 03 | [Monorepo vs Multi-repo](03-monorepo-vs-multirepo.md) | Um repo ou vários? | Architect, Tech Lead |
@@ -25,7 +25,7 @@
 
 ## Como os agentes usam esta pasta
 
-- **Todos** — 00 é o ponto de partida: os defaults da casa vencem preferência de agente; desvio vai para ADR.
+- **Todos** — 00 é o ponto de partida: os defaults do projeto vencem preferência de agente; desvio vai para ADR. Campo em branco no 00 não é blocker: o **Architect** apresenta as opções candidatas do campo com uma recomendação, oferecendo também "decida você, Architect"; a escolha vira ADR e o valor volta para o 00.
 - **Architect** — consulta 02, 03, 04, 05, 07 ao tomar decisões de design; cita a prática no ADR quando ela fundamenta a decisão.
 - **Planner** — usa 02 ao fatiar tasks respeitando fronteiras de módulo (`files_changed` disjuntos).
 - **Coder** — segue 01 e 08 como padrão default de escrita, as fronteiras de 07 onde houver regra de negócio, e 09 para os testes que escreve junto com o código; padrões da codebase existente prevalecem em conflito.

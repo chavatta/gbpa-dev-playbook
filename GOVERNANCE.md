@@ -33,7 +33,7 @@
 3. Handoffs **sempre via artifact em disco** + ponteiro leve (`multi-agents/HANDOFF-PROTOCOL.md`).
 4. **Code review é obrigatório:** nenhuma task é `done` sem `tasks/{task_id}/artifacts/reviewer.md` com `**Veredito:** APROVADO` na primeira linha. O hook `check-reviewer-gate.mjs` verifica mecanicamente.
 5. **Gate de segurança em task sensível:** task que toca auth, dados pessoais, dinheiro, superfície externa ou infra/pipeline não é `done` sem `tasks/{task_id}/artifacts/security-sre.md` com `**Veredito:** APROVADO` (agente e escopo em `docs/ADR-002-agente-security-sre.md`). O hook `check-reviewer-gate.mjs` verifica mecanicamente quando o `brief.md` marca a task como sensível. Risco residual só o Tech Lead aceita, registrado no artifact com nome e data.
-6. **Biblioteca de práticas:** `praticas/` é a referência de decisão da equipe (código, arquitetura, repos, containers, segurança, testes). Não é lei — este documento é — mas desvio relevante de uma prática se justifica no ADR da decisão. Os defaults da casa vivem em `praticas/00-stack-e-defaults-gbpa.md`.
+6. **Biblioteca de práticas:** `praticas/` é a referência de decisão da equipe (código, arquitetura, repos, containers, segurança, testes). Não é lei — este documento é — mas desvio relevante de uma prática se justifica no ADR da decisão. Os defaults do projeto vivem em `praticas/00-stack-e-defaults-gbpa.md`.
 7. **Exceções:** correções triviais de 1 linha podem comprimir o fluxo para `Coder → Reviewer` (o gate continua). Protótipos exploratórios podem pular etapas **desde que marcados como protótipo não-revisado** — e nunca vão para `main` nesse estado.
 
 ---
