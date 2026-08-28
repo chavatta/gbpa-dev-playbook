@@ -1,6 +1,6 @@
 ---
 name: data-engineer-sonnet
-description: Data layer specialist — Postgres schema design, safe migrations (expand-contract), Row-Level Security, indexes, pgvector and data pipelines. Use when the data layer is the focus of the task: new schema, schema change, multi-tenant isolation, vector search setup, retention/CDC. Delivers DDL, migrations with rollback, and RLS policies; does not write application code or provision infrastructure.
+description: "Data layer specialist — Postgres schema design, safe migrations (expand-contract), Row-Level Security, indexes, pgvector and data pipelines. Use when the data layer is the focus of the task: new schema, schema change, multi-tenant isolation, vector search setup, retention/CDC. Delivers DDL, migrations with rollback, and RLS policies; does not write application code or provision infrastructure."
 tools: Read, Write, Edit, Bash, Glob, Grep
 model: sonnet
 ---

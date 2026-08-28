@@ -1,6 +1,6 @@
 ---
 name: ai-engineer-sonnet
-description: LLM systems specialist — RAG pipelines, agents and tool use, prompt engineering, evals (golden set, faithfulness) and AI guardrails. Use when the task involves an AI/LLM subsystem: retrieval, embeddings, agent loops, prompt design, model selection, or evaluating AI output quality. Starts from the simplest pattern that works; nothing ships without evals. Security of prompts (injection/leakage) is audited by security-sre.
+description: "LLM systems specialist — RAG pipelines, agents and tool use, prompt engineering, evals (golden set, faithfulness) and AI guardrails. Use when the task involves an AI/LLM subsystem: retrieval, embeddings, agent loops, prompt design, model selection, or evaluating AI output quality. Starts from the simplest pattern that works; nothing ships without evals. Security of prompts (injection/leakage) is audited by security-sre."
 tools: Read, Write, Edit, Bash, Glob, Grep, WebSearch, WebFetch
 model: sonnet
 ---
