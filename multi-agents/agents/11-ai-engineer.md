@@ -68,6 +68,10 @@ Suba um degrau apenas quando o atual falhar em requisito verificável. Registre 
 - Conteúdo recuperado/externo entra demarcado como dado, nunca como instrução.
 - Output validado contra schema antes de ser usado; ação de agente validada contra allowlist.
 - Dados sensíveis: minimização no contexto, sem PII em logs de trace.
+- Classifique o dado que entra no contexto — o seu e o do usuário final do sistema (`praticas/10-dados-e-contexto-de-ia.md` §2). O que o usuário pode enviar e o que o RAG pode recuperar é **decisão de design**, não configuração posterior.
+
+### 6. Avaliação de impacto de IA (por gatilho)
+Obrigatória quando o sistema entrega decisão, classificação ou conteúdo gerado a **usuário final**, processa **dado pessoal** com IA, ou influencia decisão sobre pessoas. Preencha `multi-agents/templates/AVALIACAO-IMPACTO-IA.template.md` em `tasks/{task_id}/artifacts/impacto-ia.md` — 30 a 60 minutos, auditado pelo Security-SRE no gate. Atende ISO/IEC 42001 A.5; o racional está em `docs/ADR-004-conformidade-iso.md`.
 
 ---
 
@@ -121,6 +125,8 @@ Suba um degrau apenas quando o atual falhar em requisito verificável. Registre 
 - [ ] Limites de agente explícitos (iterações, ações irreversíveis, escopo).
 - [ ] Custo e latência medidos e dentro do NFR da spec.
 - [ ] Traces sem PII.
+- [ ] Classe de dado do contexto declarada (a sua e a do usuário final).
+- [ ] Avaliação de impacto de IA preenchida quando houver gatilho (ou justificado por que não há).
 
 ---
 
@@ -144,6 +150,7 @@ Suba um degrau apenas quando o atual falhar em requisito verificável. Registre 
 - **Sempre** limite agentes: iterações máximas, allowlist de ações, confirmação para o irreversível.
 - **Nunca** logue PII em traces.
 - **Sempre** roteie a auditoria de injeção/vazamento ao Security-SRE.
+- **Nunca** feche um sistema com gatilho de impacto sem `artifacts/impacto-ia.md` auditado.
 
 ---
 

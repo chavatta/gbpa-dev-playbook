@@ -12,6 +12,7 @@ Um padrão de desenvolvimento com IA baseado em **um time de agentes especializa
 - **Handoffs em disco:** cada agente grava seu trabalho completo em `tasks/{task_id}/artifacts/` e devolve só um ponteiro leve — nada se perde entre etapas.
 - **Gates obrigatórios:** nada é `done` sem review aprovado; tasks sensíveis passam também pelo gate de segurança; `main` é intocável.
 - **Travas mecânicas:** os limites são aplicados por configuração e hooks, não por confiança.
+- **Classificação de dado antes do prompt:** o que pode entrar no contexto de um modelo tem regra própria em [`praticas/10-dados-e-contexto-de-ia.md`](praticas/10-dados-e-contexto-de-ia.md) — é a única trava que depende de você, porque nenhum hook consegue aplicá-la.
 - **Biblioteca de boas práticas:** critérios de decisão de mercado (clean code, clean architecture, monorepo, containers, EKS, DevSecOps…) em [`praticas/`](praticas/README.md), consultados pelos agentes e por você.
 
 ---

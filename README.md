@@ -7,6 +7,7 @@ Padrão de desenvolvimento com IA da equipe: **time de agentes especializados + 
 1. **[DESENVOLVIMENTO-COM-IA.md](DESENVOLVIMENTO-COM-IA.md)** — por que trabalhamos assim: riscos de dev com IA e como cada um é mitigado. *Leitura nº 1.*
 2. **[ONBOARDING.md](ONBOARDING.md)** — setup e como trabalhar no dia a dia.
 3. **[GOVERNANCE.md](GOVERNANCE.md)** — a lei: papéis, regras de git, gates e travas.
+4. **[docs/ISO-MAPPING.md](docs/ISO-MAPPING.md)** — como o playbook se enquadra na ISO/IEC 27001 e 42001. *Para auditor, cliente e RFP.*
 
 ## O que tem aqui
 
@@ -24,13 +25,17 @@ gbpa-dev-playbook/
 │   ├── HANDOFF-PROTOCOL.md        # Como os agentes trocam trabalho (artifacts em disco)
 │   ├── SKILLS-GOVERNANCE.md       # Reuso e criação de skills (regra dos 3)
 │   ├── agents/                    # Manual completo de cada agente (00–12)
-│   └── templates/SKILL.template.md
+│   └── templates/                  # SKILL.template.md, AVALIACAO-IMPACTO-IA.template.md
 ├── praticas/                      # Biblioteca de boas práticas (stack GBPA, clean code, clean architecture,
-│                                  #   design funcional, modularização, monorepo, containers, EKS, DevSecOps+LGPD, testes)
+│                                  #   design funcional, modularização, monorepo, containers, EKS, DevSecOps+LGPD, testes,
+│                                  #   dados e contexto de IA)
 ├── docs/
 │   ├── ADR-001-modelos-por-agente.md
 │   ├── ADR-002-agente-security-sre.md
 │   ├── ADR-003-agentes-sdd-dados-ia.md
+│   ├── ADR-004-conformidade-iso.md
+│   ├── ISO-MAPPING.md             # Rastreabilidade ISO 27001 / ISO 42001 → evidência → status
+│   ├── EVIDENCIAS-E-METRICAS.md   # Retenção de evidência, métricas do playbook, cadência de revisão
 │   └── PENDENCIAS-TECH-LEAD.md    # Patches em arquivos protegidos (hooks/settings/GOVERNANCE) — só o Tech Lead aplica
 └── tasks/
     └── _TEMPLATE/                 # brief.md, run-log.md, memory.md, artifacts/

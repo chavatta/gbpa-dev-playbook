@@ -94,6 +94,8 @@ Racional completo e alternativas descartadas: [docs/ADR-001-modelos-por-agente.m
 | Mudança grande demais para revisar | Planner fatia em mudanças de ~200–400 linhas; diff maior que isso é sinalizado no review |
 | Escopo descontrolado (IA "aproveita para arrumar" o que ninguém pediu) | Delegação com **LIMITES explícitos**; um dono por arquivo; agente fora do escopo = anti-padrão registrado |
 | Contexto se perdendo entre etapas | Artifacts completos em disco + ponteiros leves; `run-log.md` append-only com a linha do tempo de cada task |
+| Dado de cliente, PII ou informação confidencial indo parar no contexto de um modelo externo | **Classificação obrigatória** em [praticas/10-dados-e-contexto-de-ia.md](praticas/10-dados-e-contexto-de-ia.md): quatro classes, três condições para dado confidencial, e proibição sem exceção para dado restrito. Declarada no `brief.md` de cada task |
+| Sistema de IA entregue ao cliente causando dano a pessoas (viés, decisão sem recurso, erro invisível) | **Avaliação de impacto de IA** por gatilho ([template](multi-agents/templates/AVALIACAO-IMPACTO-IA.template.md), ISO 42001 A.5), auditada pelo Security-SRE |
 | Segredo/credencial em código | Regra dura no Coder (sem hardcode) + item obrigatório do checklist do Reviewer; segredos só em cofre/secrets do CI. Secret commitado = revogar e rotacionar |
 | Vulnerabilidade sistêmica (dependência comprometida, pipeline inseguro, authZ falha) | **Security-SRE** como gate em toda task sensível: threat model, auditoria de supply chain, secrets, pipeline e runtime — método em [praticas/06-devsecops.md](praticas/06-devsecops.md) |
 | Decisão de arquitetura/infra por moda (microsserviço prematuro, EKS sem motivo) | Biblioteca [`praticas/`](praticas/README.md): critérios de decisão explícitos que o Architect cita no ADR — "é o padrão da indústria" não é justificativa |
@@ -157,6 +159,9 @@ Regra de processo depende de obediência; **trava mecânica não**. O kit traz a
 | [docs/ADR-001-modelos-por-agente.md](docs/ADR-001-modelos-por-agente.md) | Por que cada agente usa o modelo que usa |
 | [docs/ADR-002-agente-security-sre.md](docs/ADR-002-agente-security-sre.md) | Escopo e fronteiras do gate de segurança |
 | [docs/ADR-003-agentes-sdd-dados-ia.md](docs/ADR-003-agentes-sdd-dados-ia.md) | Escopo e modelos do Spec-Writer, Data-Engineer e AI-Engineer |
+| [docs/ADR-004-conformidade-iso.md](docs/ADR-004-conformidade-iso.md) | Como o playbook se posiciona perante ISO 27001 e ISO 42001 |
+| [docs/ISO-MAPPING.md](docs/ISO-MAPPING.md) | Rastreabilidade controle → evidência → status; o documento que vai ao auditor |
+| [docs/EVIDENCIAS-E-METRICAS.md](docs/EVIDENCIAS-E-METRICAS.md) | O que é evidência, por quanto tempo se retém, e como medir se o playbook funciona |
 | [praticas/README.md](praticas/README.md) | Biblioteca de boas práticas: código, arquitetura, repos, infra, segurança |
 | [praticas/00-stack-e-defaults-gbpa.md](praticas/00-stack-e-defaults-gbpa.md) | Defaults **deste projeto** (cloud, linguagens, banco, CI); campo em branco = decisão do Architect |
 | `multi-agents/agents/NN-*.md` | Manual completo de cada agente |
