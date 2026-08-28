@@ -1,10 +1,12 @@
-# 00 — Stack e Defaults da GBPA
+# 00 — Stack e Defaults do Projeto
 
-> Pergunta que este documento responde: **quais são as escolhas-padrão da casa, para que nem agentes nem devs re-decidam o já decidido?**
+> Pergunta que este documento responde: **quais são as escolhas-padrão deste projeto, para que nem agentes nem devs re-decidam o já decidido?**
 >
-> As práticas 01–09 são critérios de mercado; **este arquivo é o que as ancora na GBPA**. Em conflito entre uma preferência pessoal (ou de agente) e um default daqui, o default vence — desvio se justifica em ADR.
+> As práticas 01–09 são critérios de mercado; **este arquivo é o que as ancora no projeto**. Em conflito entre uma preferência pessoal (ou de agente) e um default daqui, o default vence — desvio se justifica em ADR.
 >
-> ⚠️ **Status: TEMPLATE — pendente de preenchimento pelo Tech Lead.** Os campos `{...}` abaixo são decisões da casa que não podem ser inventadas por agente. Enquanto não preenchido, agentes tratam cada campo como "perguntar ao Tech Lead", nunca como escolha livre.
+> **Preenchido por projeto, não uma vez pela organização.** Cada repo que adota o playbook carrega o seu 00 e o preenche no início (`ONBOARDING.md §2`, passo 6) — dois projetos da GBPA podem ter stacks legitimamente diferentes.
+>
+> **Campo em branco (`{...}`) não é blocker.** É **decisão do Architect** na primeira task que esbarrar nele: decide no contexto da task, registra em ADR e **traz o valor de volta para cá** — a partir daí é default do projeto e ninguém re-decide. Escale ao Tech Lead só quando a decisão extrapola o projeto: custo recorrente, contrato com terceiro, risco jurídico ou de dados pessoais.
 
 ---
 
@@ -59,5 +61,6 @@
 
 ## Manutenção
 
-- Dono: **Tech Lead**. Mudança aqui é mudança de governança (mesma lógica de `GOVERNANCE.md §1`).
+- Dono: **Architect do projeto**, com o Tech Lead como escalada para os campos que extrapolam o projeto (custo recorrente, contrato, risco jurídico ou de dados pessoais).
+- Todo campo preenchido a partir de uma decisão de task deve citar o ADR que o originou, na coluna "Nota".
 - Revisão trimestral (junto com ADR-001) — este arquivo envelhece mais rápido que as práticas de mercado.

@@ -127,8 +127,9 @@ Regra de processo depende de obediência; **trava mecânica não**. O kit traz a
 7. **Um dono por arquivo por vez.** Trabalho paralelo usa git worktrees e arquivos disjuntos (ver [GOVERNANCE.md](GOVERNANCE.md) §4).
 8. **Registre decisões.** Decisão técnica relevante vira ADR em `docs/` — quem chegar depois entende o porquê.
 9. **Consulte a biblioteca antes de decidir.** Modularização, monorepo, containerizar ou não, EKS ou não, clean architecture, design funcional: os critérios estão em [`praticas/`](praticas/README.md). Desvio relevante se justifica no ADR.
-10. **Segurança entra no começo, não no fim.** Feature sensível ganha threat model no design e passa pelo gate do Security-SRE antes de fechar ([praticas/06-devsecops.md](praticas/06-devsecops.md)).
-11. **Na dúvida, pergunte.** Ambiguidade que muda a abordagem → pergunta ao Tech Lead antes, não suposição depois.
+10. **Os defaults do projeto vivem no `praticas/00`.** [`praticas/00-stack-e-defaults-gbpa.md`](praticas/00-stack-e-defaults-gbpa.md) é preenchido **por projeto**, no início dele (ONBOARDING §2, passo 6) — cada repo carrega o seu. O que estiver preenchido é decidido: vence preferência de agente e de dev, e desviar exige ADR. O que estiver em branco **não é blocker** — é **decisão do Architect** na primeira task que esbarrar no campo, registrada em ADR e devolvida ao 00, para que ninguém re-decida depois.
+11. **Segurança entra no começo, não no fim.** Feature sensível ganha threat model no design e passa pelo gate do Security-SRE antes de fechar ([praticas/06-devsecops.md](praticas/06-devsecops.md)).
+12. **Na dúvida, pergunte.** Ambiguidade que muda a abordagem → pergunta ao Tech Lead antes, não suposição depois.
 
 ---
 
@@ -157,4 +158,5 @@ Regra de processo depende de obediência; **trava mecânica não**. O kit traz a
 | [docs/ADR-002-agente-security-sre.md](docs/ADR-002-agente-security-sre.md) | Escopo e fronteiras do gate de segurança |
 | [docs/ADR-003-agentes-sdd-dados-ia.md](docs/ADR-003-agentes-sdd-dados-ia.md) | Escopo e modelos do Spec-Writer, Data-Engineer e AI-Engineer |
 | [praticas/README.md](praticas/README.md) | Biblioteca de boas práticas: código, arquitetura, repos, infra, segurança |
+| [praticas/00-stack-e-defaults-gbpa.md](praticas/00-stack-e-defaults-gbpa.md) | Defaults **deste projeto** (cloud, linguagens, banco, CI); campo em branco = decisão do Architect |
 | `multi-agents/agents/NN-*.md` | Manual completo de cada agente |

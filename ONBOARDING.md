@@ -24,7 +24,11 @@ Um padrão de desenvolvimento com IA baseado em **um time de agentes especializa
 4. Abra o Claude Code **na raiz do repo** — os agentes, travas e hooks carregam automaticamente no startup (os hooks usam caminho relativo; abrir fora da raiz os desativa).
 5. **(Tech Lead, uma vez por repo)** Ative **branch protection** em `main`/`master` no GitHub: PR obrigatório com ≥1 aprovação, status checks verdes, force push e deleção bloqueados (Settings → Branches, ou `gh api`). Os hooks locais do playbook são a segunda linha de defesa — a trava que não se contorna é a do servidor, e ela não vem no clone.
 
-Para adotar o playbook em um repo que ainda não o tem: copie `.claude/`, `multi-agents/`, `praticas/`, `tasks/_TEMPLATE/`, `GOVERNANCE.md`, `DESENVOLVIMENTO-COM-IA.md` e este arquivo para a raiz do repo.
+6. **(uma vez por projeto)** Preencha [`praticas/00-stack-e-defaults-gbpa.md`](praticas/00-stack-e-defaults-gbpa.md) com os defaults **deste** projeto: cloud, região, linguagens e versões, banco, CI, secrets. O 00 é **por projeto, não global** — dois repos da GBPA podem ter stacks diferentes, e cada um carrega o seu. Preencher o que já estiver decidido; não trave o início do projeto tentando fechar todos os campos.
+
+**Campo em branco não bloqueia o trabalho.** O que não estiver preenchido é **decisão do Architect**, tomada no contexto da task, registrada em ADR e devolvida ao 00 — a partir daí vira default do projeto e ninguém re-decide. O Tech Lead só entra quando a decisão extrapola o projeto (custo recorrente, contrato, risco jurídico ou de dados). Campo preenchido, ao contrário, **vence preferência de agente e de dev**: desviar dele exige ADR.
+
+Para adotar o playbook em um repo que ainda não o tem: copie `.claude/`, `multi-agents/`, `praticas/`, `tasks/_TEMPLATE/`, `GOVERNANCE.md`, `DESENVOLVIMENTO-COM-IA.md` e este arquivo para a raiz do repo — e preencha o `praticas/00` do projeto novo (passo 6), que não vem preenchido do repo de origem.
 
 ---
 
