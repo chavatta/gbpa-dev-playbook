@@ -26,7 +26,9 @@ Um padrão de desenvolvimento com IA baseado em **um time de agentes especializa
 
 6. **(uma vez por projeto)** Preencha [`praticas/00-stack-e-defaults-gbpa.md`](praticas/00-stack-e-defaults-gbpa.md) com os defaults **deste** projeto: cloud, região, linguagens e versões, banco, CI, secrets. O 00 é **por projeto, não global** — dois repos da GBPA podem ter stacks diferentes, e cada um carrega o seu. Preencher o que já estiver decidido; não trave o início do projeto tentando fechar todos os campos.
 
-**Campo em branco não bloqueia o trabalho.** O que não estiver preenchido é **decisão do Architect**, tomada no contexto da task, registrada em ADR e devolvida ao 00 — a partir daí vira default do projeto e ninguém re-decide. O Tech Lead só entra quando a decisão extrapola o projeto (custo recorrente, contrato, risco jurídico ou de dados). Campo preenchido, ao contrário, **vence preferência de agente e de dev**: desviar dele exige ADR.
+**Campo em branco não bloqueia o trabalho — vira um menu.** Na primeira task que esbarrar num campo vazio, o Architect apresenta as **opções candidatas** daquele campo (o próprio 00 já traz uma coluna com elas, com um ponto de partida marcado ★), **uma recomendação com o porquê em uma linha**, e a opção explícita **"decida você, Architect"** — que é a resposta certa quando você não tem preferência e quer seguir sem parar a task. Escolhida a opção ou delegada ao Architect, a decisão vira ADR e o valor volta para o 00; a partir daí é default do projeto e ninguém re-decide. Campo já preenchido, ao contrário, **vence preferência de agente e de dev**: desviar dele exige ADR.
+
+Os campos marcados 🔒 no 00 escalam ao **Tech Lead**, não ao Architect — custo recorrente, contrato com terceiro, risco jurídico ou de dados pessoais não são decisão de projeto.
 
 Para adotar o playbook em um repo que ainda não o tem: copie `.claude/`, `multi-agents/`, `praticas/`, `tasks/_TEMPLATE/`, `GOVERNANCE.md`, `DESENVOLVIMENTO-COM-IA.md` e este arquivo para a raiz do repo — e preencha o `praticas/00` do projeto novo (passo 6), que não vem preenchido do repo de origem.
 
