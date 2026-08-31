@@ -4,7 +4,7 @@
 >
 > Este é o documento que se entrega ao auditor (interno ou de certificação). Ele **não** é um SGSI nem um SGIA — ver `docs/ADR-004-conformidade-iso.md` para o enquadramento e as fronteiras.
 >
-> **Dono:** Tech Lead · **Revisão:** semestral, ou a cada mudança em `GOVERNANCE.md` · **Última revisão:** 2026-08-28
+> **Dono:** Tech Lead · **Revisão:** semestral, ou a cada mudança em `GOVERNANCE.md` · **Última revisão:** 2026-08-31
 
 ---
 
@@ -122,7 +122,7 @@ A GBPA tem **duas relações distintas** com IA, e elas caem em partes diferente
 | **A.8.2** | Documentação para usuários do sistema | b | OK | Documenter — README, API docs, runbook |
 | **A.8.3** | Reporte externo | b | ORG | Canal ao titular/cliente |
 | **A.8.4** | Comunicação de incidente | a+b | PARCIAL | LGPD art. 48 em `praticas/06`; **falta runbook de incidente de IA** (§4.5) |
-| **A.9.2** | Processos para uso responsável | **a** | OK | `GOVERNANCE.md` §3 + `praticas/10` — o que pode entrar no contexto, o que a IA nunca faz (`DESENVOLVIMENTO-COM-IA.md` §7) |
+| **A.9.2** | Processos para uso responsável | **a** | OK | `GOVERNANCE.md` §3 e **§7** (em vigor desde 2026-08-31 — torna a classificação de dado lei, não referência) + `praticas/10`; o que a IA nunca faz em `DESENVOLVIMENTO-COM-IA.md` §7 |
 | **A.9.3** | Objetivos para uso responsável | a | OK | `DESENVOLVIMENTO-COM-IA.md` §1 |
 | **A.9.4** | Uso pretendido | a | OK | Escopo por agente em `.claude/agents/` e `multi-agents/agents/`; agente fora do escopo é anti-padrão registrado |
 | **A.10.2** | Alocação de responsabilidades | a+b | OK | `GOVERNANCE.md` §1 — "você é responsável pelo que a IA produziu em seu nome" |
@@ -139,17 +139,17 @@ A GBPA tem **duas relações distintas** com IA, e elas caem em partes diferente
 
 Numeração estável — referenciada por `docs/PENDENCIAS-TECH-LEAD.md`.
 
-| # | Ação | Controles | Dono | Tipo |
-|---|---|---|---|---|
-| **4.1** | Ativar branch protection nos repos existentes | A.8.4, A.8.32 | Tech Lead | Configuração |
-| **4.2** | Preencher `praticas/00-stack-e-defaults-gbpa.md` (inclui política de dado em prompt) | A.5.23, A.8.31, A.6.2.5 | Tech Lead | Decisão |
-| **4.3** | Aprovar `GOVERNANCE.md` §7 (patch em `PENDENCIAS-TECH-LEAD.md`) | A.5.36, A.8.15, A.9.2 | Tech Lead | Patch em arquivo protegido |
-| **4.4** | Definir SLA de correção por severidade | A.5.24, A.8.8 | Tech Lead | Decisão |
-| **4.5** | Runbook de incidente envolvendo IA (vazamento via prompt, código defeituoso em prod, dependência alucinada) | A.5.24–5.28, A.8.4 (42001) | Security-SRE + Tech Lead | Documento novo |
-| **4.6** | Registro de competência: quem leu o onboarding, quando, e revalidação anual | A.6.3, A.4.6 | Tech Lead | Processo (planilha ou `docs/`) |
-| **4.7** | Verificar termos do provedor de IA: retenção, opt-out de treino, sub-processadores, DPA | A.5.19, A.5.20, A.10.3 | Tech Lead + jurídico | Contrato |
-| **4.8** | Registro de risco e Declaração de Aplicabilidade (SoA) | Cláusulas 6.1.2–6.1.3 | Camada ORG | Documento organizacional |
-| **4.9** | Auditoria interna e análise crítica pela direção | Cláusulas 9.2–9.3 | Camada ORG | Processo organizacional |
+| # | Ação | Controles | Dono | Tipo | Status |
+|---|---|---|---|---|---|
+| **4.1** | Ativar branch protection nos repos existentes | A.8.4, A.8.32 | Tech Lead | Configuração | **PARCIAL** (2026-08-31) — ativa em `gbpa-dev-playbook`; replicar nos demais repos |
+| **4.2** | Preencher `praticas/00-stack-e-defaults-gbpa.md` (inclui política de dado em prompt) | A.5.23, A.8.31, A.6.2.5 | Tech Lead | Decisão | Aberta — restam contrato/DPA e política de dado pessoal |
+| **4.3** | Aprovar `GOVERNANCE.md` §7 (patch em `PENDENCIAS-TECH-LEAD.md`) | A.5.36, A.8.15, A.9.2 | Tech Lead | Patch em arquivo protegido | **FEITA** (2026-08-31) |
+| **4.4** | Definir SLA de correção por severidade | A.5.24, A.8.8 | Tech Lead | Decisão | **FEITA** (2026-08-31) — achado que impacta o processo é bloqueador até resolução humana (`praticas/06`) |
+| **4.5** | Runbook de incidente envolvendo IA (vazamento via prompt, código defeituoso em prod, dependência alucinada) | A.5.24–5.28, A.8.4 (42001) | Security-SRE + Tech Lead | Documento novo | Aberta |
+| **4.6** | Registro de competência: quem leu o onboarding, quando, e revalidação anual | A.6.3, A.4.6 | Tech Lead | Processo (planilha ou `docs/`) | Aberta |
+| **4.7** | Verificar termos do provedor de IA: retenção, opt-out de treino, sub-processadores, DPA | A.5.19, A.5.20, A.10.3 | Tech Lead + jurídico | Contrato | Aberta — insumo da 4.2 |
+| **4.8** | Registro de risco e Declaração de Aplicabilidade (SoA) | Cláusulas 6.1.2–6.1.3 | Camada ORG | Documento organizacional | Aberta |
+| **4.9** | Auditoria interna e análise crítica pela direção | Cláusulas 9.2–9.3 | Camada ORG | Processo organizacional | Aberta |
 
 ---
 

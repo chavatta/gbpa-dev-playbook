@@ -37,6 +37,25 @@
 
 ---
 
+## Severidade e prazo de correção
+
+Não usamos SLA por relógio ("MEDIUM em 30 dias"). Prazo por severidade envelhece mal: vira fila que ninguém olha e o achado expira sem que nada aconteça. A regra da casa é outra:
+
+> **Todo achado que impacta o processo é bloqueador até um humano resolvê-lo.**
+
+"Resolver" tem exatamente duas saídas, e ambas deixam rastro:
+
+1. **Corrigir** — o achado some, o gate reabre.
+2. **Aceitar o risco residual** — só o **Tech Lead** aceita, registrado no artifact com nome, data e o porquê (`GOVERNANCE.md` §3, §5). Aceite não é adiamento: é decisão assinada.
+
+O que **não** é saída: deixar como backlog sem dono, "vemos no próximo sprint" ou marcar como `done` contando que alguém volte depois.
+
+**Impacta o processo** quer dizer: o achado muda o que o time pode fazer com segurança daqui para frente — trava mecânica furada, gate que pode ser contornado, credencial exposta, dependência comprometida, controle que a documentação promete e o código não entrega. É o critério que separa o achado estrutural do achado pontual.
+
+Isso **não revoga** o alerta da Camada 2 contra travar o pipeline por LOW teórico — revoga o oposto disso. Um LOW que não impacta o processo continua sendo backlog priorizado. O que deixa de existir é a zona cinzenta em que um achado relevante ficava aberto indefinidamente por não ser CRITICAL: ou alguém corrige, ou alguém assina.
+
+---
+
 ## Princípios de projeto seguro (o que o código deve respeitar)
 
 1. **Valide toda entrada na borda** — tudo que cruza uma trust boundary (usuário, API externa, fila, arquivo) é hostil até validado. Allowlist > blocklist.

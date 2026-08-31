@@ -4,7 +4,7 @@
 >
 > Insumo da cláusula 9 (monitoramento e análise crítica) da ISO/IEC 27001 e da ISO/IEC 42001. A análise crítica em si é da direção; o que está aqui é a matéria-prima que este repositório produz.
 >
-> **Dono:** Tech Lead · **Revisão:** semestral · **Última revisão:** 2026-08-28
+> **Dono:** Tech Lead · **Revisão:** semestral · **Última revisão:** 2026-08-31
 
 ---
 

@@ -45,6 +45,20 @@ O `model:` no frontmatter de cada agente (`.claude/agents/*.md`) **prevalece** s
 - Três modelos para manter atualizados quando os aliases mudarem → revisão trimestral deste ADR.
 - Documenter em Haiku pode ficar aquém em docs complexas → o Orchestrator pode sobrescrever o modelo na delegação quando justificar.
 
+## Nomenclatura dos agentes e visibilidade do modelo
+
+*(decidido em 2026-08-31, Tech Lead)*
+
+Os arquivos em `.claude/agents/` mantêm o **sufixo de modelo** no nome (`reviewer-fable`, `coder-sonnet`, …), enquanto as referências de processo — `ONBOARDING.md`, os campos `agent:`/`next_agent:` do handoff e o corpo do orchestrator — continuam usando o **nome-base** (`reviewer`, `coder`). A separação é deliberada: os hooks e o `artifact_path` dependem do nome-base, e o sufixo existe para tornar o modelo visível já na listagem de agentes.
+
+**Requisito que sustenta a decisão:** em qualquer momento deve estar claro qual modelo está de fato executando. Três camadas garantem isso, e as três precisam continuar existindo:
+
+1. **Frontmatter** — cada agente declara seu `model:` designado.
+2. **Auto-verificação** — todo agente tem a seção "Modelo designado (ADR-001)" e confere, no próprio system prompt, em que modelo está rodando. Divergência do designado devolve `status: blocked` com o blocker `"modelo divergente: esperado {X}, rodando em {Y}"` em vez de seguir — o downgrade silencioso vira bloqueio visível.
+3. **Ponteiro de handoff** — `model` é campo **obrigatório** (`multi-agents/HANDOFF-PROTOCOL.md` §3.2) e registra o modelo em que o subagente efetivamente rodou, não o designado. É o que fica no `run-log.md` como evidência.
+
+**Custo aceito:** se este ADR trocar o modelo de um agente, o nome do arquivo muda junto e as referências que usam nome-base seguem válidas — mas qualquer menção ao nome sufixado (documentação, scripts) precisa ser atualizada na mesma mudança. A revisão trimestral deste ADR é o momento de verificar isso.
+
 ## Notas operacionais
 
 - Ajustes de modelo são mudança de governança: alterar frontmatter dos agentes passa pelo Tech Lead (a pasta `.claude/` é guardrail — ver `GOVERNANCE.md §6`).
