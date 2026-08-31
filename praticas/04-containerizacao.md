@@ -3,6 +3,8 @@
 > Pergunta que este documento responde: **este workload deve virar container — ou é complexidade desnecessária?**
 >
 > Princípio-mãe: container resolve **reprodutibilidade e paridade de ambiente**. Se esses não são seus problemas, container é embalagem cara para um problema que você não tem.
+>
+> **Dono:** Tech Lead · **Revisão:** trimestral · **Última revisão:** 2026-08-31
 
 ---
 

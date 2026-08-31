@@ -3,6 +3,8 @@
 > Pergunta que este documento responde: **onde cortar o sistema em módulos — e como saber se o corte está certo?**
 >
 > Princípio-mãe: **alta coesão dentro, baixo acoplamento entre.** Um corte é bom quando as coisas que mudam juntas ficam juntas, e uma mudança comum não atravessa fronteiras.
+>
+> **Dono:** Tech Lead · **Revisão:** anual · **Última revisão:** 2026-08-31
 
 ---
 

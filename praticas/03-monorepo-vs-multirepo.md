@@ -3,6 +3,8 @@
 > Pergunta que este documento responde: **um repositório ou vários — e quando migrar?**
 >
 > Princípio-mãe: a estrutura de repos segue a estrutura de **acoplamento e de times**, não a moda. Código que muda junto e é revisado pelas mesmas pessoas quer morar junto.
+>
+> **Dono:** Tech Lead · **Revisão:** anual · **Última revisão:** 2026-08-31
 
 ---
 

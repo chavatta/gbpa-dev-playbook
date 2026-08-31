@@ -83,4 +83,16 @@ if (hit("(psql|mysql)\\b") && /(DROP +(TABLE|DATABASE|SCHEMA)|TRUNCATE +)/i.test
   block("BLOQUEADO: DDL destrutivo (DROP/TRUNCATE) via CLI de banco. Operação destrutiva exige aprovação do Tech Lead (manual do Data-Engineer; GOVERNANCE.md §6).");
 }
 
+// Escrita nas zonas protegidas POR SHELL. O protect-guardrails.mjs só intercepta
+// Write|Edit|MultiEdit|NotebookEdit, e o deny do settings.json só cobre essas mesmas
+// ferramentas — um `cp`/`tee`/`>` para .claude/hooks/ não passava por trava nenhuma.
+// Ler continua liberado (cat, grep, node .claude/hooks/x.mjs): só o verbo que MUTA bloqueia.
+const PROTEGIDO = "(\\.claude\\/(settings\\.json|hooks\\/)|(^|[ \\/])GOVERNANCE\\.md)";
+const MUTANTES = "(cp|mv|tee|install|ln|dd|truncate|rm|chmod|chown|sed +-[a-z]*i|perl +-[a-z]*[ip]|python3? +-c)\\b";
+
+if (new RegExp(PROTEGIDO).test(flat)
+  && (hit(MUTANTES) || new RegExp(">>?\\s*\\S*" + PROTEGIDO).test(flat))) {
+  block("BLOQUEADO: escrita em zona protegida (.claude/settings.json, .claude/hooks/, GOVERNANCE.md) via shell. Estes arquivos são as travas do playbook e só o Tech Lead os altera, à mão, fora da sessão do agente (GOVERNANCE.md §6). Patch pronto vai para docs/patches/.");
+}
+
 process.exit(0);

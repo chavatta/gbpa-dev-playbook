@@ -3,6 +3,7 @@
 **Status:** Aceito
 **Data:** 2026-07-31
 **Decisores:** Tech Lead
+**Revisão:** semestral
 **Relacionado:** complementa ADR-001 (modelos por agente) — não o supersede.
 
 ## Contexto

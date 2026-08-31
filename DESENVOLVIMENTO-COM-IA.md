@@ -1,6 +1,8 @@
 # Desenvolvimento com IA — Como Trabalhamos, Riscos e Cuidados
 
 > **Leia este documento antes de qualquer outro.** Ele explica por que nosso fluxo de desenvolvimento com IA é estruturado do jeito que é.
+>
+> **Dono:** Tech Lead · **Revisão:** semestral · **Última revisão:** 2026-08-31
 
 ---
 

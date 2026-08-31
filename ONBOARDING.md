@@ -2,6 +2,8 @@
 
 > Guia de entrada para analistas usando o fluxo multi-agent do playbook.
 > Leitura obrigatória antes: [DESENVOLVIMENTO-COM-IA.md](DESENVOLVIMENTO-COM-IA.md) (o porquê de tudo isso).
+>
+> **Dono:** Tech Lead · **Revisão:** semestral · **Última revisão:** 2026-08-31
 
 ---
 

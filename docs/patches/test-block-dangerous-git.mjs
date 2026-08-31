@@ -39,6 +39,25 @@ const CASES = [
   ["clean -f em subshell",        "(git clean -fd)", "BLOCK"],
   ["rm -rf em pipe",              "echo x | rm -rf /tmp/y", "BLOCK"],
 
+  // ---- zona protegida: escrita por shell deve BLOQUEAR ----
+  ["cp para hooks",               "cp /tmp/x.mjs .claude/hooks/block-dangerous-git.mjs", "BLOCK"],
+  ["cp para settings",            "cp /tmp/s.json .claude/settings.json", "BLOCK"],
+  ["mv para hooks",               "mv /tmp/x.mjs .claude/hooks/x.mjs", "BLOCK"],
+  ["redirect para hooks",         "echo x > .claude/hooks/x.mjs", "BLOCK"],
+  ["append em GOVERNANCE",        "echo x >> GOVERNANCE.md", "BLOCK"],
+  ["tee em hooks",                "echo x | tee .claude/hooks/x.mjs", "BLOCK"],
+  ["sed -i em GOVERNANCE",        "sed -i s/a/b/ GOVERNANCE.md", "BLOCK"],
+  ["rm de hook",                  "rm .claude/hooks/protect-guardrails.mjs", "BLOCK"],
+  ["cp com caminho absoluto",     "cp /tmp/x /Users/u/repo/.claude/hooks/x.mjs", "BLOCK"],
+
+  // ---- zona protegida: LEITURA deve PASSAR ----
+  ["rodar o hook (teste)",        "node docs/patches/test-block-dangerous-git.mjs .claude/hooks/block-dangerous-git.mjs", "ALLOW"],
+  ["ler settings",                "cat .claude/settings.json", "ALLOW"],
+  ["grep em hooks",               'grep -n block .claude/hooks/block-dangerous-git.mjs', "ALLOW"],
+  ["ler GOVERNANCE",              "head -40 GOVERNANCE.md", "ALLOW"],
+  ["diff de GOVERNANCE",          "git diff GOVERNANCE.md", "ALLOW"],
+  ["cp para docs/patches",        "cp /tmp/x.mjs docs/patches/block-dangerous-git.mjs", "ALLOW"],
+
   // ---- devem PASSAR (falsos positivos que motivaram o fix) ----
   ["grep do texto clean -f",      'grep "git clean -f" arquivo.md', "ALLOW"],
   ["grep -c com escape",          'grep -c "git clean -f\\` (qualquer variante" DESENVOLVIMENTO-COM-IA.md', "ALLOW"],

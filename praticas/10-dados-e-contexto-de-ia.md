@@ -5,6 +5,8 @@
 > Princípio-mãe: **tudo que entra no contexto pode sair na resposta, e sai do nosso perímetro no momento em que entra.** Prompt enviado a um provedor externo é transferência de dado, não uso de ferramenta local.
 >
 > Este documento é a régua do Analista/Dev e de todos os agentes, e o critério de auditoria do Security-SRE nesse recorte. Complementa `praticas/06-devsecops.md` (seções LGPD e Segurança de sistemas com IA) — aqui está o **como classificar e decidir**; lá está o método de segurança em volta.
+>
+> **Dono:** Tech Lead · **Revisão:** trimestral · **Última revisão:** 2026-08-31
 
 ---
 

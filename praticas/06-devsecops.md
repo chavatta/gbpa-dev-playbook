@@ -5,6 +5,8 @@
 > Princípio-mãe: **shift-left** — segurança entra no primeiro commit, não na véspera do deploy. Achado de segurança segue a mesma regra do code review: sem severidade, local e correção proposta, é opinião, não achado.
 >
 > Este documento é o método de trabalho do agente **Security-SRE** (`multi-agents/agents/12-security-sre.md`) e a referência de segurança do DevOps e do Reviewer.
+>
+> **Dono:** Tech Lead · **Revisão:** trimestral · **Última revisão:** 2026-08-31
 
 ---
 

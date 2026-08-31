@@ -3,6 +3,7 @@
 **Status:** Aceito — complementado por ADR-002 (Security-SRE: fable) e ADR-003 (Spec-Writer, Data-Engineer, AI-Engineer: sonnet)
 **Data:** 2026-07-31
 **Decisores:** Tech Lead
+**Revisão:** trimestral
 
 > **Nota (2026-08-04):** este ADR cobre os 9 agentes originais. O quadro atual é de **13 agentes** (1 orchestrator + 12 especialistas); os modelos dos 4 agentes posteriores estão nos ADRs 002 e 003, que seguem o mesmo racional. O quadro consolidado está em `DESENVOLVIMENTO-COM-IA.md §3`.
 

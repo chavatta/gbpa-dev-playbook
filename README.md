@@ -2,6 +2,8 @@
 
 Padrão de desenvolvimento com IA da equipe: **time de agentes especializados + gates de qualidade + travas mecânicas de segurança**.
 
+> **Dono:** Tech Lead · **Revisão:** semestral · **Última revisão:** 2026-08-31
+
 ## Comece por aqui
 
 1. **[DESENVOLVIMENTO-COM-IA.md](DESENVOLVIMENTO-COM-IA.md)** — por que trabalhamos assim: riscos de dev com IA e como cada um é mitigado. *Leitura nº 1.*

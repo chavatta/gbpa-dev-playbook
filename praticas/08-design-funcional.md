@@ -3,6 +3,8 @@
 > Pergunta que este documento responde: **como usar os princípios de programação funcional para reduzir bugs — em qualquer linguagem, sem virar academicismo?**
 >
 > Princípio-mãe: **a maioria dos bugs difíceis vive em estado mutável compartilhado e efeitos colaterais escondidos.** Design funcional é minimizar e isolar essas duas coisas — não é sobre usar Haskell.
+>
+> **Dono:** Tech Lead · **Revisão:** anual · **Última revisão:** 2026-08-31
 
 ---
 

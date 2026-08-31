@@ -3,6 +3,8 @@
 > Referência técnica da equipe. **Não é lei** — a lei é `GOVERNANCE.md`. Aqui vivem os critérios de decisão e padrões de mercado que os agentes e os devs consultam antes de decidir.
 >
 > Regra de uso: cada prática é **decision-oriented** — diz *quando sim, quando não e por quê*, não só "o que é". Se um documento não ajuda a decidir, ele não pertence a esta pasta.
+>
+> **Dono:** Tech Lead · **Revisão:** anual · **Última revisão:** 2026-08-31
 
 ---
 
@@ -21,6 +23,7 @@
 | 08 | [Design Funcional](08-design-funcional.md) | Como usar princípios funcionais para reduzir bugs, em qualquer linguagem? | Coder, Reviewer |
 | 09 | [Testes](09-testes.md) | O que testar, em que nível, e quando um teste vale o custo? | Tester, Coder, Debugger |
 | 10 | [Dados e Contexto de IA](10-dados-e-contexto-de-ia.md) | Que informação pode entrar no contexto de um modelo — e sob que condição? | Todos os agentes, Analista/Dev, Security-SRE |
+| 11 | [MCP](11-mcp.md) | Que servidores MCP podem ser conectados, sob que condição, e o que muda no risco? | Architect, Security-SRE, DevOps, Tech Lead |
 
 ---
 
@@ -36,9 +39,10 @@
 - **DevOps** — usa 04, 05 e 06 (camadas de pipeline e runtime).
 - **Security-SRE** — usa 06 como método de auditoria (incl. seções LGPD e segurança de IA) e audita a classificação de 10 no gate de task sensível.
 - **Todos, sem exceção** — 10 é a régua do que pode entrar no contexto de um modelo. É a única prática que também é lei (`GOVERNANCE.md` §7).
+- **Architect e Security-SRE** — 11 antes de conectar qualquer servidor MCP em escopo de projeto: é mudança de superfície de ataque, com ADR e gate.
 
 ## Manutenção
 
 - Mudança de conteúdo passa pelo Tech Lead (mesma lógica de `GOVERNANCE.md §1`).
 - Prática nova entra quando a **regra dos 3** se cumpre: o mesmo critério de decisão foi necessário em 3 tasks diferentes (`multi-agents/SKILLS-GOVERNANCE.md`).
-- Cada prática lista as fontes na base. Cadência de revisão: **trimestral** para 00, 04, 05, 06 e 10 (cloud, ferramentas, segurança e IA giram rápido) e **anual** para 01, 02, 03, 07, 08 e 09 (fundamentos estáveis) — ou quando o mercado mudar de consenso.
+- Cada prática lista as fontes na base. Cadência de revisão: **trimestral** para 00, 04, 05, 06, 10 e 11 (cloud, ferramentas, segurança e IA giram rápido) e **anual** para 01, 02, 03, 07, 08 e 09 (fundamentos estáveis) — ou quando o mercado mudar de consenso.

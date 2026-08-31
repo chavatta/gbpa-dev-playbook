@@ -3,6 +3,7 @@
 **Status:** Aceito
 **Data:** 2026-08-28
 **Decisores:** Tech Lead
+**Revisão:** semestral
 **Relacionado:** referencia `docs/ISO-MAPPING.md` (rastreabilidade), `praticas/10-dados-e-contexto-de-ia.md` e `praticas/06-devsecops.md`. Não supersede nenhum ADR anterior.
 
 ## Contexto

@@ -3,6 +3,7 @@
 **Status:** Aceito
 **Data:** 2026-07-31
 **Decisores:** Tech Lead
+**Revisão:** semestral
 **Relacionado:** completa o quadro de 13 agentes previsto em `multi-agents/ARCHITECTURE.md` (atualização 2026-06-29); complementa ADR-001 (modelos) e ADR-002 (Security-SRE) — não os supersede.
 
 ## Contexto

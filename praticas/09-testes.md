@@ -5,6 +5,8 @@
 > Princípio-mãe: **teste comportamento, não implementação.** Um teste que quebra quando você refatora sem mudar comportamento é um custo, não uma proteção.
 >
 > Este documento é o método de trabalho do agente **Tester** (`multi-agents/agents/05-tester.md`) e a referência do Coder (que escreve testes junto com o código) e do Debugger (que entrega teste de regressão com cada correção).
+>
+> **Dono:** Tech Lead · **Revisão:** anual · **Última revisão:** 2026-08-31
 
 ---
 

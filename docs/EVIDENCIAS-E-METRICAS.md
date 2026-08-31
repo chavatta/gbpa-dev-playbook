@@ -88,14 +88,27 @@ Documento sem dono e sem data de revisão é documento morto — e auditor pergu
 |---|---|---|
 | `GOVERNANCE.md` | Tech Lead | Semestral, ou a cada mudança de trava |
 | `DESENVOLVIMENTO-COM-IA.md` | Tech Lead | Semestral |
+| `ONBOARDING.md`, `README.md` | Tech Lead | Semestral |
+| `multi-agents/ARCHITECTURE.md` | Tech Lead | Semestral |
+| `multi-agents/HANDOFF-PROTOCOL.md` | Tech Lead | Semestral, ou a cada mudança no protocolo |
+| `multi-agents/SKILLS-GOVERNANCE.md` | Tech Lead | Anual |
+| `multi-agents/agents/NN-*` | Tech Lead | A cada mudança de escopo ou de modelo do agente (ADR-001) |
 | `docs/ISO-MAPPING.md` | Tech Lead | Semestral, ou a cada mudança no `GOVERNANCE.md` |
 | `docs/EVIDENCIAS-E-METRICAS.md` | Tech Lead | Semestral |
-| `praticas/00`, `04`, `05`, `06`, `10` | Tech Lead | Trimestral (cloud, ferramentas, segurança e IA giram rápido) |
-| `praticas/01`, `02`, `03`, `07`, `08`, `09` | Tech Lead | Anual |
-| `docs/ADR-*` | Autor do ADR | Por evento (revisão do ADR-001 é trimestral; ADR-004, semestral) |
+| `docs/PENDENCIAS-TECH-LEAD.md` | Tech Lead | Trimestral — é backlog vivo, não documento de referência |
+| `praticas/00`, `04`, `05`, `06`, `10`, `11` | Tech Lead | Trimestral (cloud, ferramentas, segurança e IA giram rápido) |
+| `praticas/01`, `02`, `03`, `07`, `08`, `09`, `praticas/README.md` | Tech Lead | Anual |
+| `docs/ADR-*` | Autor do ADR | Por evento (revisão do ADR-001 é trimestral; ADR-002 a 004, semestral) |
 | `.claude/agents/`, `.claude/hooks/` | Tech Lead | A cada mudança de modelo ou de trava |
+| `docs/patches/` | Tech Lead | Esvaziar conforme aplicado — patch pendente é dívida, não acervo |
 
-Revisão feita = data atualizada no cabeçalho do documento, mesmo que o conteúdo não mude. "Revisado em, sem alterações" é resultado válido e é evidência.
+**O cabeçalho é a evidência.** Todo documento da tabela carrega, na abertura, a linha `**Dono:** … · **Revisão:** … · **Última revisão:** AAAA-MM-DD` (os ADRs usam `**Decisores:**` e `**Revisão:**`, que cumprem o mesmo papel). Revisão feita = data atualizada nesse cabeçalho, mesmo que o conteúdo não mude. "Revisado em, sem alterações" é resultado válido e é evidência.
+
+Para achar o que está vencido:
+
+```bash
+grep -rn "Última revisão" --include="*.md" . | sort -t: -k3
+```
 
 ---
 
