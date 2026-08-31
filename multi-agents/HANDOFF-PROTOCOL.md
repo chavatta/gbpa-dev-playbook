@@ -2,6 +2,8 @@
 
 > Complemento operacional de `ARCHITECTURE.md`. Define **como** os agentes trocam trabalho na prática.
 > Regra de ouro: **artifacts são arquivos no disco, não JSON no contexto.** O Orchestrator nunca carrega o conteúdo bruto de um subagente — só referências leves.
+>
+> **Dono:** Tech Lead · **Revisão:** semestral, ou a cada mudança no protocolo · **Última revisão:** 2026-08-31
 
 ---
 

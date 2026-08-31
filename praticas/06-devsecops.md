@@ -5,6 +5,8 @@
 > Princípio-mãe: **shift-left** — segurança entra no primeiro commit, não na véspera do deploy. Achado de segurança segue a mesma regra do code review: sem severidade, local e correção proposta, é opinião, não achado.
 >
 > Este documento é o método de trabalho do agente **Security-SRE** (`multi-agents/agents/12-security-sre.md`) e a referência de segurança do DevOps e do Reviewer.
+>
+> **Dono:** Tech Lead · **Revisão:** trimestral · **Última revisão:** 2026-08-31
 
 ---
 
@@ -32,6 +34,25 @@
 - Postura de cloud (CSPM) e drift de IaC.
 - Least privilege: IAM por serviço, network policies, egress controlado.
 - Logs de auditoria imutáveis; alertas acionáveis (sem alert fatigue).
+
+---
+
+## Severidade e prazo de correção
+
+Não usamos SLA por relógio ("MEDIUM em 30 dias"). Prazo por severidade envelhece mal: vira fila que ninguém olha e o achado expira sem que nada aconteça. A regra da casa é outra:
+
+> **Todo achado que impacta o processo é bloqueador até um humano resolvê-lo.**
+
+"Resolver" tem exatamente duas saídas, e ambas deixam rastro:
+
+1. **Corrigir** — o achado some, o gate reabre.
+2. **Aceitar o risco residual** — só o **Tech Lead** aceita, registrado no artifact com nome, data e o porquê (`GOVERNANCE.md` §3, §5). Aceite não é adiamento: é decisão assinada.
+
+O que **não** é saída: deixar como backlog sem dono, "vemos no próximo sprint" ou marcar como `done` contando que alguém volte depois.
+
+**Impacta o processo** quer dizer: o achado muda o que o time pode fazer com segurança daqui para frente — trava mecânica furada, gate que pode ser contornado, credencial exposta, dependência comprometida, controle que a documentação promete e o código não entrega. É o critério que separa o achado estrutural do achado pontual.
+
+Isso **não revoga** o alerta da Camada 2 contra travar o pipeline por LOW teórico — revoga o oposto disso. Um LOW que não impacta o processo continua sendo backlog priorizado. O que deixa de existir é a zona cinzenta em que um achado relevante ficava aberto indefinidamente por não ser CRITICAL: ou alguém corrige, ou alguém assina.
 
 ---
 

@@ -2,6 +2,8 @@
 
 > Complemento de `ARCHITECTURE.md` e `HANDOFF-PROTOCOL.md`. Define **quando** reutilizar uma skill, **quando** criar uma nova, **quem** decide e **onde** ela mora.
 > Princípio: **reuso antes de criação; criação só do que já se provou.** Uma skill ruim é pior que nenhuma — ela dispara na hora errada.
+>
+> **Dono:** Tech Lead · **Revisão:** anual · **Última revisão:** 2026-08-31
 
 ---
 

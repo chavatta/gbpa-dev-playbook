@@ -1,6 +1,8 @@
 # Desenvolvimento com IA — Como Trabalhamos, Riscos e Cuidados
 
 > **Leia este documento antes de qualquer outro.** Ele explica por que nosso fluxo de desenvolvimento com IA é estruturado do jeito que é.
+>
+> **Dono:** Tech Lead · **Revisão:** semestral · **Última revisão:** 2026-08-31
 
 ---
 
@@ -94,6 +96,8 @@ Racional completo e alternativas descartadas: [docs/ADR-001-modelos-por-agente.m
 | Mudança grande demais para revisar | Planner fatia em mudanças de ~200–400 linhas; diff maior que isso é sinalizado no review |
 | Escopo descontrolado (IA "aproveita para arrumar" o que ninguém pediu) | Delegação com **LIMITES explícitos**; um dono por arquivo; agente fora do escopo = anti-padrão registrado |
 | Contexto se perdendo entre etapas | Artifacts completos em disco + ponteiros leves; `run-log.md` append-only com a linha do tempo de cada task |
+| Dado de cliente, PII ou informação confidencial indo parar no contexto de um modelo externo | **Classificação obrigatória** em [praticas/10-dados-e-contexto-de-ia.md](praticas/10-dados-e-contexto-de-ia.md): quatro classes, três condições para dado confidencial, e proibição sem exceção para dado restrito. Declarada no `brief.md` de cada task |
+| Sistema de IA entregue ao cliente causando dano a pessoas (viés, decisão sem recurso, erro invisível) | **Avaliação de impacto de IA** por gatilho ([template](multi-agents/templates/AVALIACAO-IMPACTO-IA.template.md), ISO 42001 A.5), auditada pelo Security-SRE |
 | Segredo/credencial em código | Regra dura no Coder (sem hardcode) + item obrigatório do checklist do Reviewer; segredos só em cofre/secrets do CI. Secret commitado = revogar e rotacionar |
 | Vulnerabilidade sistêmica (dependência comprometida, pipeline inseguro, authZ falha) | **Security-SRE** como gate em toda task sensível: threat model, auditoria de supply chain, secrets, pipeline e runtime — método em [praticas/06-devsecops.md](praticas/06-devsecops.md) |
 | Decisão de arquitetura/infra por moda (microsserviço prematuro, EKS sem motivo) | Biblioteca [`praticas/`](praticas/README.md): critérios de decisão explícitos que o Architect cita no ADR — "é o padrão da indústria" não é justificativa |
@@ -108,11 +112,13 @@ Regra de processo depende de obediência; **trava mecânica não**. O kit traz a
 
 - **`.claude/settings.json` → `permissions.deny`** — nega de saída: push direto em `main`, force push, `rm -rf`, `git reset --hard`, `git clean -f` (qualquer variante com `-f`, incluindo `-fd`), e qualquer escrita em `GOVERNANCE.md`, `.claude/settings.json` e `.claude/hooks/`.
 - **Hooks (scripts Node que interceptam as ações da IA — a mesma implementação roda em macOS, Linux e Windows, sem configuração por sistema):**
-  - `block-dangerous-git.mjs` — analisa cada comando antes de executar; bloqueia variações que burlam o deny simples (ex.: `git push origin HEAD:main`, flags reordenadas) e os equivalentes Windows (`Remove-Item -Recurse -Force`, `rmdir /s`).
-  - `protect-guardrails.mjs` — impede a IA de editar as próprias travas e a governança, cobrindo caminhos absolutos e caminhos Windows (`C:\...\.claude\settings.json`).
+  - `block-dangerous-git.mjs` — analisa cada comando antes de executar; bloqueia variações que burlam o deny simples (ex.: `git push origin HEAD:main`, flags reordenadas, ofuscação por aspas) e os equivalentes Windows (`Remove-Item -Recurse -Force`, `rmdir /s`). O casamento é **por posição de comando**: o padrão perigoso só bloqueia quando está no início da linha ou logo após um separador (`;`, `&&`, `|`), de modo que *citar* o comando como texto — um `grep` na documentação, um `echo` explicativo — não dispara a trava. A exceção são os wrappers que executam string como código (`sh -c`, `eval`, `xargs`): neles o conteúdo citado **é** comando, e a checagem volta a valer em qualquer posição.
+  - `protect-guardrails.mjs` — impede a IA de editar as próprias travas e a governança, cobrindo caminhos absolutos e caminhos Windows (`C:\...\.claude\settings.json`). Ele intercepta as ferramentas de escrita; o caminho por shell (`cp`, `tee`, `>`, `sed -i` para `.claude/` ou `GOVERNANCE.md`) é fechado pelo `block-dangerous-git.mjs`, que continua permitindo **ler** esses arquivos.
   - `check-reviewer-gate.mjs` — no fim de cada sessão, verifica se alguma task foi marcada `done` sem `**Veredito:** APROVADO` do Reviewer — e, em task marcada como sensível no brief, também do Security-SRE; se sim, bloqueia o encerramento.
 
 **Regra de ouro:** trava disparou → **não se contorna**. Nem manualmente "só dessa vez". Se parecer falso positivo, reporte ao Tech Lead — a trava é ajustada pelo processo, nunca ignorada.
+
+Ajustar uma trava é, ele próprio, um fluxo com gate: a mudança nasce em branch, vem acompanhada do **banco de payloads** que prova o caso novo (o que passou a bloquear e o que passou a liberar) rodado contra a versão antiga e a nova, e é **o Tech Lead quem aplica o arquivo** — os agentes não têm escrita em `.claude/hooks/` nem em uma sessão que está corrigindo o próprio hook. Guardrail sem teste de regressão é guardrail que ninguém confia depois do primeiro falso positivo.
 
 ---
 
@@ -124,7 +130,7 @@ Regra de processo depende de obediência; **trava mecânica não**. O kit traz a
 4. **Testes são contrato, não enfeite.** O Tester valida os critérios; teste falhando → Debugger, não gambiarra.
 5. **Você é responsável pelo que a IA produziu em seu nome.** Leia o diff inteiro antes de abrir o PR. "Foi a IA" não é justificativa em code review.
 6. **Commits limpos.** Mensagens descritivas do quê e por quê. Sem marcações de IA no código ou nos commits.
-7. **Um dono por arquivo por vez.** Trabalho paralelo usa git worktrees e arquivos disjuntos (ver [GOVERNANCE.md](GOVERNANCE.md) §4).
+7. **Um dono por arquivo por vez.** Trabalho paralelo usa git worktrees e arquivos disjuntos (ver [GOVERNANCE.md](GOVERNANCE.md) §4). Worktree criada por sessão do Claude Code mora em `.claude/worktrees/` — **ignorada pelo git**, porque versionar um checkout aninhado duplicaria a árvore. Ela não se limpa sozinha: quando a branch dela mergear, remova com `git worktree remove <caminho>` e apague a branch, ou o repo acumula cópias antigas que confundem qualquer comparação futura.
 8. **Registre decisões.** Decisão técnica relevante vira ADR em `docs/` — quem chegar depois entende o porquê.
 9. **Consulte a biblioteca antes de decidir.** Modularização, monorepo, containerizar ou não, EKS ou não, clean architecture, design funcional: os critérios estão em [`praticas/`](praticas/README.md). Desvio relevante se justifica no ADR.
 10. **Os defaults do projeto vivem no `praticas/00`.** [`praticas/00-stack-e-defaults-gbpa.md`](praticas/00-stack-e-defaults-gbpa.md) é preenchido **por projeto**, no início dele (ONBOARDING §2, passo 6) — cada repo carrega o seu. O que estiver preenchido é decidido: vence preferência de agente e de dev, e desviar exige ADR. O que estiver em branco **não é blocker — é um menu**: o Architect apresenta as opções candidatas do campo (o 00 já traz uma coluna com elas), uma recomendação com o porquê, e a opção explícita **"decida você, Architect"** para quando você não tem preferência. A escolha vira ADR e o valor volta para o 00, para que ninguém re-decida depois. Campos marcados 🔒 escalam ao Tech Lead, não ao Architect.
@@ -157,6 +163,9 @@ Regra de processo depende de obediência; **trava mecânica não**. O kit traz a
 | [docs/ADR-001-modelos-por-agente.md](docs/ADR-001-modelos-por-agente.md) | Por que cada agente usa o modelo que usa |
 | [docs/ADR-002-agente-security-sre.md](docs/ADR-002-agente-security-sre.md) | Escopo e fronteiras do gate de segurança |
 | [docs/ADR-003-agentes-sdd-dados-ia.md](docs/ADR-003-agentes-sdd-dados-ia.md) | Escopo e modelos do Spec-Writer, Data-Engineer e AI-Engineer |
+| [docs/ADR-004-conformidade-iso.md](docs/ADR-004-conformidade-iso.md) | Como o playbook se posiciona perante ISO 27001 e ISO 42001 |
+| [docs/ISO-MAPPING.md](docs/ISO-MAPPING.md) | Rastreabilidade controle → evidência → status; o documento que vai ao auditor |
+| [docs/EVIDENCIAS-E-METRICAS.md](docs/EVIDENCIAS-E-METRICAS.md) | O que é evidência, por quanto tempo se retém, e como medir se o playbook funciona |
 | [praticas/README.md](praticas/README.md) | Biblioteca de boas práticas: código, arquitetura, repos, infra, segurança |
 | [praticas/00-stack-e-defaults-gbpa.md](praticas/00-stack-e-defaults-gbpa.md) | Defaults **deste projeto** (cloud, linguagens, banco, CI); campo em branco = decisão do Architect |
 | `multi-agents/agents/NN-*.md` | Manual completo de cada agente |

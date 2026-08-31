@@ -3,6 +3,8 @@
 > Pergunta que este documento responde: **como escrever código que o próximo dev (humano ou agente) entende e modifica com segurança?**
 >
 > Princípio-mãe: código é lido dezenas de vezes mais do que é escrito. Otimize para o leitor.
+>
+> **Dono:** Tech Lead · **Revisão:** anual · **Última revisão:** 2026-08-31
 
 ---
 

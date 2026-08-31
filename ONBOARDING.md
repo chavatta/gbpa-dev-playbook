@@ -2,6 +2,8 @@
 
 > Guia de entrada para analistas usando o fluxo multi-agent do playbook.
 > Leitura obrigatória antes: [DESENVOLVIMENTO-COM-IA.md](DESENVOLVIMENTO-COM-IA.md) (o porquê de tudo isso).
+>
+> **Dono:** Tech Lead · **Revisão:** semestral · **Última revisão:** 2026-08-31
 
 ---
 
@@ -12,6 +14,7 @@ Um padrão de desenvolvimento com IA baseado em **um time de agentes especializa
 - **Handoffs em disco:** cada agente grava seu trabalho completo em `tasks/{task_id}/artifacts/` e devolve só um ponteiro leve — nada se perde entre etapas.
 - **Gates obrigatórios:** nada é `done` sem review aprovado; tasks sensíveis passam também pelo gate de segurança; `main` é intocável.
 - **Travas mecânicas:** os limites são aplicados por configuração e hooks, não por confiança.
+- **Classificação de dado antes do prompt:** o que pode entrar no contexto de um modelo tem regra própria em [`praticas/10-dados-e-contexto-de-ia.md`](praticas/10-dados-e-contexto-de-ia.md) — é a única trava que depende de você, porque nenhum hook consegue aplicá-la.
 - **Biblioteca de boas práticas:** critérios de decisão de mercado (clean code, clean architecture, monorepo, containers, EKS, DevSecOps…) em [`praticas/`](praticas/README.md), consultados pelos agentes e por você.
 
 ---
@@ -22,7 +25,9 @@ Um padrão de desenvolvimento com IA baseado em **um time de agentes especializa
 2. Instale o [Node.js](https://nodejs.org) ≥ 18 (`brew install node` / `winget install OpenJS.NodeJS.LTS`) — os hooks são scripts Node e rodam idênticos em macOS, Linux e Windows, sem configuração por sistema.
 3. Clone o repo do projeto (que já contém a pasta `.claude/` deste playbook).
 4. Abra o Claude Code **na raiz do repo** — os agentes, travas e hooks carregam automaticamente no startup (os hooks usam caminho relativo; abrir fora da raiz os desativa).
-5. **(Tech Lead, uma vez por repo)** Ative **branch protection** em `main`/`master` no GitHub: PR obrigatório com ≥1 aprovação, status checks verdes, force push e deleção bloqueados (Settings → Branches, ou `gh api`). Os hooks locais do playbook são a segunda linha de defesa — a trava que não se contorna é a do servidor, e ela não vem no clone.
+5. **(Tech Lead, uma vez por repo)** Ative **branch protection** em `main`/`master` no GitHub: PR obrigatório, ≥1 aprovação, status checks verdes, force push e deleção bloqueados (Settings → Branches, ou `gh api`). Os hooks locais do playbook são a segunda linha de defesa — a trava que não se contorna é a do servidor, e ela não vem no clone.
+
+   **Repo com um só mantenedor:** o GitHub não permite aprovar o próprio PR, então exigir 1 aprovação faria todo merge depender do bypass de admin — e trava que só se cumpre por bypass ensina a equipe a usar bypass. Nesse caso, configure **0 aprovações mantendo o PR obrigatório**: nada entra em `main` por push direto e o histórico de revisão continua registrado. Suba para ≥1 e inclua os administradores assim que houver um segundo revisor. É configuração de transição, e revê-la é parte de integrar alguém novo ao repo.
 
 6. **(uma vez por projeto)** Preencha [`praticas/00-stack-e-defaults-gbpa.md`](praticas/00-stack-e-defaults-gbpa.md) com os defaults **deste** projeto: cloud, região, linguagens e versões, banco, CI, secrets. O 00 é **por projeto, não global** — dois repos da GBPA podem ter stacks diferentes, e cada um carrega o seu. Preencher o que já estiver decidido; não trave o início do projeto tentando fechar todos os campos.
 
@@ -112,6 +117,8 @@ tasks/2026-07-31_export-csv/
 
 **Uma trava disparou?** A mensagem diz o caminho certo (ex.: push bloqueado → abra PR). Se parecer falso positivo, **não contorne** — reporte ao Tech Lead ([GOVERNANCE.md](GOVERNANCE.md) §6).
 
+Falso positivo é bug da trava, e trata-se como bug: reproduza o comando exato, registre-o e leve ao Tech Lead. O conserto vem em branch, com o banco de payloads provando o caso novo sem afrouxar os antigos, e quem aplica o arquivo em `.claude/hooks/` é o Tech Lead — nem o agente que achou o problema tem escrita ali. O que **não** vale é reescrever o comando só para escapar do padrão: isso enterra o bug e deixa a trava pior para quem vier depois.
+
 ---
 
 ## 6. Erros comuns de quem está começando
@@ -121,6 +128,8 @@ tasks/2026-07-31_export-csv/
 - **Confiar no "está pronto" da IA** → pronto é: critérios atendidos + Reviewer APROVADO + você leu o diff.
 - **Editar o mesmo arquivo que um agente está editando** → um dono por arquivo ([GOVERNANCE.md](GOVERNANCE.md) §4).
 - **Reaproveitar sessão com hooks alterados** → hooks carregam no startup; reinicie a sessão.
+- **Deixar worktree para trás depois do merge** → `.claude/worktrees/` é ignorada pelo git, então a cópia órfã não aparece no `git status` e sobrevive indefinidamente. Depois que a branch mergear, `git worktree remove <caminho>` e apague a branch.
+- **Comparar contra um `main` local desatualizado** → antes de concluir que uma branch "está na frente", rode `git fetch` e compare com `origin/main`. Branch que parece adiantada costuma ser `main` que ficou para trás.
 
 ---
 

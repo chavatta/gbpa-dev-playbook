@@ -63,3 +63,14 @@
 2. O que está travado localmente: push em `main`/`master` (qualquer sintaxe, incluindo flags e refspec `branch:main`), force push, `rm -rf`, `git reset --hard`, `git clean -f`, DDL destrutivo via CLI de banco (`DROP`/`TRUNCATE` em `psql`/`mysql`), escrita em `GOVERNANCE.md` / `.claude/settings.json` / `.claude/hooks/`, e encerramento de sessão com task `done` sem aprovação do Reviewer (e do Security-SRE, em task sensível).
 3. **Trava disparou → não se contorna.** Nem manualmente, nem pedindo para a IA reformular o comando. Falso positivo → reporte ao Tech Lead, que ajusta a trava pelo processo.
 4. Requisito das máquinas: **Node.js ≥ 18** instalado e no PATH (os hooks são scripts Node `.mjs` — a mesma implementação roda em macOS, Linux e Windows, sem configuração por sistema) e sessões do Claude Code abertas **na raiz do repo** (os hooks usam caminho relativo e são carregados no startup — mudou hook, reinicie a sessão). Os hooks `.sh` legados permanecem no repo apenas como referência; o `settings.json` aponta para os `.mjs`.
+
+---
+
+## §7. Dados, evidência e conformidade
+
+1. **Classificação antes do contexto.** Toda informação enviada a um modelo de IA é classificada como Pública, Interna, Confidencial ou Restrita (`praticas/10-dados-e-contexto-de-ia.md` §2). Dado **Restrito** — segredo, credencial, dado pessoal sensível (LGPD art. 5º II), dado de criança ou adolescente — **nunca entra no contexto de um modelo. Sem exceção, e nem o Tech Lead autoriza.** Dado **Confidencial** só entra com as três condições da §3 daquele documento: ferramental aprovado, contrato que cubra o subprocessamento e minimização.
+2. **A classe declarada no brief.** Todo `brief.md` declara a classe de dado da task. Classe Confidencial ou Restrita torna a task **sensível** para efeito do gate do Security-SRE (§3.5).
+3. **Envio indevido é incidente, não achado.** Reportar ao Tech Lead imediatamente; se for credencial, revogar e rotacionar; se envolver dado pessoal, o Tech Lead aciona o encarregado (DPO) para avaliar o art. 48 da LGPD. Registrar no `run-log.md`. Não há punição por reportar rápido — há por esconder.
+4. **Avaliação de impacto de IA.** Feature que entrega decisão ou conteúdo de IA a usuário final, processa dado pessoal com IA, ou influencia decisão sobre pessoas não é `done` sem `tasks/{task_id}/artifacts/impacto-ia.md` (`multi-agents/templates/AVALIACAO-IMPACTO-IA.template.md`), auditado pelo Security-SRE.
+5. **Evidência é versionada.** `tasks/` não entra no `.gitignore`. Brief, run-log e artifacts são retidos por **3 anos** (`docs/EVIDENCIAS-E-METRICAS.md` §2). Artifact registra veredito e racional — nunca dado real de cliente ou pessoal.
+6. **Revisão periódica.** Cada documento do playbook tem dono e cadência declarados em `docs/EVIDENCIAS-E-METRICAS.md` §4. Revisão feita atualiza a data no cabeçalho, mesmo sem alteração de conteúdo.

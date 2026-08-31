@@ -1,6 +1,8 @@
 # Multi-Agent Architecture for Software Development
 
 > Based on research from Anthropic Engineering, AgentForge, AgentMesh, and academic literature on LLM-based multi-agent systems (2025–2026).
+>
+> **Dono:** Tech Lead · **Revisão:** semestral · **Última revisão:** 2026-08-31
 
 ---
 

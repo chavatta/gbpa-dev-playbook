@@ -3,6 +3,8 @@
 > Pergunta que este documento responde: **quando um workload containerizado justifica Kubernetes (EKS) — e quando é overkill?**
 >
 > Princípio-mãe: **se você não consegue nomear a capacidade específica do Kubernetes que precisa, você não precisa de Kubernetes.** "É o padrão da indústria" não é requisito.
+>
+> **Dono:** Tech Lead · **Revisão:** trimestral · **Última revisão:** 2026-08-31
 
 ---
 

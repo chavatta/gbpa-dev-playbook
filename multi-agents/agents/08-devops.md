@@ -142,6 +142,66 @@ stages:
 
 ---
 
+## Claude Code em CI/CD (execução não-interativa)
+
+Rodar um agente dentro do pipeline é útil para **revisão, diagnóstico e geração de rascunho** — nunca para decidir se algo vai a produção. A resposta de um modelo varia entre execuções idênticas; um gate de release precisa ser determinístico.
+
+### Invocação
+
+```bash
+claude -p "revise o diff e liste riscos de segurança" --output-format json
+```
+
+O prompt vai como argumento ou por stdin (`git diff | claude -p "..."`). Flags que importam num job:
+
+| Flag | Para quê |
+|---|---|
+| `-p`, `--print` | Executa e sai, sem TUI. É o modo de CI |
+| `--output-format` | `text` (padrão), `json` (um resultado) ou `stream-json` |
+| `--input-format` | `text` (padrão) ou `stream-json` |
+| `--max-turns` | Teto de iterações. **Obrigatório** — sem ele um job pode girar até o timeout |
+| `--max-budget-usd` | Teto de gasto da execução. **Obrigatório** — é a única trava de custo real |
+| `--allowedTools` | Lista de ferramentas liberadas sem prompt, ex.: `"Read" "Bash(npm test *)"` |
+| `--disallowedTools` | Nega ferramentas específicas |
+| `--permission-mode` | `manual`, `auto`, `plan`, `acceptEdits`, `dontAsk`, `bypassPermissions` |
+| `--mcp-config` | Declara explicitamente os servidores MCP do job |
+| `--model`, `--fallback-model` | Fixa o modelo e o plano B quando ele estiver indisponível |
+
+### Permissões sem humano na frente
+
+Em CI não há quem responda a um prompt de permissão. Ordem de preferência:
+
+1. **`--permission-mode dontAsk` + `--allowedTools` com a lista mínima** — o job declara exatamente o que pode fazer. É o padrão da casa.
+2. `--permission-mode auto` para automação sem escrita, quando a lista mínima for impraticável.
+3. **`--dangerously-skip-permissions` — proibido** em qualquer job com credencial de escrita no repo, no registry ou na cloud. Ele desliga *todas* as verificações, inclusive as que impedem o agente de tocar as travas do playbook. Se um job parece precisar disso, o escopo do job está errado.
+
+Os hooks do repo continuam valendo dentro do job (carregam do `.claude/` no startup), mas **não** substituem o controle de permissão: hook barra comando destrutivo, não barra o agente gastando 40 turnos.
+
+### Parsing do resultado
+
+Com `--output-format json`, a saída é um objeto único. Extraia com `jq` e **trate o campo de erro antes do resultado**:
+
+```bash
+out=$(claude -p "$PROMPT" --output-format json --max-turns 8 --max-budget-usd 2)
+echo "$out" | jq -e '.is_error == false' > /dev/null || { echo "$out" | jq -r '.result'; exit 1; }
+```
+
+Inspecione o objeto completo uma vez e fixe no script só os campos que você usa — o formato pode ganhar campos entre versões, e script que assume a forma inteira quebra em upgrade. O código de saída do processo também é sinal: `0` sucesso, não-zero falha.
+
+### Autenticação
+
+`ANTHROPIC_API_KEY` vem de secret do CI, nunca do repo. Em Bedrock ou Vertex, a autenticação é a da própria cloud (credential chain / workload identity) — **prefira federação OIDC a chave estática de longa duração**, que é credencial parada esperando vazar.
+
+Existe action oficial (`anthropics/claude-code-action@v1`) para GitHub Actions, com modo interativo (responde a menção em PR/issue) e modo automação (roda um prompt fixo). Ela pede permissões amplas de repositório — avalie no gate do Security-SRE antes de adotar, como qualquer integração com acesso de escrita.
+
+### Armadilhas
+
+- **`.mcp.json` não pede aprovação em `-p`.** Em sessão interativa há confirmação; num job não há a quem perguntar, e o arquivo commitado vira configuração efetiva do pipeline. Declare os servidores com `--mcp-config` e trate MCP no CI pela `praticas/11-mcp.md`.
+- **Custo silencioso.** Um job que roda a cada push, sem `--max-budget-usd`, é uma fatura crescendo sem alarme. Meça antes de habilitar em todo PR.
+- **Não delegue ao agente**: aprovar merge, promover release, mexer em secret, tocar infra crítica ou executar qualquer ação irreversível sem checkpoint humano. Vale aqui a mesma regra do `GOVERNANCE.md`: agente propõe, humano decide.
+
+---
+
 ## Estratégias de Deploy
 
 | Estratégia | Risco | Quando Usar |

@@ -3,6 +3,8 @@
 > Pergunta que este documento responde: **como organizar as camadas para que a regra de negócio não dependa de framework, banco ou UI — e quando esse investimento vale a pena?**
 >
 > Princípio-mãe (a única regra que importa): **dependências apontam para dentro.** O domínio no centro não conhece nada de fora; o mundo externo (web, banco, filas, frameworks) se pluga nele — nunca o contrário.
+>
+> **Dono:** Tech Lead · **Revisão:** anual · **Última revisão:** 2026-08-31
 
 ---
 

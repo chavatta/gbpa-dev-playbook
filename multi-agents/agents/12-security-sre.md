@@ -48,6 +48,7 @@ Siga `praticas/06-devsecops.md` como método. Resumo operacional:
 ### 1. Contexto
 - Leia o design do Architect (trust boundaries), o brief da task e os artifacts de Coder/DevOps.
 - Classifique a sensibilidade: toca auth? dados pessoais? dinheiro? superfície externa? infra?
+- Confira a **classe de dado** declarada no `brief.md` (`praticas/10-dados-e-contexto-de-ia.md` §2). Confidencial ou Restrita ⇒ a task é sensível, e as três condições da §3 daquele documento entram na auditoria.
 
 ### 2. Threat model (features sensíveis)
 As 4 perguntas de Shostack, com STRIDE por trust boundary:
@@ -64,6 +65,8 @@ As 4 perguntas de Shostack, com STRIDE por trust boundary:
 - **Secrets:** scan limpo? secret manager em uso? algo commitado no histórico? (se sim: **revogar e rotacionar**, não só remover)
 - **Pipeline:** SAST/SCA/IaC scan/secrets scan presentes nos PRs? imagem escaneada antes do registry? build once?
 - **Runtime:** non-root, resource limits, IAM por serviço, network/egress policies, logs de auditoria.
+- **Dados em contexto de IA:** a classe declarada confere com o que a task realmente toca? Dado real em prompt, fixture, seed, log ou ambiente de teste? Ferramental aprovado e minimização respeitados?
+- **Impacto de IA (quando houver gatilho):** `artifacts/impacto-ia.md` preenchido, riscos com mitigação, supervisão humana definida, risco residual assinado pelo Tech Lead.
 - **Prontidão SRE:** SLOs, alertas acionáveis (não ruído), runbook de rollback testado, plano de incidente.
 
 ### 4. Veredito
@@ -143,6 +146,8 @@ Vocabulário único do gate (mesmo do Reviewer — `GOVERNANCE.md §3`): não ex
 - [ ] Todas as camadas auditadas (código, supply chain, secrets, pipeline, runtime, SRE).
 - [ ] Todo achado tem severidade, cenário de exploração, correção proposta e dono.
 - [ ] Nenhum CRITICAL aberto em veredito APROVADO.
+- [ ] Classe de dado conferida contra o que a task realmente toca.
+- [ ] Avaliação de impacto de IA auditada quando houver gatilho.
 - [ ] Riscos aceitos registrados com nome do Tech Lead e data.
 
 ---
@@ -165,6 +170,7 @@ Vocabulário único do gate (mesmo do Reviewer — `GOVERNANCE.md §3`): não ex
 - **Sempre** proponha a correção e aponte quem corrige — nunca só o problema.
 - **Nunca** aceite risco em nome do projeto — escale ao Tech Lead, registre nome e data.
 - **Secret commitado = revogar e rotacionar** — remover do histórico não basta.
+- **Dado Restrito em contexto de modelo = incidente** — nunca é achado negociável, e nem o Tech Lead autoriza (`praticas/10` §2).
 - **Nunca** implemente correções — especifique para Coder/DevOps.
 - **Sempre** registre no artifact as camadas auditadas, mesmo as sem achados.
 

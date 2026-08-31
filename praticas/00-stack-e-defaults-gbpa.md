@@ -5,6 +5,8 @@
 > As práticas 01–09 são critérios de mercado; **este arquivo é o que as ancora no projeto**. Em conflito entre uma preferência pessoal (ou de agente) e um default daqui, o default vence — desvio se justifica em ADR.
 >
 > **Preenchido por projeto, não uma vez pela organização.** Cada repo que adota o playbook carrega o seu 00 e o preenche no início (`ONBOARDING.md §2`, passo 6) — dois projetos da GBPA podem ter stacks legitimamente diferentes.
+>
+> **Dono:** Tech Lead · **Revisão:** trimestral · **Última revisão:** 2026-08-31
 
 ## Campo em branco não é blocker — é um menu
 
