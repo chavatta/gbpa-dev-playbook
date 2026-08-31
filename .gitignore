@@ -15,3 +15,7 @@ desktop.ini
 
 # Claude Code — estado local de sessão
 .claude/settings.local.json
+.claude/worktrees/
+
+# Handoff entre sessões — arquivo de trabalho, não versionado de propósito
+HANDOFF-SESSAO.md
