@@ -21,7 +21,34 @@
 - **SCA** — dependências: CVEs conhecidas, licenças, pacotes abandonados (Dependabot/Renovate + osv-scanner/Trivy).
 - **IaC scanning** — Terraform/K8s/Dockerfile (Checkov ou Trivy config; o tfsec foi descontinuado e absorvido pelo Trivy).
 - **Secrets scanning** de novo, no servidor (pega o que passou do hook local).
+- **Check de padrão de PII** sobre fixtures, seeds e testes — ver abaixo. É **somatório** ao `gitleaks`, não alternativa: um procura segredo, o outro procura dado pessoal.
 - Gate: **CRITICAL/HIGH explorável bloqueia o merge**; o resto vira backlog priorizado — não trave o pipeline por LOW teórico (isso gera bypass cultural).
+
+#### Check de PII em dado de teste
+
+O controle forte contra dado pessoal em prompt é **não ter dado real na máquina do dev**: dump de produção não desce para ambiente de desenvolvimento, e fixture sintética gerada por seed versionado é a única fonte (`praticas/00` → IA/LLM). Este check é a rede embaixo disso — pega o descuido, não o adversário.
+
+O script está em [`scripts/check-pii.sh`](../scripts/check-pii.sh) — um passo no job, depois do `gitleaks`:
+
+```bash
+bash scripts/check-pii.sh
+```
+
+Casa CPF, CNPJ e celular brasileiro **formatados** (`123.456.789-00`, `12.345.678/0001-99`, `(11) 98765-4321`) em `fixtures/`, `seeds/`, `factories/`, `testdata/`, `__fixtures__/` e arquivos `*.test.*`, `*.spec.*`, `*.seed.*`. Sai `1` se achar, `0` se não — **inclusive quando o repo não tem nenhuma dessas pastas**, que é o caso comum e não é erro.
+
+Ele usa `find` + `grep` em vez de `ripgrep` de propósito: o runner de CI pode não ter `rg` instalado, e a versão com `rg` erra fácil no código de saída — `rg` devolve `2` quando nenhum arquivo casa o glob, o que um `rg ... && exit 1` ingênuo ignora e um `set -e` transforma em falha sem motivo.
+
+**Limites, que precisam ser ditos:**
+
+- **CPF e CNPJ só são pegos formatados.** Um CPF cru (`12345678901`) escapa, de propósito: casar 11 dígitos seguidos pegaria timestamp, ID e hash em qualquer repo de código, e um check que grita falso positivo é um check que alguém desliga. A pontuação é o que separa "provavelmente um CPF" de "onze dígitos". O padrão de celular é mais frouxo e pega também o número cru de 11 dígitos — o que, em troca, pode gerar falso positivo em outro número de 11 dígitos; calibre por projeto se incomodar. Cobrir CPF/CNPJ crus exige a mesma calibração e não é o default.
+- **Não distingue sintético de real** — CPF fake e verdadeiro têm a mesma forma. Nenhuma ferramenta resolve isso; é o motivo de o controle forte ser não ter dado real na máquina, não o scanner.
+- **Não cobre e-mail e nome**, que dariam falso positivo demais para valer.
+- **Não olha o prompt**, que é o vetor principal e continua sendo decisão humana (`praticas/10` §1).
+- **Ignora arquivo binário** (`grep -I`). Um dump binário — um `.sqlite` de fixture, por exemplo — com CPF em texto plano dentro passa em silêncio. Isso é margem aceitável: dump binário em fixture já viola a regra de fixture sintética por seed, então o problema está a montante do scanner.
+
+Trate-o como o que é: custo quase zero para eliminar a classe mais comum e mais visível de erro — dado real formatado esquecido numa fixture —, não prova de conformidade.
+
+Ao adotar, calibre uma vez contra a base existente antes de tornar bloqueante — check novo que nasce vermelho em 200 arquivos é check que alguém desliga na primeira sexta-feira.
 
 ### Camada 3 — CD / build (antes de chegar em prod)
 - **Scan da imagem** de container antes do push ao registry.

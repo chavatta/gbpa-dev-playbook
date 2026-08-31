@@ -8,42 +8,28 @@
 
 ## Aberto
 
-### 1. Campos 🔒 do `praticas/00` que extrapolam o projeto
+### 1. ⚠️ Confirmar a classe do plano contratado com a Anthropic — e migrar se for consumidor
 
-O 00 é preenchido **por projeto** e campo em branco é decisão do Architect em ADR, não blocker (`ONBOARDING.md` §2, passo 6). Restam ao Tech Lead apenas os dois que nenhum projeto decide sozinho:
+**É a pendência mais consequente da lista, e a única que limita o que a equipe pode fazer hoje.**
 
-- **Status do contrato/DPA com o provedor de LLM** — sem ele, dado Confidencial não cumpre a condição 2 da `praticas/10` §3, e nenhuma ferramenta passa de "aprovada para dado Interno".
-- **Política de dados pessoais em prompt** — o recorte prático do que a §7.1 do `GOVERNANCE.md` já proíbe.
+A GBPA usa "plano de subscrição", o que cobre duas realidades contratuais opostas. O DPA da Anthropic é **incorporado automaticamente aos Termos Comerciais** (Team, Enterprise, API), com SCCs e sem assinatura separada — mas **não** alcança planos de consumidor (Pro, Max), em que cada usuário decide individualmente se seus dados vão para treino, com retenção de 5 anos quando ligado e 30 dias quando desligado.
 
-Ambos alimentam a ação **4.7** do `ISO-MAPPING.md` (verificar retenção, opt-out de treino, subprocessadores e DPA do provedor).
+**Se a subscrição for de consumidor**, falha a condição 2 da `praticas/10` §3 e **código de cliente não pode entrar no contexto** — o que inviabiliza o uso normal do playbook em projeto de cliente. E não há controle organizacional: o interruptor de treino é de cada pessoa, sem visibilidade central.
 
-### 2. Regenerar os binários de `docs/` e fixar o processo
+Encaminhamento: conferir o plano no Console (Billing); se for consumidor, migrar para **Claude for Work (Team)**; arquivar DPA e Termos Comerciais vigentes em `docs/contratos/` com a data; e substituir o valor do campo em `praticas/00` por algo verificável. Detalhe completo na nota do [`praticas/00`](../praticas/00-stack-e-defaults-gbpa.md) → IA/LLM. Fecha as ações **4.2** e **4.7**.
 
-**Decidido (2026-08-31):** regenerar a partir do `.md`, não remover — o formato distribuível é entregável para quem não abre o repo, auditor incluído.
+A base legal de transferência internacional sob a LGPD (cap. V) é pergunta para o jurídico — o DPA traz SCCs em formato europeu.
 
-`DESENVOLVIMENTO-COM-IA.docx` e `.pdf` são de 2026-08-09 e estão várias mudanças atrás do `.md`. Falta a ferramenta: `pandoc` não está instalado.
-
-```bash
-brew install pandoc
-```
-
-```bash
-pandoc DESENVOLVIMENTO-COM-IA.md -o docs/DESENVOLVIMENTO-COM-IA.docx
-```
-
-O PDF exige um motor adicional (`--pdf-engine`); decidir qual ao instalar — `basictex` dá saída tipográfica melhor, `weasyprint` é mais leve e fiel ao HTML. Depois de escolher, **fixe os dois comandos aqui e no `EVIDENCIAS-E-METRICAS.md` §4**, com a regra: regenerar a cada release do playbook, e a data no cabeçalho do `.md` é a fonte da verdade da versão.
-
-### 3. Trava opcional — exigir `impacto-ia.md` mecanicamente
-
-Estender `check-reviewer-gate.mjs` para exigir `tasks/{id}/artifacts/impacto-ia.md` quando o `brief.md` marcar `**Avaliação de impacto de IA:** sim`. É o mesmo padrão do gate de segurança e fecha mecanicamente o §7.4 do `GOVERNANCE.md`, que hoje depende de disciplina. Só o Tech Lead edita hooks: patch vai para `docs/patches/` com banco de payloads, como o anterior.
-
-### 4. Ações de conformidade ISO
+### 2. Ações de conformidade ISO
 
 Rastreadas com numeração estável em `docs/ISO-MAPPING.md` §4:
 
-- ~~**4.1** branch protection~~ (feita em `main` deste repo — **replicar nos demais repos da GBPA**) · **4.2** preencher `praticas/00` (ver item 1) · ~~**4.3** patch do §7~~ (aplicado) · ~~**4.4** SLA por severidade~~ (decidido, ver abaixo)
-- **4.5** runbook de incidente envolvendo IA · **4.6** registro de competência (quem leu o onboarding, quando) · **4.7** termos do provedor de IA: retenção, opt-out de treino, subprocessadores, DPA
-- **4.8** registro de risco e Declaração de Aplicabilidade · **4.9** auditoria interna e análise crítica — ambas na camada organizacional, fora deste repositório
+- ~~**4.1** branch protection~~ (feita em `main` deste repo — **replicar nos demais repos da GBPA**) · **4.2** classe do plano e `praticas/00` (item 1) · ~~**4.3** patch do §7~~ · ~~**4.4** SLA por severidade~~ · ~~**4.5** runbook de incidente com IA~~
+- **4.6** registro de competência — arquivo criado, **falta cada pessoa preencher a própria linha** (item 3) · **4.7** termos do provedor de IA — absorvida pelo item 1 · **4.8** registro de risco e Declaração de Aplicabilidade · **4.9** auditoria interna e análise crítica — as duas últimas na camada organizacional, fora deste repositório
+
+### 3. Preencher o `docs/COMPETENCIA.md`
+
+O arquivo existe e está vazio de propósito: **cada pessoa abre o PR que adiciona a própria linha** — registro preenchido por terceiro não é declaração de leitura. Comece pelo Tech Lead, para que exista uma linha de referência.
 
 ---
 
@@ -56,6 +42,9 @@ Rastreadas com numeração estável em `docs/ISO-MAPPING.md` §4:
 | 3 | **SLA por severidade** | Sem prazo por relógio. **Todo achado que impacta o processo é bloqueador até um humano resolvê-lo** — corrigindo ou aceitando o risco por escrito. Achado que não impacta o processo segue backlog priorizado | `praticas/06-devsecops.md` → "Severidade e prazo de correção" |
 | 4 | **Nome dos agentes** | Mantido o sufixo de modelo (`reviewer-fable`), com nome-base nas referências de processo. Requisito: o modelo em execução tem de estar claro — garantido por frontmatter + auto-verificação + campo `model` obrigatório no ponteiro de handoff | `ADR-001` → "Nomenclatura dos agentes e visibilidade do modelo" |
 | 5 | **Trilha de certificação** | Fora do backlog por ora. Não é pendência aberta | — |
+| 6 | **Binários `.docx`/`.pdf`** | **Removidos.** O `.md` no repo é a única fonte; nada os referenciava e não havia processo de regeneração. Recuperáveis pelo histórico do git se voltarem a ser necessários | `docs/` |
+| 7 | **Trava do `impacto-ia.md`** | **Descartada.** O gatilho depende de declaração humana no `brief`, então a trava só pegaria "declarei e não fiz" — não o caso que machuca. E não dispararia nenhuma vez no estado atual do repo. Reavaliar quando entrar o primeiro projeto com IA voltada a usuário final | — |
+| 8 | **Dado real vs. sintético** | Não se valida se um dado é falso — CPF sintético e real têm a mesma forma. Inverte-se o controle: dump de produção não desce para desenvolvimento, fixture sintética por seed é a única fonte, e `scripts/check-pii.sh` roda no CI ao lado do `gitleaks` | `praticas/06` e `praticas/00` |
 
 **Ressalva da branch protection — reveja quando o time crescer.** O GitHub não deixa ninguém aprovar o próprio PR. Com um só mantenedor, exigir 1 aprovação tornaria todo merge dependente de bypass de admin, e trava que só se cumpre por bypass ensina a equipe a usar bypass. Por isso a exigência está em **0 aprovações**: o PR continua obrigatório (nada entra em `main` por push direto, e o histórico de revisão fica registrado), mas o merge não trava.
 

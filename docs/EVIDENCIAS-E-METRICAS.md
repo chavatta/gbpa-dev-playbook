@@ -96,6 +96,8 @@ Documento sem dono e sem data de revisão é documento morto — e auditor pergu
 | `docs/ISO-MAPPING.md` | Tech Lead | Semestral, ou a cada mudança no `GOVERNANCE.md` |
 | `docs/EVIDENCIAS-E-METRICAS.md` | Tech Lead | Semestral |
 | `docs/PENDENCIAS-TECH-LEAD.md` | Tech Lead | Trimestral — é backlog vivo, não documento de referência |
+| `docs/COMPETENCIA.md` | Tech Lead | Semestral, e a cada entrada ou saída de pessoa |
+| `docs/RUNBOOK-INCIDENTE-IA.md` | Tech Lead | Semestral, **e depois de todo incidente real** |
 | `praticas/00`, `04`, `05`, `06`, `10`, `11` | Tech Lead | Trimestral (cloud, ferramentas, segurança e IA giram rápido) |
 | `praticas/01`, `02`, `03`, `07`, `08`, `09`, `praticas/README.md` | Tech Lead | Anual |
 | `docs/ADR-*` | Autor do ADR | Por evento (revisão do ADR-001 é trimestral; ADR-002 a 004, semestral) |
