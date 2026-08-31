@@ -51,17 +51,25 @@ Rastreadas com numeração estável em `docs/ISO-MAPPING.md` §4:
 
 | # | Assunto | Decisão | Onde ficou registrado |
 |---|---|---|---|
-| 1 | **Branch protection** | Ativada em `main`: PR obrigatório, 1 aprovação, resolução de conversas exigida, force push e deleção bloqueados. Administradores **não** incluídos — ver ressalva abaixo | GitHub (`chavatta/gbpa-dev-playbook`) |
+| 1 | **Branch protection** | Ativada em `main`: **PR obrigatório**, resolução de conversas exigida, force push e deleção bloqueados. Aprovações exigidas: **0** enquanto houver um só mantenedor — ver ressalva abaixo | GitHub (`chavatta/gbpa-dev-playbook`) |
 | 2 | **Alias `model: fable`** | Válido no Claude Code atual; a auto-verificação de modelo nos agentes cobre o fallback silencioso. Não precisa trocar pelo id completo | ADR-001 (revisão trimestral) |
 | 3 | **SLA por severidade** | Sem prazo por relógio. **Todo achado que impacta o processo é bloqueador até um humano resolvê-lo** — corrigindo ou aceitando o risco por escrito. Achado que não impacta o processo segue backlog priorizado | `praticas/06-devsecops.md` → "Severidade e prazo de correção" |
 | 4 | **Nome dos agentes** | Mantido o sufixo de modelo (`reviewer-fable`), com nome-base nas referências de processo. Requisito: o modelo em execução tem de estar claro — garantido por frontmatter + auto-verificação + campo `model` obrigatório no ponteiro de handoff | `ADR-001` → "Nomenclatura dos agentes e visibilidade do modelo" |
 | 5 | **Trilha de certificação** | Fora do backlog por ora. Não é pendência aberta | — |
 
-**Ressalva da branch protection:** com **1 aprovação exigida** e um só mantenedor, o GitHub não deixa ninguém aprovar o próprio PR. Por isso administradores ficaram **fora** da regra (`enforce_admins: false`) — você consegue mergear usando o bypass de admin, e a trava continua valendo para qualquer outra pessoa. Quando o time crescer, inclua os administradores. Se preferir mergear sem bypass enquanto está sozinho, baixe a exigência para 0 aprovações mantendo o PR obrigatório:
+**Ressalva da branch protection — reveja quando o time crescer.** O GitHub não deixa ninguém aprovar o próprio PR. Com um só mantenedor, exigir 1 aprovação tornaria todo merge dependente de bypass de admin, e trava que só se cumpre por bypass ensina a equipe a usar bypass. Por isso a exigência está em **0 aprovações**: o PR continua obrigatório (nada entra em `main` por push direto, e o histórico de revisão fica registrado), mas o merge não trava.
+
+**Isso é configuração de transição, não o estado desejado.** Assim que houver um segundo revisor, subir para 1 e incluir os administradores na regra:
 
 ```bash
-gh api -X PATCH repos/chavatta/gbpa-dev-playbook/branches/main/protection/required_pull_request_reviews -f required_approving_review_count=0
+gh api -X PATCH repos/chavatta/gbpa-dev-playbook/branches/main/protection/required_pull_request_reviews -F required_approving_review_count=1
 ```
+
+```bash
+gh api -X PUT repos/chavatta/gbpa-dev-playbook/branches/main/protection/enforce_admins
+```
+
+Note o `-F` maiúsculo: `required_approving_review_count` é inteiro, e `-f` (minúsculo) manda string, que a API rejeita com HTTP 422.
 
 ---
 
