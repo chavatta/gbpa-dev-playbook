@@ -33,6 +33,27 @@
 
 **Trava opcional (decisão do Tech Lead):** estender `check-reviewer-gate.mjs` para exigir `artifacts/impacto-ia.md` quando o brief marcar `**Avaliação de impacto de IA:** sim`. É o mesmo padrão do gate de segurança e fecha o item 4 acima mecanicamente. Só o Tech Lead edita hooks.
 
+## Patch pendente em arquivo protegido — `block-dangerous-git.mjs`
+
+> **Contexto:** o hook casava o padrão perigoso em **qualquer posição da linha**, então um `grep "git clean -f" arquivo.md` — busca, não execução — era bloqueado. O falso positivo apareceu ao tentar *auditar a própria documentação das travas*, que é justamente quando a trava não pode atrapalhar.
+> `.claude/hooks/` é zona negada para escrita por agentes (§6.2), então o arquivo corrigido foi entregue pronto e testado em [`patches/`](patches/README.md), **para aplicação por mão humana**.
+
+**O que muda.** O casamento passa a ser por **posição de comando** — início da linha ou logo após separador (`;`, `&&`, `||`, `|`, subshell), admitindo prefixo de variável de ambiente. Citar o comando como texto deixa de disparar. Três correções vieram junto:
+
+- **Quebra de linha vira separador explícito** antes de colapsar espaço. Sem isso, `echo a`⏎`git clean -fd` viraria uma linha só e o comando perigoso sairia da posição de comando — o ancoramento teria aberto um bypass novo.
+- **Aspas são removidas como caracteres, não como conteúdo**, fechando a ofuscação `git clean -"f"`, que a versão anterior deixava passar.
+- **Wrappers que executam string como código** (`sh -c`, `bash -c`, `eval`, `xargs`) voltam a casar em qualquer posição, porque neles o texto citado **é** comando. A versão anterior deixava passar `eval "rm -rf /tmp/x"`.
+
+**Evidência.** Banco de 45 payloads reais rodado contra as duas versões: a atual passa 38/45 (5 falsos positivos + 2 bypasses reais — a ofuscação por aspas e o `eval`); a corrigida passa 45/45. Nenhum caso que a versão atual bloqueia deixou de ser bloqueado.
+
+**Limitação conhecida, aceita:** conteúdo de heredoc (`<<EOF`) é tratado como sequência de comandos, então escrever documentação que *contenha* um comando perigoso via heredoc bloqueia. O caminho certo para isso é a ferramenta de escrita de arquivo, não o shell — falha para o lado seguro.
+
+## Lacuna de guardrail — escrita em `.claude/` via shell
+
+`protect-guardrails.mjs` intercepta `Write|Edit|MultiEdit|NotebookEdit` e o `settings.json` nega `Write(.claude/hooks/**)`. **Nenhum dos dois cobre o shell:** um `cp`, `tee` ou redirecionamento `>` para `.claude/hooks/` não passa por esses controles — só o `block-dangerous-git.mjs` vê comandos Bash, e ele não tem regra sobre caminhos protegidos. Na sessão de 2026-08-31 um `cp` para esse caminho foi barrado pelo classificador de permissões do harness, não pelas travas do playbook — ou seja, a defesa que funcionou não é a nossa.
+
+**Decisão do Tech Lead:** adicionar ao `block-dangerous-git.mjs` uma regra que bloqueie escrita em `.claude/settings.json`, `.claude/hooks/` e `GOVERNANCE.md` por comando de shell (`cp`, `mv`, `tee`, `>`, `>>`, `sed -i`, `install`). Fecha a assimetria entre o caminho de ferramenta e o caminho de shell.
+
 ## Ações de conformidade ISO em aberto
 
 Rastreadas com numeração estável em `docs/ISO-MAPPING.md` §4:

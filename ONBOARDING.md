@@ -113,6 +113,8 @@ tasks/2026-07-31_export-csv/
 
 **Uma trava disparou?** A mensagem diz o caminho certo (ex.: push bloqueado → abra PR). Se parecer falso positivo, **não contorne** — reporte ao Tech Lead ([GOVERNANCE.md](GOVERNANCE.md) §6).
 
+Falso positivo é bug da trava, e trata-se como bug: reproduza o comando exato, registre-o e leve ao Tech Lead. O conserto vem em branch, com o banco de payloads provando o caso novo sem afrouxar os antigos, e quem aplica o arquivo em `.claude/hooks/` é o Tech Lead — nem o agente que achou o problema tem escrita ali. O que **não** vale é reescrever o comando só para escapar do padrão: isso enterra o bug e deixa a trava pior para quem vier depois.
+
 ---
 
 ## 6. Erros comuns de quem está começando
@@ -122,6 +124,8 @@ tasks/2026-07-31_export-csv/
 - **Confiar no "está pronto" da IA** → pronto é: critérios atendidos + Reviewer APROVADO + você leu o diff.
 - **Editar o mesmo arquivo que um agente está editando** → um dono por arquivo ([GOVERNANCE.md](GOVERNANCE.md) §4).
 - **Reaproveitar sessão com hooks alterados** → hooks carregam no startup; reinicie a sessão.
+- **Deixar worktree para trás depois do merge** → `.claude/worktrees/` é ignorada pelo git, então a cópia órfã não aparece no `git status` e sobrevive indefinidamente. Depois que a branch mergear, `git worktree remove <caminho>` e apague a branch.
+- **Comparar contra um `main` local desatualizado** → antes de concluir que uma branch "está na frente", rode `git fetch` e compare com `origin/main`. Branch que parece adiantada costuma ser `main` que ficou para trás.
 
 ---
 

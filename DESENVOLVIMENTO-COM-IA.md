@@ -110,11 +110,13 @@ Regra de processo depende de obediência; **trava mecânica não**. O kit traz a
 
 - **`.claude/settings.json` → `permissions.deny`** — nega de saída: push direto em `main`, force push, `rm -rf`, `git reset --hard`, `git clean -f` (qualquer variante com `-f`, incluindo `-fd`), e qualquer escrita em `GOVERNANCE.md`, `.claude/settings.json` e `.claude/hooks/`.
 - **Hooks (scripts Node que interceptam as ações da IA — a mesma implementação roda em macOS, Linux e Windows, sem configuração por sistema):**
-  - `block-dangerous-git.mjs` — analisa cada comando antes de executar; bloqueia variações que burlam o deny simples (ex.: `git push origin HEAD:main`, flags reordenadas) e os equivalentes Windows (`Remove-Item -Recurse -Force`, `rmdir /s`).
+  - `block-dangerous-git.mjs` — analisa cada comando antes de executar; bloqueia variações que burlam o deny simples (ex.: `git push origin HEAD:main`, flags reordenadas, ofuscação por aspas) e os equivalentes Windows (`Remove-Item -Recurse -Force`, `rmdir /s`). O casamento é **por posição de comando**: o padrão perigoso só bloqueia quando está no início da linha ou logo após um separador (`;`, `&&`, `|`), de modo que *citar* o comando como texto — um `grep` na documentação, um `echo` explicativo — não dispara a trava. A exceção são os wrappers que executam string como código (`sh -c`, `eval`, `xargs`): neles o conteúdo citado **é** comando, e a checagem volta a valer em qualquer posição.
   - `protect-guardrails.mjs` — impede a IA de editar as próprias travas e a governança, cobrindo caminhos absolutos e caminhos Windows (`C:\...\.claude\settings.json`).
   - `check-reviewer-gate.mjs` — no fim de cada sessão, verifica se alguma task foi marcada `done` sem `**Veredito:** APROVADO` do Reviewer — e, em task marcada como sensível no brief, também do Security-SRE; se sim, bloqueia o encerramento.
 
 **Regra de ouro:** trava disparou → **não se contorna**. Nem manualmente "só dessa vez". Se parecer falso positivo, reporte ao Tech Lead — a trava é ajustada pelo processo, nunca ignorada.
+
+Ajustar uma trava é, ele próprio, um fluxo com gate: a mudança nasce em branch, vem acompanhada do **banco de payloads** que prova o caso novo (o que passou a bloquear e o que passou a liberar) rodado contra a versão antiga e a nova, e é **o Tech Lead quem aplica o arquivo** — os agentes não têm escrita em `.claude/hooks/` nem em uma sessão que está corrigindo o próprio hook. Guardrail sem teste de regressão é guardrail que ninguém confia depois do primeiro falso positivo.
 
 ---
 
@@ -126,7 +128,7 @@ Regra de processo depende de obediência; **trava mecânica não**. O kit traz a
 4. **Testes são contrato, não enfeite.** O Tester valida os critérios; teste falhando → Debugger, não gambiarra.
 5. **Você é responsável pelo que a IA produziu em seu nome.** Leia o diff inteiro antes de abrir o PR. "Foi a IA" não é justificativa em code review.
 6. **Commits limpos.** Mensagens descritivas do quê e por quê. Sem marcações de IA no código ou nos commits.
-7. **Um dono por arquivo por vez.** Trabalho paralelo usa git worktrees e arquivos disjuntos (ver [GOVERNANCE.md](GOVERNANCE.md) §4).
+7. **Um dono por arquivo por vez.** Trabalho paralelo usa git worktrees e arquivos disjuntos (ver [GOVERNANCE.md](GOVERNANCE.md) §4). Worktree criada por sessão do Claude Code mora em `.claude/worktrees/` — **ignorada pelo git**, porque versionar um checkout aninhado duplicaria a árvore. Ela não se limpa sozinha: quando a branch dela mergear, remova com `git worktree remove <caminho>` e apague a branch, ou o repo acumula cópias antigas que confundem qualquer comparação futura.
 8. **Registre decisões.** Decisão técnica relevante vira ADR em `docs/` — quem chegar depois entende o porquê.
 9. **Consulte a biblioteca antes de decidir.** Modularização, monorepo, containerizar ou não, EKS ou não, clean architecture, design funcional: os critérios estão em [`praticas/`](praticas/README.md). Desvio relevante se justifica no ADR.
 10. **Os defaults do projeto vivem no `praticas/00`.** [`praticas/00-stack-e-defaults-gbpa.md`](praticas/00-stack-e-defaults-gbpa.md) é preenchido **por projeto**, no início dele (ONBOARDING §2, passo 6) — cada repo carrega o seu. O que estiver preenchido é decidido: vence preferência de agente e de dev, e desviar exige ADR. O que estiver em branco **não é blocker — é um menu**: o Architect apresenta as opções candidatas do campo (o 00 já traz uma coluna com elas), uma recomendação com o porquê, e a opção explícita **"decida você, Architect"** para quando você não tem preferência. A escolha vira ADR e o valor volta para o 00, para que ninguém re-decida depois. Campos marcados 🔒 escalam ao Tech Lead, não ao Architect.
