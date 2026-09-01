@@ -67,9 +67,29 @@ Escolhida a opção (ou delegada ao Architect), a decisão vira **ADR** e o valo
 
 | Default | Valor | Opções (★ = ponto de partida) | Nota |
 |---|---|---|---|
-| Provedor/modelos 🔒 | `{...}` | ★ **Anthropic — Fable / Sonnet / Haiku** · outro provedor | ★ é o que o playbook inteiro assume; trocar exige revisar ADR-001/002/003 e a designação de modelo dos 13 agentes |
-| Dados em prompt | Dado pessoal real **nunca** | *(decidido — sem menu)* | Ver seção LGPD do [06](06-devsecops.md). Contrato/DPA com provedor 🔒: `{status}` |
+| Provedor/modelos 🔒 | **Anthropic — Fable / Sonnet / Haiku** | ★ **Anthropic** · outro provedor | Trocar exige revisar ADR-001/002/003 e a designação de modelo dos 13 agentes |
+| Contrato/DPA 🔒 | **Plano de subscrição — ⚠️ classe a confirmar (ver nota abaixo)** | Comercial (Team / Enterprise / API) · Consumidor (Pro / Max) | O DPA da Anthropic é **incorporado automaticamente aos Termos Comerciais**, com SCCs — não exige assinatura separada. Planos de consumidor **não** são cobertos por ele |
+| Dados em prompt | Dado pessoal real **nunca**; fixture sintética por seed é a única fonte em desenvolvimento | *(decidido — sem menu)* | Ver seção LGPD do [06](06-devsecops.md). Verificação no CI: `gitleaks` (segredo) **+** check de padrão de PII sobre fixtures e seeds — somatório, não alternativa |
 | Framework de agentes/RAG | `{...}` | ★ **SDK do provedor, direto** · framework de orquestração (LangGraph, LlamaIndex) | ★ é o "padrão mínimo que atende" do manual do AI-Engineer. Framework entra quando o SDK direto já não dá conta — via ADR do Architect, não por antecipação |
+
+> ### ⚠️ Ação aberta do Tech Lead — confirmar a classe do plano
+>
+> "Plano de subscrição" cobre duas realidades contratuais **opostas**, e a diferença decide o que a equipe pode colar em um prompt:
+>
+> | | Comercial (Team, Enterprise, API) | Consumidor (Pro, Max) |
+> |---|---|---|
+> | **DPA** | Incorporado automaticamente aos Termos Comerciais, com SCCs | **Não se aplica** |
+> | **Treino com o seu conteúdo** | Não, por padrão | **Escolha de cada usuário**, individualmente |
+> | **Retenção** | Conforme os termos comerciais | 5 anos se o treino estiver ligado; 30 dias se desligado |
+> | **Controle organizacional** | Admin da organização | Nenhum — é conta pessoal |
+>
+> **A consequência, se a subscrição for de consumidor:** falha a condição 2 da [`praticas/10`](10-dados-e-contexto-de-ia.md) §3 (contrato que cubra o subprocessamento). Isso significa que **código e dado de cliente — classe Confidencial — não podem entrar no contexto**, o que inviabiliza o uso normal do playbook em projeto de cliente. Não é uma formalidade de auditoria: é a diferença entre poder e não poder trabalhar com o repositório do cliente aberto.
+>
+> Some-se o problema de governança: em plano de consumidor, **o interruptor de treino é de cada pessoa**. Não existe visibilidade nem controle central sobre quem ligou.
+>
+> **Encaminhamento recomendado:** confirmar o plano no Console (Billing). Se for consumidor, migrar para Claude for Work (Team) — é o que faz o DPA valer e devolve controle de administrador. Feito isso, substituir o valor deste campo por algo verificável, no formato: `Claude for Work Team · DPA incorporado aos Termos Comerciais aceitos em AAAA-MM-DD · cópia em docs/contratos/`.
+>
+> A base legal de transferência internacional sob a LGPD (cap. V) é pergunta para o jurídico, não para o Tech Lead — o DPA traz SCCs em formato europeu.
 
 ---
 

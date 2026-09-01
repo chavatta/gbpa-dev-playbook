@@ -42,7 +42,7 @@ Escopo desta tabela: os controles com relação direta com o ciclo de vida de de
 | **A.5.20** | SI em acordos com fornecedores | ORG | DPA e termos com Anthropic/GitHub/cloud — camada jurídica |
 | **A.5.21** | SI na cadeia de suprimento ICT | OK | `praticas/06-devsecops.md` camada 2 (SCA, lockfile, SBOM) + auditoria de supply chain do Security-SRE |
 | **A.5.23** | SI para serviços em nuvem | PARCIAL | `praticas/05-kubernetes-eks.md` e `praticas/06` camada 4 (CSPM, IAM); depende de `praticas/00` preenchido |
-| **A.5.24–5.28** | Gestão de incidentes de SI | PARCIAL | `praticas/06` trata secret commitado como incidente e prevê runbook; **falta runbook de incidente específico de IA** (§4.5) |
+| **A.5.24–5.28** | Gestão de incidentes de SI | OK | `praticas/06` trata secret commitado como incidente; [`RUNBOOK-INCIDENTE-IA.md`](RUNBOOK-INCIDENTE-IA.md) cobre os três cenários específicos de IA com detecção, contenção, comunicação e aprendizado |
 | **A.5.31** | Requisitos legais e contratuais | OK | `praticas/06` seção LGPD — base legal, direitos do titular, art. 48 |
 | **A.5.34** | Privacidade e proteção de PII | OK | `praticas/06` seção LGPD + `praticas/10` §2: dado pessoal real nunca entra em prompt, fixture, log ou ambiente de teste |
 | **A.5.36** | Conformidade com políticas | OK | Travas mecânicas (§6) — conformidade verificada por hook, não por declaração |
@@ -52,7 +52,7 @@ Escopo desta tabela: os controles com relação direta com o ciclo de vida de de
 
 | Controle | Título (resumo) | Status | Evidência / observação |
 |---|---|---|---|
-| **A.6.3** | Conscientização e treinamento | PARCIAL | `ONBOARDING.md` + `DESENVOLVIMENTO-COM-IA.md` são o material; **falta registro de quem leu e quando** (§4.6) |
+| **A.6.3** | Conscientização e treinamento | PARCIAL | `ONBOARDING.md` + `DESENVOLVIMENTO-COM-IA.md` são o material; [`COMPETENCIA.md`](COMPETENCIA.md) é o registro — **falta cada pessoa preencher a própria linha** (§4.6) |
 | **A.6.6** | Confidencialidade / NDA | ORG | — |
 | **A.6.8** | Reporte de eventos de SI | PARCIAL | "Trava disparou → reporte ao Tech Lead" (§6.3); canal formal de reporte é ORG |
 
@@ -71,7 +71,7 @@ Escopo desta tabela: os controles com relação direta com o ciclo de vida de de
 | **A.8.16** | Atividades de monitoramento | PARCIAL | Métricas do playbook definidas em `docs/EVIDENCIAS-E-METRICAS.md`; monitoramento de runtime é `praticas/06` camada 4 |
 | **A.8.19** | Software em sistemas operacionais | ORG | — |
 | **A.8.24** | Uso de criptografia | OK | `praticas/06`, princípio 6 — TLS, cifra gerenciada, argon2/bcrypt, "não invente crypto" |
-| **A.8.25** | Ciclo de vida de desenvolvimento seguro | **OK** | **O playbook inteiro.** `GOVERNANCE.md` §3 (fluxo obrigatório) + `multi-agents/ARCHITECTURE.md` |
+| **A.8.25** | Ciclo de vida de desenvolvimento seguro | OK | **O playbook inteiro.** `GOVERNANCE.md` §3 (fluxo obrigatório) + `multi-agents/ARCHITECTURE.md` |
 | **A.8.26** | Requisitos de segurança da aplicação | OK | Spec-Writer entrega NFRs e critérios de aceitação antes do design (`docs/ADR-003`) |
 | **A.8.27** | Princípios de arquitetura e engenharia seguras | OK | `praticas/07-clean-architecture.md`, `praticas/06` (8 princípios de projeto seguro), ADRs em `docs/` |
 | **A.8.28** | Codificação segura | OK | `praticas/01-clean-code.md` + `praticas/08-design-funcional.md` + regras duras do Coder (sem hardcode de segredo) |
@@ -82,7 +82,7 @@ Escopo desta tabela: os controles com relação direta com o ciclo de vida de de
 | **A.8.33** | Informação de teste | OK | `praticas/06` LGPD — dado pessoal real nunca em fixture ou ambiente de teste; dado sintético/anonimizado |
 | **A.8.34** | Proteção de sistemas durante auditoria | ORG | — |
 
-**Resumo 27001:** 21 OK · 11 PARCIAL · 0 LACUNA · 7 ORG.
+**Resumo 27001:** 25 OK · 9 PARCIAL · 0 LACUNA · 6 ORG. *(40 controles; A.8.30 é OK por analogia.)*
 
 ---
 
@@ -104,7 +104,7 @@ A GBPA tem **duas relações distintas** com IA, e elas caem em partes diferente
 | **A.4.3** | Recursos de dados | b | PARCIAL | `praticas/10` §2 classifica o dado; qualidade/proveniência de dado de treino é do AI-Engineer por projeto |
 | **A.4.4** | Recursos de ferramental | a | OK | `.claude/settings.json`, `.claude/agents/`, hooks — ferramental versionado e auditável |
 | **A.4.5** | Recursos de sistema e computação | a | ORG | Contratação e cotas do provedor |
-| **A.4.6** | Recursos humanos (competência) | a+b | PARCIAL | `ONBOARDING.md`; **falta registro de competência** (§4.6) |
+| **A.4.6** | Recursos humanos (competência) | a+b | PARCIAL | `ONBOARDING.md`; [`COMPETENCIA.md`](COMPETENCIA.md) é o registro — **falta cada pessoa preencher a própria linha** (§4.6) |
 | **A.5.2** | Processo de avaliação de impacto de IA | a+b | OK | `multi-agents/templates/AVALIACAO-IMPACTO-IA.template.md` + gatilho no `brief.md` |
 | **A.5.3** | Documentação da avaliação de impacto | a+b | OK | Artefato versionado em `tasks/{id}/artifacts/impacto-ia.md` |
 | **A.5.4** | Impacto sobre indivíduos e grupos | b | OK | Seção 3 do template (inclui viés, grupos afetados e recurso humano à decisão) |
@@ -121,7 +121,7 @@ A GBPA tem **duas relações distintas** com IA, e elas caem em partes diferente
 | **A.7.2–A.7.6** | Dados para sistemas de IA | b | PARCIAL | `praticas/10` §2 (classificação) e `praticas/06` (dado sintético em teste); proveniência e preparação são do Data-Engineer/AI-Engineer por projeto |
 | **A.8.2** | Documentação para usuários do sistema | b | OK | Documenter — README, API docs, runbook |
 | **A.8.3** | Reporte externo | b | ORG | Canal ao titular/cliente |
-| **A.8.4** | Comunicação de incidente | a+b | PARCIAL | LGPD art. 48 em `praticas/06`; **falta runbook de incidente de IA** (§4.5) |
+| **A.8.4** | Comunicação de incidente | a+b | OK | LGPD art. 48 em `praticas/06`; [`RUNBOOK-INCIDENTE-IA.md`](RUNBOOK-INCIDENTE-IA.md) define quem aciona o DPO, em que prazo e por qual cenário |
 | **A.9.2** | Processos para uso responsável | **a** | OK | `GOVERNANCE.md` §3 e **§7** (em vigor desde 2026-08-31 — torna a classificação de dado lei, não referência) + `praticas/10`; o que a IA nunca faz em `DESENVOLVIMENTO-COM-IA.md` §7 |
 | **A.9.3** | Objetivos para uso responsável | a | OK | `DESENVOLVIMENTO-COM-IA.md` §1 |
 | **A.9.4** | Uso pretendido | a | OK | Escopo por agente em `.claude/agents/` e `multi-agents/agents/`; agente fora do escopo é anti-padrão registrado |
@@ -129,7 +129,7 @@ A GBPA tem **duas relações distintas** com IA, e elas caem em partes diferente
 | **A.10.3** | Fornecedores de IA | a | PARCIAL | `praticas/10` §4 define os critérios de avaliação; assinatura de DPA e verificação de opt-out de treino são ORG (§4.7) |
 | **A.10.4** | Clientes / obrigações contratuais | b | ORG | Camada comercial/jurídica |
 
-**Resumo 42001:** 21 OK · 11 PARCIAL · 0 LACUNA · 4 ORG.
+**Resumo 42001:** 22 OK · 8 PARCIAL · 0 LACUNA · 3 ORG.
 
 **Supervisão humana** (A.9.2, e também Art. 14 do EU AI Act, se vier a ser exigido): o playbook atende de forma explícita e mecânica — nenhuma task fecha sem veredito humano-revisável do Reviewer, e o dev que abre o PR assume a responsabilidade. Esse é o ponto mais forte do conjunto perante um auditor.
 
@@ -142,12 +142,12 @@ Numeração estável — referenciada por `docs/PENDENCIAS-TECH-LEAD.md`.
 | # | Ação | Controles | Dono | Tipo | Status |
 |---|---|---|---|---|---|
 | **4.1** | Ativar branch protection nos repos existentes | A.8.4, A.8.32 | Tech Lead | Configuração | **PARCIAL** (2026-08-31) — ativa em `gbpa-dev-playbook`; replicar nos demais repos |
-| **4.2** | Preencher `praticas/00-stack-e-defaults-gbpa.md` (inclui política de dado em prompt) | A.5.23, A.8.31, A.6.2.5 | Tech Lead | Decisão | Aberta — restam contrato/DPA e política de dado pessoal |
+| **4.2** | Confirmar a classe do plano Anthropic e preencher `praticas/00` (política de dado em prompt já preenchida) | A.5.23, A.8.31, A.6.2.5 | Tech Lead | Decisão | Aberta — falta confirmar comercial vs. consumidor (ver 4.7 e `PENDENCIAS` item 1) |
 | **4.3** | Aprovar `GOVERNANCE.md` §7 (patch em `PENDENCIAS-TECH-LEAD.md`) | A.5.36, A.8.15, A.9.2 | Tech Lead | Patch em arquivo protegido | **FEITA** (2026-08-31) |
 | **4.4** | Definir SLA de correção por severidade | A.5.24, A.8.8 | Tech Lead | Decisão | **FEITA** (2026-08-31) — achado que impacta o processo é bloqueador até resolução humana (`praticas/06`) |
-| **4.5** | Runbook de incidente envolvendo IA (vazamento via prompt, código defeituoso em prod, dependência alucinada) | A.5.24–5.28, A.8.4 (42001) | Security-SRE + Tech Lead | Documento novo | Aberta |
-| **4.6** | Registro de competência: quem leu o onboarding, quando, e revalidação anual | A.6.3, A.4.6 | Tech Lead | Processo (planilha ou `docs/`) | Aberta |
-| **4.7** | Verificar termos do provedor de IA: retenção, opt-out de treino, sub-processadores, DPA | A.5.19, A.5.20, A.10.3 | Tech Lead + jurídico | Contrato | Aberta — insumo da 4.2 |
+| **4.5** | Runbook de incidente envolvendo IA (vazamento via prompt, código defeituoso em prod, dependência alucinada) | A.5.24–5.28, A.8.4 (42001) | Security-SRE + Tech Lead | Documento novo | **FEITA** (2026-08-31) — [`RUNBOOK-INCIDENTE-IA.md`](RUNBOOK-INCIDENTE-IA.md) |
+| **4.6** | Registro de competência: quem leu o onboarding, quando, e revalidação anual | A.6.3, A.4.6 | Tech Lead | Processo (`docs/`) | **PARCIAL** (2026-08-31) — [`COMPETENCIA.md`](COMPETENCIA.md) criado; **falta cada pessoa registrar a própria linha** |
+| **4.7** | Verificar termos do provedor de IA: retenção, opt-out de treino, sub-processadores, DPA | A.5.19, A.5.20, A.10.3 | Tech Lead + jurídico | Contrato | **Aberta — prioridade máxima.** DPA é automático nos Termos Comerciais, mas não alcança plano de consumidor; confirmar a classe do plano (ver 4.2) |
 | **4.8** | Registro de risco e Declaração de Aplicabilidade (SoA) | Cláusulas 6.1.2–6.1.3 | Camada ORG | Documento organizacional | Aberta |
 | **4.9** | Auditoria interna e análise crítica pela direção | Cláusulas 9.2–9.3 | Camada ORG | Processo organizacional | Aberta |
 
