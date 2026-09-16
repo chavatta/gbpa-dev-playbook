@@ -102,6 +102,8 @@ Documento sem dono e sem data de revisão é documento morto — e auditor pergu
 | `praticas/01`, `02`, `03`, `07`, `08`, `09`, `praticas/README.md` | Tech Lead | Anual |
 | `docs/ADR-*` | Autor do ADR | Por evento (revisão do ADR-001 é trimestral; ADR-002 a 004, semestral) |
 | `.claude/agents/`, `.claude/hooks/` | Tech Lead | A cada mudança de modelo ou de trava |
+| `.claude/workflows/gbpa-task.js`, `.claude/skills/task/` | Tech Lead | A cada mudança no fluxo (ADR-005) — em branch, com teste de sintaxe, como os hooks |
+| `docs/PROPOSTA-PIPELINE-FLUXO.md` | Tech Lead | Por evento — arquivar quando o ADR-005 estiver em vigor e o piloto rodado |
 | `docs/patches/` | Tech Lead | Esvaziar conforme aplicado — patch pendente é dívida, não acervo |
 
 **O cabeçalho é a evidência.** Todo documento da tabela carrega, na abertura, a linha `**Dono:** … · **Revisão:** … · **Última revisão:** AAAA-MM-DD` (os ADRs usam `**Decisores:**` e `**Revisão:**`, que cumprem o mesmo papel). Revisão feita = data atualizada nesse cabeçalho, mesmo que o conteúdo não mude. "Revisado em, sem alterações" é resultado válido e é evidência.

@@ -27,6 +27,22 @@ Rastreadas com numeração estável em `docs/ISO-MAPPING.md` §4:
 - ~~**4.1** branch protection~~ (feita em `main` deste repo — **replicar nos demais repos da GBPA**) · **4.2** classe do plano e `praticas/00` (item 1) · ~~**4.3** patch do §7~~ · ~~**4.4** SLA por severidade~~ · ~~**4.5** runbook de incidente com IA~~
 - **4.6** registro de competência — arquivo criado, **falta cada pessoa preencher a própria linha** (item 3) · **4.7** termos do provedor de IA — absorvida pelo item 1 · **4.8** registro de risco e Declaração de Aplicabilidade · **4.9** auditoria interna e análise crítica — as duas últimas na camada organizacional, fora deste repositório
 
+### 4. Aplicar o patch do `GOVERNANCE.md` e rodar o piloto do fluxo por script (ADR-005)
+
+Dois passos, nesta ordem:
+
+1. **Patch em arquivo protegido:** `docs/patches/GOVERNANCE-fluxo-por-script.md` — §3.1 (o fluxo obrigatório passa a ser `/task` → `gbpa-task.js`), §3.4, §6.2 e §6.4. Só o Tech Lead aplica, à mão, fora da sessão do agente.
+2. **Piloto:** rodar `/task` numa task real, num projeto com código. O playbook nunca executou o próprio fluxo; as estimativas de quota do ADR-005 são qualitativas até isso acontecer. Critério de saída: taxa de `escalado` abaixo de 30% nas primeiras 10 tasks — acima disso o recon está fraco ou o teto de 2 rodadas está baixo.
+
+### 5. Dois falsos positivos reportados no `block-dangerous-git.mjs` (2026-09-15)
+
+Ambos reproduzidos com o mecanismo da suíte (`spawnSync` do hook com o payload em `tool_input.command`); cada linha sozinha passa.
+
+1. **`git push -u origin feat/x` seguido, na linha seguinte do mesmo comando, de `gh pr create --draft --base main`** → BLOQUEADO como "push direto em main". O casamento por posição não está isolando linhas para este padrão: o `main` do `--base` da linha 2 é lido como alvo do `push` da linha 1. Impacto: o fluxo prescrito pelo §2 (push da branch + draft PR) não cabe num comando só.
+2. **Texto de heredoc que contém as palavras "push" e "main"** (mensagem de commit via `git commit -F - <<'EOF'`, ou `python3 - <<'EOF'` escrevendo documentação que descreve o caso 1) → BLOQUEADO pelo mesmo padrão. O hook está lendo o corpo do heredoc como comando. Impacto: qualquer commit ou documento que *fale* sobre a trava dispara a trava — inclusive este registro, que precisou ser gravado por arquivo.
+
+Encaminhamento: acrescentar os dois casos ao banco de payloads de `docs/patches/` como `ALLOW` e ajustar o hook pelo processo do §6.3 (branch, suíte contra a versão antiga e a nova, aplicação à mão). Contam na M5.
+
 ### 3. Preencher o `docs/COMPETENCIA.md`
 
 O arquivo existe e está vazio de propósito: **cada pessoa abre o PR que adiciona a própria linha** — registro preenchido por terceiro não é declaração de leitura. Comece pelo Tech Lead, para que exista uma linha de referência.

@@ -2,7 +2,14 @@
 
 Arquivos que agentes não podem escrever (`.claude/hooks/`, `.claude/settings.json`, `GOVERNANCE.md` — `GOVERNANCE.md` §6.2) chegam aqui prontos e testados, para o **Tech Lead aplicar por mão humana**. O racional de cada patch fica em [`../PENDENCIAS-TECH-LEAD.md`](../PENDENCIAS-TECH-LEAD.md).
 
-## `block-dangerous-git.mjs` — corrige falso positivo por posição de comando
+## Pendente — `GOVERNANCE-fluxo-por-script.md` (ADR-005)
+
+Ajusta §3.1, §3.4, §6.2 e §6.4 para o fluxo por script. Texto pronto e verificação de sintaxe no próprio arquivo. Sem banco de payloads: não é trava, é texto.
+
+## Aplicado em 2026-08-31 — `block-dangerous-git.mjs` (mantido como referência da suíte)
+
+> A versão abaixo já está em produção (arquivo idêntico ao de `.claude/hooks/`) e a suíte cresceu para 60 casos. O texto original fica como registro do processo.
+
 
 O hook em produção casa o padrão perigoso em qualquer posição da linha, então `grep "git clean -f" arquivo.md` é bloqueado mesmo sendo busca, não execução. Esta versão casa por posição de comando e, de quebra, fecha dois bypasses reais (ofuscação por aspas e `eval "rm -rf …"`).
 

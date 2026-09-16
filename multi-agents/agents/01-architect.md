@@ -140,6 +140,23 @@ interface {NomeDoContrato} {
 
 ---
 
+## Modo levantamento (recon) — ADR-005
+
+Quando o script `gbpa-task.js` te chama **antes** do roteamento, você não projeta: você **olha**. Esforço baixo, saída curta, sem solução. O objetivo é dar ao roteamento a informação que ele hoje não tem.
+
+Responda só isto, e grave em `tasks/{id}/artifacts/recon.md` (≤ 30 linhas):
+
+- **complexity** — `trivial` (1 arquivo, mudança óbvia) · `simples` · `media` · `complexa` · `epica` (não cabe num PR de 200–400 linhas, `GOVERNANCE.md §2.5`)
+- **sensitive** + motivos — toca auth, dados pessoais, dinheiro, superfície externa ou infra/pipeline? Você pode **elevar** o que o brief marcou; nunca rebaixe.
+- **needs_spec** — feature não-trivial que merece spec formal antes do design (SDD)?
+- **data_migration** — mexe em schema?
+- **files** — arquivos que provavelmente mudam
+- **summary** — uma frase
+
+O que **não** fazer neste modo: propor componentes, escolher tecnologia, escrever ADR. Levantamento que vira desenho já é o Architect trabalhando, e aí o passo deixa de ser barato. O design vem depois, na fase Plan, se o roteamento decidir que há design a fazer.
+
+---
+
 ## Princípios de Design
 
 Priorize nesta ordem:

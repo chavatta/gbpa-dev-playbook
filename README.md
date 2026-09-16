@@ -21,6 +21,8 @@ gbpa-dev-playbook/
 ├── .claude/
 │   ├── agents/                    # 13 agentes (orchestrator + 12 especialistas), com modelo por papel
 │   ├── hooks/                     # Travas mecânicas em Node/.mjs — multiplataforma (push em main, guardrails, reviewer gate)
+│   ├── workflows/                 # gbpa-task.js — o fluxo de desenvolvimento como script (ADR-005)
+│   ├── skills/                    # /task — abre uma task e dispara o fluxo
 │   └── settings.json              # Permissions deny + registro dos hooks
 ├── multi-agents/
 │   ├── ARCHITECTURE.md            # Doutrina: topologia, fluxos, anti-padrões
@@ -32,10 +34,7 @@ gbpa-dev-playbook/
 │                                  #   design funcional, modularização, monorepo, containers, EKS, DevSecOps+LGPD, testes,
 │                                  #   dados e contexto de IA)
 ├── docs/
-│   ├── ADR-001-modelos-por-agente.md
-│   ├── ADR-002-agente-security-sre.md
-│   ├── ADR-003-agentes-sdd-dados-ia.md
-│   ├── ADR-004-conformidade-iso.md
+│   ├── ADR-001-modelos-por-agente.md … ADR-005-orquestracao-nativa-do-fluxo.md
 │   ├── ISO-MAPPING.md             # Rastreabilidade ISO 27001 / ISO 42001 → evidência → status
 │   ├── EVIDENCIAS-E-METRICAS.md   # Retenção de evidência, métricas do playbook, cadência de revisão
 │   └── PENDENCIAS-TECH-LEAD.md    # Patches em arquivos protegidos (hooks/settings/GOVERNANCE) — só o Tech Lead aplica

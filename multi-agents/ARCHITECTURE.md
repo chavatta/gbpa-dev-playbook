@@ -166,6 +166,26 @@ User → Orchestrator
 
 ---
 
+## Execução: o script `gbpa-task` (ADR-005)
+
+Os fluxos acima **explicam**; quem **decide** é `.claude/workflows/gbpa-task.js`, executado pela ferramenta nativa Workflow e disparado pela skill `/task`. A prosa desta página é a documentação do script, não uma segunda fonte de verdade — se divergirem, o script está certo e esta página está desatualizada.
+
+O que o script faz que a prosa não conseguia garantir:
+
+| Propriedade | Como |
+|---|---|
+| Roteamento com informação | `recon` (Architect, modo levantamento, esforço baixo) roda **antes** de classificar; o `if` decide com escopo real |
+| Teto do retrabalho | `for (round ≤ 2)`; na 2ª reprovação devolve `escalado` |
+| Verificação proporcional ao risco | `if (sensitive)` → Reviewer ∥ Security-SRE ∥ Tester, unanimidade; senão voto único |
+| Anti-carimbo | refutador cego após a aprovação em task sensível; discordância devolve `divergencia` |
+| Gate por código | `done` só é retornado após veredito validado por schema; o hook `check-reviewer-gate.mjs` é a segunda linha |
+| Épica | fatiada pelo Planner; cada fatia é uma `/task` |
+| Ponteiro | o bloco YAML do §3.2 vira JSON Schema validado na chamada |
+
+O script **não toca disco**: cada agente grava seu artifact em `tasks/{id}/artifacts/` por instrução, e a sessão principal anexa ao `run-log.md` os `events` que o script devolve (escritor único, `GOVERNANCE.md §4.3`). Restrições da ferramenta: sem `fs`, sem `Date`/`Math.random` (timestamps entram por `args`), até 16 agentes simultâneos, plano pago com Dynamic workflows habilitados.
+
+---
+
 ## Protocolo de Handoff
 
 O contrato completo está em **`HANDOFF-PROTOCOL.md`** — ele é a fonte de verdade. Resumo: cada agente grava seu trabalho completo em `tasks/{task_id}/artifacts/{agente}.md` e devolve ao Orchestrator **apenas o ponteiro leve** (nunca o conteúdo bruto — isso causaria os anti-padrões *Context Bloat* e *Telephone Game* listados abaixo):

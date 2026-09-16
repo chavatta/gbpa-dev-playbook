@@ -71,6 +71,7 @@ Escolhida a opção (ou delegada ao Architect), a decisão vira **ADR** e o valo
 | Contrato/DPA 🔒 | **Plano de subscrição — ⚠️ classe a confirmar (ver nota abaixo)** | Comercial (Team / Enterprise / API) · Consumidor (Pro / Max) | O DPA da Anthropic é **incorporado automaticamente aos Termos Comerciais**, com SCCs — não exige assinatura separada. Planos de consumidor **não** são cobertos por ele |
 | Dados em prompt | Dado pessoal real **nunca**; fixture sintética por seed é a única fonte em desenvolvimento | *(decidido — sem menu)* | Ver seção LGPD do [06](06-devsecops.md). Verificação no CI: `gitleaks` (segredo) **+** check de padrão de PII sobre fixtures e seeds — somatório, não alternativa |
 | Framework de agentes/RAG | `{...}` | ★ **SDK do provedor, direto** · framework de orquestração (LangGraph, LlamaIndex) | ★ é o "padrão mínimo que atende" do manual do AI-Engineer. Framework entra quando o SDK direto já não dá conta — via ADR do Architect, não por antecipação |
+| Orquestração do **fluxo de desenvolvimento** | **Nativa do Claude Code** — Workflow (`.claude/workflows/gbpa-task.js`) + subagentes + hooks, na assinatura | *(decidido — `docs/ADR-005`; sem menu)* | Automação **fora** do Claude Code (LangGraph, Agent SDK, `claude -p` em servidor) exige API key e ADR: a assinatura cobre uso ordinário do produto, não orquestração externa (legal e compliance do Claude Code). Framework de agentes acima é para o **produto**; esta linha é para o **processo** |
 
 > ### ⚠️ Ação aberta do Tech Lead — confirmar a classe do plano
 >
