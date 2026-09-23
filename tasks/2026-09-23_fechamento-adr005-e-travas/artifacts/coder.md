@@ -8,7 +8,7 @@ A parte de consistência documental está em `coder-docs.md` (segundo Coder, arq
 | Arquivo | Mudança |
 |---|---|
 | `docs/patches/block-dangerous-git.mjs` | Proposta nova: heredoc (corpo de dado sai da análise; corpo para interpretador liga modo conservador, olhando a linha inteira — `cat <<EOF \| bash` conta); quebra de linha só é separador fora de aspas (aspas desbalanceadas → comportamento anterior); token de argumento não atravessa separador; opções globais do git (`-C`, `-c`, `--git-dir`…) antes do subcomando; zona protegida por **segmento** de comando, com exceção para `cd`/`pushd` para dentro da zona; verbo mutante como palavra inteira; zona estendida a `.claude/workflows/` e `.claude/agents/` |
-| `docs/patches/test-block-dangerous-git.mjs` | +78 casos (estado final, após as três rodadas) — produção falha em 31 (15 falsos positivos, 11 bypasses, 5 da zona nova); os outros 47 são guardas de regressão, inclusive tudo o que os gates pegaram |
+| `docs/patches/test-block-dangerous-git.mjs` | +82 casos (estado final, após as três rodadas) — produção falha em 32 (16 falsos positivos, 11 bypasses, 5 da zona nova); os outros 50 são guardas de regressão, inclusive tudo o que os gates pegaram |
 | `docs/patches/check-reviewer-gate.mjs` | Regex sem flag `m` — veredito na primeira linha de fato (admite BOM e linhas em branco) |
 | `docs/patches/test-check-reviewer-gate.mjs` | Novo — 14 casos com `tasks/` temporário |
 | `docs/patches/protect-guardrails.mjs` | Bloqueia `.claude/workflows/` e `.claude/agents/`; `.claude/skills/` e `.claude/worktrees/` seguem livres |
@@ -29,7 +29,7 @@ A parte de consistência documental está em `coder-docs.md` (segundo Coder, arq
 
 | Prova | Proposta | Produção / versão do PR #6 |
 |---|---|---|
-| `test-block-dangerous-git.mjs` | 138/138 | 107/138 |
+| `test-block-dangerous-git.mjs` | 142/142 | 110/142 |
 | `test-check-reviewer-gate.mjs` | 14/14 | 11/14 |
 | `test-protect-guardrails.mjs` | 22/22 | 16/22 |
 | `scripts/test-gbpa-task.mjs` | 15/15 | 8/15 (a versão do PR #6 devolve `done` sem refutador) |
@@ -79,4 +79,6 @@ Suítes após a rodada 2: `block-dangerous-git` 128/128 (produção 97/128) · `
 
 | (achado próprio, ao reduzir `SCRIPT`) — script gravado por heredoc e executado por caminho absoluto, `$PWD/…` ou `exec` passaria a descartar o corpo | Arquivo alvo de redirect que reaparece no comando conta como possível execução — o corpo fica | 3 BLOCK |
 
-Suítes após a rodada 3: `block-dangerous-git` 138/138 (produção 107/138) · `check-reviewer-gate` 14/14 · `protect-guardrails` 22/22 · smoke 15/15.
+| HIGH residual (security-sre r3) — gravar por `tee`/`dd of=` e rodar por caminho | Em vez de enumerar quem grava: caminho em posição de comando (inclusive após `exec`/`env`/`nohup`/`sudo`) conta como execução — fecha a classe inteira | 3 BLOCK + 1 ALLOW (doc em caminho absoluto sem execução) |
+
+Suítes após a rodada 3: `block-dangerous-git` 142/142 (produção 110/142) · `check-reviewer-gate` 14/14 · `protect-guardrails` 22/22 · smoke 15/15.
