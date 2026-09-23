@@ -20,5 +20,8 @@ Append-only. Uma linha por evento.
 | 2026-09-23 23:20 | orchestrator | rerouted     | -      | 3ª rodada, fora do teto do HANDOFF §4.7: decisão tomada sob a autonomia total delegada pelo usuário nesta sessão. Racional: o achado é estreito (uma lista de executores), com correção e prova diretas — não é problema de design |
 | 2026-09-23 23:25 | coder        | rerouted     | -      | rodada 3: CLIs de banco como consumidores de heredoc + não-bloqueantes do reviewer — suíte 135/135 (produção 104/135) |
 | 2026-09-23 23:25 | coder        | needs_review | -      | re-auditoria do security-sre restrita à rodada 3 |
+| 2026-09-23 23:45 | security-sre | completed    | REPROVADO | artifacts/security-sre.md (r3) — r2 fechado; residual: grava por tee/dd e roda por caminho |
+| 2026-09-23 23:50 | coder        | rerouted     | -      | caminho em posição de comando conta como execução — fecha a classe, não só tee/dd; suíte 142/142 (produção 110/142) |
+| 2026-09-23 23:50 | coder        | needs_review | -      | re-auditoria do security-sre restrita ao residual |
 
 <!-- Eventos: started, completed, blocked, needs_review, rerouted, done -->
