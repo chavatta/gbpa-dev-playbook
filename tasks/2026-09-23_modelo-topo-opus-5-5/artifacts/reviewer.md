@@ -1,96 +1,85 @@
-**Veredito:** REPROVADO (6 issues)
+**Veredito:** APROVADO
 
-# Review — 2026-09-23_modelo-topo-opus-5-5
+# Review (rodada 2) — 2026-09-23_modelo-topo-opus-5-5
 
-**Agente:** reviewer
-**Modelo em que rodou:** `claude-fable-5-1` (Fable 5.1). Divergente do designado a partir desta mudança (`claude-opus-5-5`); registrado sem bloquear, por instrução do Orchestrator — a sessão carregou a definição anterior dos agentes no startup e é esta própria task que redefine o esperado.
-**Escopo revisado:** diff não commitado na branch `claude/practical-allen-px9mfl` — 17 arquivos, 71+/57− (pequeno; não precisava de fatiamento).
-**Base:** `brief.md` + `git diff` diretamente, porque `artifacts/coder.md` não existe (ver issue 3).
+**Agente:** reviewer (`reviewer-opus`)
+**Modelo em que rodou:** `claude-opus-5-5[1m]` (Opus 5.5, janela de 1M), conforme o system prompt. Bate com o designado (`claude-opus-5-5`); o sufixo `[1m]` indica só a janela de contexto, não outra versão.
+**Escopo revisado:** `git diff a3bb02d d135bef` (commits `efb8313` + `d135bef`, branch `claude/practical-allen-px9mfl`): 21 arquivos fora de `tasks/`, diff pequeno, sem necessidade de fatiamento.
+**Base:** `brief.md` (escopo ajustado: Security-SRE fica em Fable 5.1), `artifacts/coder.md`, artifact da rodada 1 e o diff.
 
-Um issue bloqueante (HIGH); os demais são melhorias que podem entrar na mesma correção.
+Nenhum issue bloqueante. Os 6 achados da rodada 1 estão resolvidos e a mudança de escopo (Security-SRE em Fable 5.1) está coerente em todos os documentos do escopo.
 
 ---
 
-## Critérios do brief — evidência
+## Histórico: rodada 1 (resumo)
+
+A rodada 1 rodou em `claude-fable-5-1` (`reviewer-fable`), porque a sessão tinha carregado a definição anterior dos agentes no startup. Veredito: REPROVADO (6 issues). Na época, o escopo ainda previa o Security-SRE em Opus.
+
+| # | Sev. | Achado da rodada 1 | Status na rodada 2 | Evidência |
+|---|---|---|---|---|
+| 1 | HIGH | ADR-003 §3 designava `Architect-fable`/`Reviewer-fable` no presente | Resolvido | `docs/ADR-003-agentes-sdd-dados-ia.md:21`: "nó no modelo de topo", `Architect-opus`, `Reviewer-opus`, `Security-SRE-fable` (agora correto, porque o nome segue `security-sre-fable`) |
+| 2 | MEDIUM | PENDENCIAS decisão 2 se contradizia na mesma célula | Resolvido | `docs/PENDENCIAS-TECH-LEAD.md:58`: texto original tachado (`~~…~~`) e supersessão datada, cobrindo os dois IDs |
+| 3 | MEDIUM | `artifacts/coder.md` ausente | Resolvido | Artifact existe, com `files_changed`, modelo `claude-opus-5-5`, verificações e seção de retrabalho da rodada 2 |
+| 4 | LOW | Campo `model` do ponteiro registrava só a família | Resolvido | `multi-agents/HANDOFF-PROTOCOL.md:55,70` e `.claude/workflows/gbpa-task.js:42` pedem o ID exato lido no system prompt, com justificativa ("mesma granularidade da regra") |
+| 5 | LOW | "Mudou junto" do ADR-001 incompleto | Resolvido | `docs/ADR-001-modelos-por-agente.md:72` lista agentes, script (agentType + descrição do `model`), ADR-002/003/005, HANDOFF, ARCHITECTURE, as 4 tabelas, PENDENCIAS 2 e 4 e o payload de `docs/patches/` |
+| 6 | SUGGESTION | Data de revisão dos manuais | Resolvido | `multi-agents/agents/{00,01,04,12}-*.md:3` com `Última revisão: 2026-09-23` |
+
+---
+
+## Critérios do brief: evidência
 
 | # | Critério | Resultado | Evidência |
 |---|---|---|---|
-| 1 | 4 agentes com `model: claude-opus-5-5`, nome `-opus` (orchestrator sem sufixo), auto-verificação esperando Opus 5.5 | OK | `grep '^name:\|^model:' .claude/agents/*.md`: `architect-opus`, `reviewer-opus`, `security-sre-opus`, `orchestrator`; os quatro com `model: claude-opus-5-5`. Seção "Modelo designado" dos quatro diz "Se o modelo não for **Opus 5.5**, pare imediatamente" e blocker `"modelo divergente: esperado Opus 5.5, rodando em {modelo real}"` |
-| 2 | Todo `agentType` do `gbpa-task.js` existe como `name:`; smoke 15/15 | OK | 7 valores distintos (`architect-opus` ×2, `reviewer-opus` ×3, `security-sre-opus`, `planner-sonnet` ×2, `coder-sonnet`, `tester-sonnet` ×2, `spec-writer-sonnet`) — 7/7 batem com `name:`. `node scripts/test-gbpa-task.mjs` → `passou: 15/15 falhou: 0` |
-| 3 | `grep -i fable` fora de `tasks/` só acha menções históricas explícitas | **FALHA** | 9 ocorrências. 8 são históricas e datadas (ADR-001 status/contexto/seção de revisão, ADR-002 item 5, PENDENCIAS 2 e 4). **1 não é:** `docs/ADR-003-agentes-sdd-dados-ia.md:21` designa `Architect-fable`, `Reviewer-fable` e `Security-SRE-fable` no presente — issue 1 |
-| 4 | Nenhuma menção a "Opus 5" que não seja 5.5 | OK | `grep -rnE 'Opus[ -]5([^.]|$)'` e variantes `opus-5`/`opus 5` fora de `tasks/`: zero. A única menção a "Opus" sem versão é histórica ("O estudo original usou Opus", `ARCHITECTURE.md:20`) |
-| 5 | Links relativos resolvem | OK | Todos os `](caminho)` relativos dos 17 arquivos alterados testados com `-e`: 0 quebrados |
-| 6 | Nenhum `-fable` que quebre algo | OK | `grep -rn -- '-fable' .claude scripts docs/patches`: zero. Hooks, settings e patches não referenciam nomes sufixados |
-| 7 | `docs/patches/test-block-dangerous-git.mjs` (caso `sed -i em agents` trocado para `s/opus/haiku/`) | OK | `node docs/patches/test-block-dangerous-git.mjs docs/patches/block-dangerous-git.mjs` → `passou: 145/145` |
+| 1 | Orchestrator/Architect/Reviewer em `claude-opus-5-5`, nome `-opus` (orchestrator sem sufixo), auto-verificação exigindo Opus 5.5; Security-SRE em `claude-fable-5-1`, `security-sre-fable`, auto-verificação exigindo Fable 5.1 | OK | `grep '^name:\|^model:' .claude/agents/*.md`: `orchestrator`, `architect-opus` e `reviewer-opus` com `claude-opus-5-5`; `security-sre-fable` com `claude-fable-5-1`. Nos quatro, a seção "Modelo designado" compara a versão ("Se o modelo não for **Opus 5.5**" / "**Fable 5.1**"), e não mais só a família. O blocker traz a versão |
+| 2 | 7/7 `agentType` existem como `name:`; smoke 15/15 | OK | Valores distintos no script: `architect-opus`, `planner-sonnet`, `spec-writer-sonnet`, `coder-sonnet`, `tester-sonnet`, `reviewer-opus`, `security-sre-fable`. Os 7 existem em `.claude/agents/`. `node scripts/test-gbpa-task.mjs` retorna `passou: 15/15 falhou: 0`. Extra: `node docs/patches/test-block-dangerous-git.mjs docs/patches/block-dangerous-git.mjs` retorna `passou: 145/145` |
+| 3 | Toda menção a Fable fora de `tasks/` é datada/histórica ou se refere ao Security-SRE | OK | `grep -rniI fable --exclude-dir=tasks --exclude-dir=.git .`: 25 ocorrências. Todas se referem ao Security-SRE (agente, script, tabelas, ADR-002/003/005, README, praticas/00) ou são históricas e datadas (ADR-001 status/contexto/revisão, PENDENCIAS 2 e 4, ADR-003 "Fable até 2026-09-23"). Nenhuma designa Fable a Orchestrator, Architect ou Reviewer no presente |
+| 4 | Nenhum "Opus 5" que não seja 5.5 | OK | Regex para `opus 5`/`opus-5`/`opus 5.x` diferente de 5.5 no repo inteiro: só casa com o texto do próprio critério em `tasks/` (brief, run-log, coder.md, rodada 1). Fora de `tasks/`: zero. O "Opus" sem versão em `ARCHITECTURE.md:20` é o estudo histórico da Anthropic |
+| 5 | Links relativos resolvem | OK | Todos os links markdown relativos dos `.md` do diff testados com `-e`: o único quebrado era o do artifact da rodada 1, que este arquivo substitui. Este artifact não usa link markdown |
 
-### Coerência da seção "Revisão de 2026-09-23" (ADR-001) com o resto
+## Coerência com o Security-SRE em Fable 5.1
 
 | Documento | Coerente? | Observação |
 |---|---|---|
-| ADR-002 item 5 | Sim | "`fable` — desde 2026-09-23, Opus 5.5 (`claude-opus-5-5`), ver ADR-001" — histórico explícito, aponta para a revisão |
-| ADR-003 item 3 | **Não** | Primeira frase atualizada ("Fable até 2026-09-23; Opus 5.5 desde então"); segunda frase ficou no presente com os nomes antigos. Ver issue 1 |
-| ADR-005 "Consequência de trava" | Sim | Lista de `agentType` bate com o script (7/7) |
-| HANDOFF-PROTOCOL §3.2 | Sim | `model` ∈ {`opus`, `sonnet`, `haiku`} — bate com "O campo `model` do ponteiro passa a registrar `opus`" (ADR-001) e com o `POINTER.model.description` do script (`opus | sonnet | haiku`). Ver issue 4 sobre granularidade |
-| DESENVOLVIMENTO-COM-IA (tabela §modelos e tabela de riscos) | Sim | 4 linhas de topo → Opus 5.5; 3 linhas de dependência (Spec-Writer/Data/AI → "Opus 5.5") coerentes com ADR-003 corrigido |
-| ONBOARDING tabela de agentes | Sim | 4 linhas → Opus 5.5; nomes-base mantidos, como manda a seção "Nomenclatura" |
-| README requisitos | Sim | "Opus 5.5 / Sonnet 5 / Haiku 4.5" |
-| praticas/00 default Provedor/modelos | Sim | Mesmo trio, agora com versão — melhor que o anterior sem versão |
-| ARCHITECTURE nota do estudo | Sim | "papel de lead é do Opus 5.5 — ver ADR-001" |
-| PENDENCIAS decisões 2 e 4 | Parcial | 4 OK ("`reviewer-fable`, hoje `reviewer-opus`"). 2 ficou contraditória — issue 2 |
+| ADR-001: status, contexto, tabela | Sim | Status e contexto datam a troca e citam Fable 5.1 no Security-SRE. A tabela cobre só os 9 agentes originais (a nota de 2026-08-04 remete o Security-SRE ao ADR-002), então não precisava de linha nova |
+| ADR-001: "Revisão de 2026-09-23" | Sim | Título, parágrafo de abertura (gates em famílias diferentes, com racional explícito), ID fixo nos dois modelos, "Sufixo segue a família" (`security-sre-fable` mantém o nome), auto-verificação por versão |
+| ADR-001: "Custo aceito" | Sim | A lista de `agentType` bate 7/7 com o script, `security-sre-fable` incluído |
+| ADR-002 item 5 | Sim | "Fable, desde 2026-09-23 fixado em Fable 5.1 (`claude-fable-5-1`)" |
+| ADR-003 §3 e alternativa 1 | Sim | Ver issue 1 da rodada 1 |
+| ADR-005 "Consequência de trava" | Sim | Mesma lista do script |
+| DESENVOLVIMENTO-COM-IA §3 e riscos | Sim | Três nós em Opus 5.5; Security-SRE em **Fable 5.1**; AI-Engineer "Reviewer (Opus 5.5) e Security-SRE (Fable 5.1)"; linha de riscos com Reviewer (Opus 5.5) |
+| ONBOARDING | Sim | `security-sre` em Fable 5.1; os outros três em Opus 5.5 |
+| README / praticas/00 | Sim | "Opus 5.5 / Fable 5.1 / Sonnet 5 / Haiku 4.5" |
+| PENDENCIAS 2 e 4 | Sim | 2: supersessão cobre os dois IDs. 4: "`reviewer-fable`; hoje `reviewer-opus`, e `security-sre-fable` segue igual" |
+| HANDOFF §3.2 / `POINTER.model` | Sim | Exemplos `claude-opus-5-5` e `claude-sonnet-5`; a revisão do ADR-001 cita `claude-fable-5-1` |
 
 ---
 
 ## Issues
 
-### 1. HIGH — ADR-003 ainda designa agentes `-fable` no presente
-**Arquivo:** `docs/ADR-003-agentes-sdd-dados-ia.md:21`
-**Trecho atual:** "Os três novos agentes produzem trabalho **consumido e auditado por um nó Fable imediatamente a jusante**: a spec é validada pelo Architect-fable, e schema/subsistema de IA passam pelo Reviewer-fable (e Security-SRE-fable quando sensível)."
-**Por que é HIGH:** é o objetivo verificável do brief ("nenhum documento vigente do playbook ainda designa Fable como modelo de agente") e o critério 3 falhando num ADR **vigente** que, na mesma mudança, ganhou `Última revisão: 2026-09-23` — o documento afirma ter sido revisado hoje e designa três agentes que não existem mais em `.claude/agents/`. A primeira frase do item foi atualizada e a segunda não, o que deixa o parágrafo internamente contraditório.
-**Correção esperada:** trocar a segunda frase para o modelo de topo atual, no mesmo padrão já usado na alternativa 1 do mesmo ADR (`Architect-opus`): "consumido e auditado por um nó no modelo de topo imediatamente a jusante: a spec é validada pelo Architect-opus, e schema/subsistema de IA passam pelo Reviewer-opus (e Security-SRE-opus quando sensível)". Depois, re-rodar `grep -rni fable --exclude-dir=tasks --exclude-dir=.git .` e confirmar que só sobram as 8 menções datadas.
+Nenhum bloqueante. Uma observação, que não bloqueia e fica a critério do Tech Lead:
 
-### 2. MEDIUM — PENDENCIAS decisão 2 contém duas orientações contraditórias na mesma célula
-**Arquivo:** `docs/PENDENCIAS-TECH-LEAD.md:58`
-**Trecho atual:** "*Superado em 2026-09-23: o topo passou a Opus 5.5, fixado pelo ID completo `claude-opus-5-5` (ADR-001).* Válido no Claude Code atual; a auto-verificação de modelo nos agentes cobre o fallback silencioso. Não precisa trocar pelo id completo"
-**Problema:** a última frase ("Não precisa trocar pelo id completo") segue no presente e contradiz a frase anterior. Quem lê a tabela de decisões como fonte (é o propósito dela) fica sem saber qual das duas vale.
-**Correção esperada:** colocar a decisão original no passado e datada, ex.: "*Superado em 2026-09-23 … (ADR-001).* Decisão original (2026-08-31): o alias era válido e a auto-verificação cobria o fallback silencioso; não se trocava pelo id completo." Ou tachar (`~~…~~`) o trecho superado.
-
-### 3. MEDIUM — `artifacts/coder.md` ausente; run-log registra coder `completed` sem artifact
-**Arquivo:** `tasks/2026-09-23_modelo-topo-opus-5-5/artifacts/` (vazio antes deste review); `run-log.md` linhas 9–10
-**Problema:** HANDOFF-PROTOCOL (linha 48 e checklist "Cada subagente grava em `artifacts/{agente}.md`") e `.claude/agents/coder.md` §Saída exigem o artifact com `files_changed` e o `model` em que rodou. O run-log diz "17 arquivos; … smoke 15/15; suíte do hook 145/145; links 0 quebrados", mas não há artifact nem evidência do modelo do coder. Este review usou `git diff` como fonte; a rastreabilidade da task (evidência ISO citada no ADR-005) fica sem o elo do coder.
-**Correção esperada:** Orchestrator/coder gravar `artifacts/coder.md` com `files_changed` (os 17 arquivos), o modelo em que rodou e o resumo das verificações, antes de marcar `done`. Roteio para o Orchestrator — não é defeito do diff.
-
-### 4. LOW — Campo `model` do ponteiro registra só a família, mas a decisão passou a depender da versão
-**Arquivos:** `multi-agents/HANDOFF-PROTOCOL.md:70`; `.claude/workflows/gbpa-task.js:42`
-**Problema:** a revisão do ADR-001 justifica fixar o ID completo porque "o alias `opus` seguiria automaticamente a próxima versão" e a auto-verificação bloqueia "outra versão ou família". Mas a camada 3 de visibilidade (ponteiro/run-log, a que "fica como evidência") só grava `opus` — um subagente que rodasse num Opus futuro por override registraria o mesmo valor que um em 5.5. A camada de evidência ficou menos granular do que a regra que ela deveria evidenciar.
-**Correção esperada (melhoria, não bloqueia):** aceitar no `model` do ponteiro o ID exato (`claude-opus-5-5`) ou família+versão (`opus-5.5`), e refletir isso na descrição do `POINTER.model` e no §3.2. Se preferir manter a família, registrar no ADR-001 que a evidência de versão fica só no run-log do Orchestrator (item 2 da seção "Modelo designado" dele).
-
-### 5. LOW — Bullet "Mudou junto" da revisão do ADR-001 está incompleto
-**Arquivo:** `docs/ADR-001-modelos-por-agente.md:71`
-**Problema:** lista `name:`/`model:` dos 4 agentes, `agentType` do script e as tabelas de 4 docs. O diff também alterou HANDOFF-PROTOCOL (valores de `model`), ARCHITECTURE, ADR-002/003/005, PENDENCIAS 2 e 4 e `docs/patches/test-block-dangerous-git.mjs`. Esse bullet é o mapa da próxima troca de modelo (o ADR diz que a revisão trimestral "é o momento de verificar isso"); faltando itens, a próxima troca repete o esquecimento que gerou o issue 1.
-**Correção esperada:** completar a lista com os arquivos acima.
-
-### 6. SUGGESTION — Cabeçalho dos manuais pede revisão "a cada mudança de modelo", e a data não foi tocada
-**Arquivos:** `multi-agents/agents/04-reviewer.md:3` (2026-08-04), `12-security-sre.md:3` (2026-08-31), `00-orchestrator.md:3` e `01-architect.md:3` (2026-09-15)
-**Problema:** os manuais não nomeiam modelo (`grep -iE 'opus|sonnet|haiku' multi-agents/agents/` → zero), então não há conteúdo a corrigir; mas o próprio cabeçalho estabelece a regra "Revisão: a cada mudança de escopo ou de modelo do agente (ADR-001)". Ou se bumpa `Última revisão` com nota "sem alteração de conteúdo — troca de modelo (ADR-001, 2026-09-23)", ou se ajusta a regra do cabeçalho para "a cada mudança de escopo" (o modelo vive no frontmatter e no ADR). Fora do escopo do brief; fica como sugestão para o Tech Lead.
+### 1. SUGGESTION: sufixo de janela de contexto no ID lido do system prompt
+**Arquivo:** `multi-agents/HANDOFF-PROTOCOL.md:70`
+**Observação:** o protocolo manda registrar o "ID exato lido no próprio system prompt". Esta própria sessão mostra `claude-opus-5-5[1m]`, e não `claude-opus-5-5`. A auto-verificação compara pelo nome ("Opus 5.5"), então não há falso bloqueio. Mas quem auditar o run-log comparando strings com o frontmatter pode ler `[1m]` como divergência.
+**Correção sugerida:** acrescentar em §3.2 que sufixos de janela de contexto (ex.: `[1m]`) fazem parte do ID registrado e não são divergência de versão.
 
 ---
 
 ## O que está bem feito
 
-- Fixar o ID completo em vez do alias, com o racional explícito no ADR ("o upgrade seguinte é uma revisão explícita deste ADR, não um efeito colateral") — é a decisão certa para um gate, e o bullet "Sessões abertas" antecipa exatamente o problema desta sessão.
-- Nomes-base preservados em todos os arquivos de agente e no `artifact_path`; nenhum hook, `settings` ou patch referencia nome sufixado — a separação prevista na seção "Nomenclatura" segurou.
-- ADR-002 e PENDENCIAS 4 registram o histórico sem apagar o que valia antes (auditável).
-- Coerência forte entre ADR-001 → HANDOFF §3.2 → `POINTER.model` do script → texto de auto-verificação dos 4 agentes: mesma família, mesmo blocker, mesmo formato.
-- Caso de teste do patch trocado de `s/fable/haiku/` para `s/opus/haiku/` — detalhe que mostra atenção ao que o teste realmente cobre.
+- A reversão do Security-SRE veio com racional, e não só como ajuste de config: "os dois gates passam a rodar em famílias diferentes" dá motivo técnico à escolha do Tech Lead e fica registrado no ADR.
+- A auto-verificação passou de família para versão nos quatro agentes de topo, alinhada com a fixação do ID. Sem isso, fixar o ID não teria evidência.
+- A supersessão em PENDENCIAS 2 foi tachada e datada, sem apagar o registro original.
+- O `coder.md` separa a entrega original do retrabalho da rodada 2 e atribui o ajuste de escopo ao Tech Lead.
 
 ## Segurança (escopo do diff)
 
-Nenhum segredo, credencial ou superfície nova. A mudança altera **qual** modelo ocupa os gates, não as regras dos gates. Achado sistêmico para rotear ao Security-SRE: nenhum. Observação para o Tech Lead: `.claude/agents/` ainda não é zona protegida (patch pendente) — esta task o editou legitimamente por pedido direto, mas até o patch entrar, uma sessão de agente pode rebaixar o `model:` de um gate sem trava técnica; a auto-verificação é a única defesa.
+Nenhum segredo, credencial ou superfície nova. A mudança troca o modelo dos gates, não as regras deles. Nenhum achado sistêmico para rotear ao Security-SRE. Continua valendo a observação da rodada 1: `.claude/agents/` ainda não é zona protegida (patch pendente), então a auto-verificação segue sendo a única defesa contra rebaixamento de `model:`.
 
 ## Skill Candidates
 
-Nenhum — procedimento de troca de modelo já está documentado no ADR-001 ("Custo aceito" + "Mudou junto"); o issue 5 é o que falta para ele ser reutilizável.
+Nenhum.
 
 ## Próximo passo
 
-`coder` corrige o issue 1 (obrigatório) e, idealmente, 2 e 5 na mesma rodada; Orchestrator resolve o issue 3. Re-review pode ser só do `git diff` de `docs/ADR-003-agentes-sdd-dados-ia.md`, `docs/PENDENCIAS-TECH-LEAD.md` e `docs/ADR-001-modelos-por-agente.md` mais o `grep -rni fable` final.
+Orchestrator pode marcar `done`. Lembrete do próprio ADR-001 ("Sessões abertas"): reiniciar as sessões para que `security-sre-fable` em `claude-fable-5-1` e os nomes `-opus` passem a valer.

@@ -12,5 +12,9 @@ Append-only. Uma linha por evento.
 | 2026-09-24 01:00 | orchestrator | rerouted     | -      | Tech Lead, durante o review: "mantém o Fable 5.1 somente no agente de sec" — escopo ajustado no brief |
 | 2026-09-24 01:10 | coder        | rerouted     | -      | rodada 2: achados do reviewer + Security-SRE em `claude-fable-5-1` (artifacts/coder.md) |
 | 2026-09-24 01:10 | coder        | needs_review | -      | re-review com `reviewer-opus` (já carregado na sessão) |
+| 2026-09-24 01:12 | reviewer     | blocked      | -      | execução interrompida por interrupção do usuário na sessão principal, antes de qualquer veredito — relançada |
+| 2026-09-24 01:25 | reviewer     | completed    | APROVADO | artifacts/reviewer.md (r2) — rodou em `claude-opus-5-5[1m]`; 6 achados da r1 fechados; 1 SUGGESTION |
+| 2026-09-24 01:30 | coder        | completed    | -      | SUGGESTION aplicada: sufixo `[1m]` não é divergência (HANDOFF §3.2, ADR-001) |
+| 2026-09-24 01:30 | orchestrator | done         | done   | reviewer APROVADO; merge autorizado pelo Tech Lead ("se tiver tudo ok, pode subir") |
 
 <!-- Eventos: started, completed, blocked, needs_review, rerouted, done -->
