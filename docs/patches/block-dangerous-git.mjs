@@ -36,14 +36,11 @@ const executa = (texto) => {
   const limpo = texto.replace(/['"]/g, "");
   const palavras = limpo.split(/[\s;&|(){}`<>]+/).filter((w) => w !== "");
   if (palavras.some((w) => EXECUTOR.test(w.replace(/^.*\//, "")) || SCRIPT.test(w))) return true;
-  // Caminho em posição de comando é execução por caminho (`/tmp/s`, `$PWD/s`, `exec ~/s`),
-  // seja qual for o comando que gravou o arquivo (`>`, `tee`, `dd of=`, `install`…).
-  if (/(?:^|[\n;&|(])\s*(?:(?:exec|env|nohup|sudo|time|command)\s+(?:-\S+\s+)*)*[^\s;&|()<>=]*\/[^\s;&|()<>]*/.test(limpo)) return true;
-  // Arquivo gravado por redirect que reaparece no comando pode estar sendo executado por
-  // caminho (`cat > /tmp/s <<EOF … ; /tmp/s`, `$PWD/s`): na dúvida, o corpo é código.
-  const nome = (w) => w.replace(/^.*\//, "");
-  const alvos = [...limpo.matchAll(/>{1,2}\s*([^\s;&|<>()`]+)/g)].map((m) => nome(m[1]));
-  return alvos.some((a) => palavras.filter((w) => nome(w) === a).length >= 2);
+  // Caminho em posição de comando é execução por caminho (`/tmp/s`, `$PWD/s`, `exec ~/s`,
+  // `sudo -u x /tmp/s`, `timeout 5 /tmp/s`), seja qual for o comando que gravou o arquivo
+  // (`>`, `tee`, `dd of=`, `install`…). Depois do wrapper, qualquer argumento sem `/` é dele.
+  // Só a posição de comando conta: `git add docs/x.md` depois de gravar o doc não é execução.
+  return /(?:^|[\n;&|(])\s*(?:(?:exec|env|nohup|sudo|doas|time|timeout|nice|ionice|command)\s+(?:[^\s\/;&|()<>]+\s+)*)*[^\s;&|()<>=]*\/[^\s;&|()<>]*/.test(limpo);
 };
 let execHeredoc = false;
 const stripHeredocs = (text) => {

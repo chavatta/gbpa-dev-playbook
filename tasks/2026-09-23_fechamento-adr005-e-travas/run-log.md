@@ -23,5 +23,8 @@ Append-only. Uma linha por evento.
 | 2026-09-23 23:45 | security-sre | completed    | REPROVADO | artifacts/security-sre.md (r3) — r2 fechado; residual: grava por tee/dd e roda por caminho |
 | 2026-09-23 23:50 | coder        | rerouted     | -      | caminho em posição de comando conta como execução — fecha a classe, não só tee/dd; suíte 142/142 (produção 110/142) |
 | 2026-09-23 23:50 | coder        | needs_review | -      | re-auditoria do security-sre restrita ao residual |
+| 2026-09-24 00:05 | security-sre | completed    | APROVADO | artifacts/security-sre.md (r4) — residual fechado; 2 MEDIUM não-bloqueantes em backlog, prazo "antes de o Tech Lead copiar o lote" |
+| 2026-09-24 00:10 | coder        | completed    | -      | os 2 MEDIUM aplicados no próprio lote — suíte 145/145 (produção 112/145), 14/14, 22/22, smoke 15/15 |
+| 2026-09-24 00:10 | orchestrator | done         | done   | reviewer APROVADO (r2) e security-sre APROVADO (r4). As rodadas 3–4 só tocaram o hook proposto, a suíte e os números — escopo do security-sre —, mais o MEDIUM do próprio reviewer. Aplicar os patches continua sendo do Tech Lead (PENDENCIAS item 2) |
 
 <!-- Eventos: started, completed, blocked, needs_review, rerouted, done -->
