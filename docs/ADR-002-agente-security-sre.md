@@ -4,13 +4,14 @@
 **Data:** 2026-07-31
 **Decisores:** Tech Lead
 **Revisão:** semestral
+**Última revisão:** 2026-09-23
 **Relacionado:** complementa ADR-001 (modelos por agente) — não o supersede.
 
 ## Contexto
 
 A revisão de escopo dos 9 agentes mostrou que a responsabilidade de segurança estava **diluída em três agentes sem dono sistêmico**: o Reviewer cobre OWASP no diff, o Coder evita secrets no código, o DevOps cita scanning e least privilege como domínio. Ninguém era dono de: threat modeling, auditoria de supply chain, segurança do pipeline (4 camadas DevSecOps), postura de runtime e prontidão de produção (SLOs, incident readiness).
 
-O `multi-agents/ARCHITECTURE.md` (atualização 2026-06-29) já previa o agente **Security-SRE** (nº 12), mas o manual e a definição operacional nunca foram criados. Os agentes 09–11 (Spec-Writer, Data-Engineer, AI-Engineer) previstos na mesma atualização permanecem como backlog.
+O `multi-agents/ARCHITECTURE.md` (atualização 2026-06-29) já previa o agente **Security-SRE** (nº 12), mas o manual e a definição operacional nunca foram criados. Os agentes 09–11 (Spec-Writer, Data-Engineer, AI-Engineer) previstos na mesma atualização permanecem como backlog. *[Superado — ADR-003]*
 
 ## Decisão
 

@@ -3,7 +3,7 @@
 > Guia de entrada para analistas usando o fluxo multi-agent do playbook.
 > Leitura obrigatória antes: [DESENVOLVIMENTO-COM-IA.md](DESENVOLVIMENTO-COM-IA.md) (o porquê de tudo isso).
 >
-> **Dono:** Tech Lead · **Revisão:** semestral · **Última revisão:** 2026-08-31
+> **Dono:** Tech Lead · **Revisão:** semestral · **Última revisão:** 2026-09-23
 
 ---
 
@@ -25,9 +25,9 @@ Um padrão de desenvolvimento com IA baseado em **um time de agentes especializa
 2. Instale o [Node.js](https://nodejs.org) ≥ 18 (`brew install node` / `winget install OpenJS.NodeJS.LTS`) — os hooks são scripts Node e rodam idênticos em macOS, Linux e Windows, sem configuração por sistema.
 3. Clone o repo do projeto (que já contém a pasta `.claude/` deste playbook).
 4. Abra o Claude Code **na raiz do repo** — os agentes, travas e hooks carregam automaticamente no startup (os hooks usam caminho relativo; abrir fora da raiz os desativa).
-5. **(Tech Lead, uma vez por repo)** Ative **branch protection** em `main`/`master` no GitHub: PR obrigatório, ≥1 aprovação, status checks verdes, force push e deleção bloqueados (Settings → Branches, ou `gh api`). Os hooks locais do playbook são a segunda linha de defesa — a trava que não se contorna é a do servidor, e ela não vem no clone.
+5. **(Tech Lead, uma vez por repo)** Ative **branch protection** em `main`/`master` no GitHub: PR obrigatório, ≥1 aprovação, status checks verdes onde houver CI, force push e deleção bloqueados (Settings → Branches, ou `gh api`). Os hooks locais do playbook são a segunda linha de defesa — a trava que não se contorna é a do servidor, e ela não vem no clone.
 
-   **Repo com um só mantenedor:** o GitHub não permite aprovar o próprio PR, então exigir 1 aprovação faria todo merge depender do bypass de admin — e trava que só se cumpre por bypass ensina a equipe a usar bypass. Nesse caso, configure **0 aprovações mantendo o PR obrigatório**: nada entra em `main` por push direto e o histórico de revisão continua registrado. Suba para ≥1 e inclua os administradores assim que houver um segundo revisor. É configuração de transição, e revê-la é parte de integrar alguém novo ao repo.
+   **Repo com um só mantenedor:** o GitHub não permite aprovar o próprio PR, então exigir 1 aprovação faria todo merge depender do bypass de admin — e trava que só se cumpre por bypass ensina a equipe a usar bypass. Nesse caso, configure **0 aprovações mantendo o PR obrigatório**: nada entra em `main` por push direto e o histórico de revisão continua registrado. Suba para **1 aprovação + `enforce_admins`** assim que houver um segundo revisor. É configuração de transição — formalizada em `GOVERNANCE.md` §2.6 (patch pendente em `docs/patches/`) — e a decisão de quando subir se registra em `docs/PENDENCIAS-TECH-LEAD.md`.
 
 6. **(uma vez por projeto)** Preencha [`praticas/00-stack-e-defaults-gbpa.md`](praticas/00-stack-e-defaults-gbpa.md) com os defaults **deste** projeto: cloud, região, linguagens e versões, banco, CI, secrets. O 00 é **por projeto, não global** — dois repos da GBPA podem ter stacks diferentes, e cada um carrega o seu. Preencher o que já estiver decidido; não trave o início do projeto tentando fechar todos os campos.
 
@@ -35,7 +35,7 @@ Um padrão de desenvolvimento com IA baseado em **um time de agentes especializa
 
 Os campos marcados 🔒 no 00 escalam ao **Tech Lead**, não ao Architect — custo recorrente, contrato com terceiro, risco jurídico ou de dados pessoais não são decisão de projeto.
 
-Para adotar o playbook em um repo que ainda não o tem: copie `.claude/`, `multi-agents/`, `praticas/`, `tasks/_TEMPLATE/`, `GOVERNANCE.md`, `DESENVOLVIMENTO-COM-IA.md` e este arquivo para a raiz do repo — e preencha o `praticas/00` do projeto novo (passo 6), que não vem preenchido do repo de origem.
+Para adotar o playbook em um repo que ainda não o tem: copie `.claude/`, `multi-agents/`, `praticas/`, `scripts/`, `tasks/_TEMPLATE/` (não as tasks deste próprio playbook), `docs/`, `GOVERNANCE.md`, `README.md`, `DESENVOLVIMENTO-COM-IA.md` e este arquivo para a raiz do repo — detalhe completo em [README.md](README.md#adotando-em-um-repositório). No repo novo, `docs/PENDENCIAS-TECH-LEAD.md` e `docs/patches/` nascem vazios (são o backlog deste playbook) e `docs/COMPETENCIA.md` fica no repo do playbook. Preencha o `praticas/00` do projeto novo (passo 6), que não vem preenchido do repo de origem.
 
 ---
 
@@ -63,13 +63,13 @@ Por que esses modelos: [docs/ADR-001-modelos-por-agente.md](docs/ADR-001-modelos
 
 ## 4. Como trabalhar no dia a dia
 
-### Peça pelo orchestrator
+### Peça pelo /task
 
-Para qualquer task não-trivial, invoque o fluxo — por exemplo:
+Para qualquer task não-trivial, dispare o fluxo pela skill — por exemplo:
 
-> "Use o orchestrator: implementar endpoint de exportação CSV no serviço de relatórios, com paginação."
+> `/task implementar endpoint de exportação CSV no serviço de relatórios, com paginação`
 
-O orchestrator classifica a complexidade e monta o fluxo:
+Sob o ADR-005, `/task` é o ponto de entrada: o script `.claude/workflows/gbpa-task.js` roda o recon (o Architect em modo levantamento) e é ele quem classifica a complexidade real antes de rotear. O fluxo manual abaixo — pedir pelo orchestrator em prosa — continua como fallback para quando o Workflow estiver indisponível (Dynamic workflows precisa estar habilitado em `/config`, e exige plano pago); use-o e registre o motivo no `run-log.md`.
 
 | Complexidade | Fluxo |
 |---|---|
@@ -123,7 +123,7 @@ Falso positivo é bug da trava, e trata-se como bug: reproduza o comando exato, 
 
 ## 6. Erros comuns de quem está começando
 
-- **Pedir código direto ao Claude, fora do fluxo** → sem review, sem rastro. Use o orchestrator.
+- **Pedir código direto ao Claude, fora do fluxo** → sem review, sem rastro. Use `/task` (ou o orchestrator em prosa, só se o Workflow estiver indisponível).
 - **Aceitar diff gigante** → peça para fatiar; PRs de ~200–400 linhas.
 - **Confiar no "está pronto" da IA** → pronto é: critérios atendidos + Reviewer APROVADO + você leu o diff.
 - **Editar o mesmo arquivo que um agente está editando** → um dono por arquivo ([GOVERNANCE.md](GOVERNANCE.md) §4).

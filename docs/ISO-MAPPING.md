@@ -4,7 +4,7 @@
 >
 > Este é o documento que se entrega ao auditor (interno ou de certificação). Ele **não** é um SGSI nem um SGIA — ver `docs/ADR-004-conformidade-iso.md` para o enquadramento e as fronteiras.
 >
-> **Dono:** Tech Lead · **Revisão:** semestral, ou a cada mudança em `GOVERNANCE.md` · **Última revisão:** 2026-08-31
+> **Dono:** Tech Lead · **Revisão:** semestral, ou a cada mudança em `GOVERNANCE.md` · **Última revisão:** 2026-09-23
 
 ---
 
@@ -61,12 +61,12 @@ Escopo desta tabela: os controles com relação direta com o ciclo de vida de de
 | Controle | Título (resumo) | Status | Evidência / observação |
 |---|---|---|---|
 | **A.8.2** | Direitos de acesso privilegiado | OK | Least privilege por agente (`tools:` no frontmatter); agente não altera as próprias travas |
-| **A.8.4** | Acesso ao código-fonte | OK | `GOVERNANCE.md` §2.6 (branch protection) + `permissions.deny` sobre `.claude/` e `GOVERNANCE.md` |
+| **A.8.4** | Acesso ao código-fonte | OK | `GOVERNANCE.md` §2.6 (branch protection) + `permissions.deny` sobre `.claude/settings.json`, `.claude/hooks/` e `GOVERNANCE.md`; `.claude/workflows/` e `.claude/agents/` entram na mesma zona protegida pelo patch pendente em `docs/patches/settings.proposto.json` |
 | **A.8.7** | Proteção contra malware | ORG | Endpoint corporativo |
 | **A.8.8** | Gestão de vulnerabilidades técnicas | OK | `praticas/06` camadas 1–3 (SAST, SCA, IaC, imagem) + gate do Security-SRE; regra anti-slopsquatting para dependência sugerida por IA |
 | **A.8.9** | Gestão de configuração | OK | `.claude/settings.json` e `.claude/hooks/` versionados e protegidos contra escrita pelos agentes |
 | **A.8.10** | Exclusão de informação | PARCIAL | Retenção/expurgo de dado pessoal em `praticas/06` (LGPD item 4); retenção de **evidência do playbook** definida em `docs/EVIDENCIAS-E-METRICAS.md` |
-| **A.8.12** | Prevenção de vazamento de dados | OK | `praticas/10` §2–§3 — regra de classe por contexto de IA; `permissions.deny` de segredos |
+| **A.8.12** | Prevenção de vazamento de dados | OK | `praticas/10` §2–§3 — regra de classe por contexto de IA; `gitleaks` (hook local + CI) e `scripts/check-pii.sh` sobre fixtures/seeds (`praticas/06`); negar leitura de `.env`/`.env.*` a agentes é patch pendente em `docs/patches/settings.proposto.json` |
 | **A.8.15** | Registro (logging) | OK | `tasks/{id}/run-log.md` append-only + `artifacts/*.md` por agente; retenção em `docs/EVIDENCIAS-E-METRICAS.md` |
 | **A.8.16** | Atividades de monitoramento | PARCIAL | Métricas do playbook definidas em `docs/EVIDENCIAS-E-METRICAS.md`; monitoramento de runtime é `praticas/06` camada 4 |
 | **A.8.19** | Software em sistemas operacionais | ORG | — |
@@ -113,7 +113,7 @@ A GBPA tem **duas relações distintas** com IA, e elas caem em partes diferente
 | **A.6.1.3** | Processos de design e desenvolvimento responsáveis | a+b | OK | `GOVERNANCE.md` §3 — fluxo multi-agent obrigatório com gates |
 | **A.6.2.2** | Requisitos e especificação do sistema de IA | b | OK | Spec-Writer (`docs/ADR-003`) — critérios Given/When/Then e NFRs mensuráveis antes do código |
 | **A.6.2.3** | Documentação de design e desenvolvimento | a+b | OK | ADRs em `docs/` + artifacts por agente |
-| **A.6.2.4** | Verificação e validação | a+b | OK | Gate do Reviewer verificado por `check-reviewer-gate.mjs`; evals obrigatórios do AI-Engineer |
+| **A.6.2.4** | Verificação e validação | a+b | OK | Gate do Reviewer verificado por `check-reviewer-gate.mjs` (segunda linha); no fluxo por script (ADR-005) a primeira linha é o próprio código — `gbpa-task.js` só devolve `done` após veredito validado por schema; piloto do script ainda pendente (`docs/PENDENCIAS-TECH-LEAD.md`). Evals obrigatórios do AI-Engineer |
 | **A.6.2.5** | Implantação | b | PARCIAL | Checklist pré-deploy do DevOps; depende de `praticas/00` |
 | **A.6.2.6** | Operação e monitoramento | b | PARCIAL | `praticas/06` camada 4; monitoramento específico de LLM (drift, custo, taxa de recusa) é do AI-Engineer por projeto |
 | **A.6.2.7** | Documentação técnica | a+b | OK | Documenter, após aprovação do Reviewer |

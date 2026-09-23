@@ -2,7 +2,7 @@
 
 > Based on research from Anthropic Engineering, AgentForge, AgentMesh, and academic literature on LLM-based multi-agent systems (2025–2026).
 >
-> **Dono:** Tech Lead · **Revisão:** semestral · **Última revisão:** 2026-08-31
+> **Dono:** Tech Lead · **Revisão:** semestral · **Última revisão:** 2026-09-23
 
 ---
 
@@ -57,7 +57,7 @@ Agentes únicos têm limites: contexto limitado, raciocínio sequencial, e tend�
 
 ## Os 13 Agentes (1 Orchestrator + 12 Especialistas)
 
-> **Atualizado em 2026-06-29** com base no estudo `03-TECHNOLOGY/Stacks-Arquiteturas-Estado-Da-Arte-2026.md`. Os 8 originais foram revisados e ancorados nos defaults de stack 2026; 4 novos (Spec-Writer, Data-Engineer, AI-Engineer, Security-SRE) cobrem as lacunas que o estudo revelou (SDD, camada de dados, sistemas de IA/RAG, segurança aprofundada + SRE).
+> **Atualizado em 2026-06-29** com base no estudo `03-TECHNOLOGY/Stacks-Arquiteturas-Estado-Da-Arte-2026.md` (vault externo, fora deste repo). Os 8 originais foram revisados e ancorados nos defaults de stack 2026; 4 novos (Spec-Writer, Data-Engineer, AI-Engineer, Security-SRE) cobrem as lacunas que o estudo revelou (SDD, camada de dados, sistemas de IA/RAG, segurança aprofundada + SRE).
 
 | # | Agente | Responsabilidade Principal | Quando Ativar |
 |---|--------|--------------------------|---------------|
@@ -329,6 +329,6 @@ projeto/
 - [LLM-Based Multi-Agent Systems for Software Engineering — ACM](https://dl.acm.org/doi/10.1145/3712003)
 - [Designing LLM-based Multi-Agent Systems — arXiv](https://arxiv.org/pdf/2511.08475)
 - [Choosing the Right Multi-Agent Architecture — LangChain](https://blog.langchain.com/choosing-the-right-multi-agent-architecture/)
-- `03-TECHNOLOGY/Stacks-Arquiteturas-Estado-Da-Arte-2026.md` — estudo interno que ancora os defaults de stack 2026 e motivou os 4 novos agentes.
+- `03-TECHNOLOGY/Stacks-Arquiteturas-Estado-Da-Arte-2026.md` (vault externo, fora deste repo) — estudo interno que ancora os defaults de stack 2026 e motivou os 4 novos agentes.
 
 

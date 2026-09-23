@@ -1,10 +1,11 @@
 # ADR-005 — Orquestração do fluxo de desenvolvimento por script nativo do Claude Code
 
-**Status:** Aceito
+**Status:** Aceito — vigência plena depende do patch do GOVERNANCE (`docs/patches/GOVERNANCE.proposto.md`) e do piloto
 **Data:** 2026-09-15
 **Decisores:** Tech Lead
 **Revisão:** trimestral (junto com ADR-001), ou imediatamente se a Anthropic mudar as regras de uso da assinatura
-**Relacionado:** implementa `docs/PROPOSTA-PIPELINE-FLUXO.md`; altera `multi-agents/HANDOFF-PROTOCOL.md` §3.2/§4/§6 e `ARCHITECTURE.md`; adiciona uma linha em `praticas/00` (IA/LLM). Não supersede nenhum ADR. O `GOVERNANCE.md` §3.1/§6 é ajustado por patch do Tech Lead (`docs/patches/`).
+**Última revisão:** 2026-09-23
+**Relacionado:** implementa `docs/PROPOSTA-PIPELINE-FLUXO.md`; altera `multi-agents/HANDOFF-PROTOCOL.md` §3.2/§4/§6 e `ARCHITECTURE.md`; adiciona uma linha em `praticas/00` (IA/LLM). Não supersede nenhum ADR. O `GOVERNANCE.md` §3.1/§6 é ajustado por patch do Tech Lead (`docs/patches/GOVERNANCE.proposto.md`).
 
 ## Contexto
 
@@ -36,6 +37,8 @@ Duas restrições delimitaram a solução:
 ## Consequências
 
 **Positivas:** as quatro falhas estruturais viram propriedades do script; o gate de review deixa de ser declaratório (o `done` só é retornado por código após veredito validado); observabilidade por execução (`/workflows` e `events` no run-log) em vez de grep trimestral; hooks, `permissions.deny`, agentes e evidência ISO permanecem intactos; tudo dentro da assinatura.
+
+**Consequência de trava:** como é o script quem devolve `done`, ele próprio vira alvo a proteger. `.claude/workflows/` e `.claude/agents/` entram na zona protegida contra escrita por agentes (`GOVERNANCE.md` §6.2, patch pendente em `docs/patches/settings.proposto.json`) — sem isso, um agente poderia editar o roteamento ou o próprio veredito que o valida. O script (`gbpa-task.js`) hard-codeia os `agentType` sufixados (`architect-fable`, `planner-sonnet`, `spec-writer-sonnet`, `coder-sonnet`, `tester-sonnet`, `reviewer-fable`, `security-sre-fable`); qualquer troca de modelo (ADR-001) precisa atualizar esses nomes no script na mesma mudança, não só o frontmatter do agente.
 
 **Negativas / custos:** fan-out consome quota da assinatura mais rápido — começar com voto único em task normal e medir; o `00-orchestrator.md` (246 linhas) passa a ser explicação de ~150 linhas de JS, o que é menos legível para auditor e dev novo; `Workflow` exige plano pago e opt-in do usuário a cada run (ou "não perguntar de novo" por projeto); o script não escreve em disco — o run-log continua dependendo da sessão principal.
 

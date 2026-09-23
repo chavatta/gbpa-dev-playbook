@@ -6,7 +6,7 @@
 >
 > Este documento é o método de trabalho do agente **Security-SRE** (`multi-agents/agents/12-security-sre.md`) e a referência de segurança do DevOps e do Reviewer.
 >
-> **Dono:** Tech Lead · **Revisão:** trimestral · **Última revisão:** 2026-08-31
+> **Dono:** Tech Lead · **Revisão:** trimestral · **Última revisão:** 2026-09-23
 
 ---
 
@@ -34,13 +34,13 @@ O script está em [`scripts/check-pii.sh`](../scripts/check-pii.sh) — um passo
 bash scripts/check-pii.sh
 ```
 
-Casa CPF, CNPJ e celular brasileiro **formatados** (`123.456.789-00`, `12.345.678/0001-99`, `(11) 98765-4321`) em `fixtures/`, `seeds/`, `factories/`, `testdata/`, `__fixtures__/` e arquivos `*.test.*`, `*.spec.*`, `*.seed.*`. Sai `1` se achar, `0` se não — **inclusive quando o repo não tem nenhuma dessas pastas**, que é o caso comum e não é erro.
+Casa CPF e CNPJ **formatados** (`123.456.789-00`, `12.345.678/0001-99`) e celular brasileiro formatado ou cru (`(11) 98765-4321`, `11987654321`), sempre **delimitados por não-dígito**, em `fixtures/`, `seeds/`, `factories/`, `testdata/`, `__fixtures__/` e arquivos `*.test.*`, `*.spec.*`, `*.seed.*`. Sai `1` se achar, `0` se não — **inclusive quando o repo não tem nenhuma dessas pastas**, que é o caso comum e não é erro.
 
 Ele usa `find` + `grep` em vez de `ripgrep` de propósito: o runner de CI pode não ter `rg` instalado, e a versão com `rg` erra fácil no código de saída — `rg` devolve `2` quando nenhum arquivo casa o glob, o que um `rg ... && exit 1` ingênuo ignora e um `set -e` transforma em falha sem motivo.
 
 **Limites, que precisam ser ditos:**
 
-- **CPF e CNPJ só são pegos formatados.** Um CPF cru (`12345678901`) escapa, de propósito: casar 11 dígitos seguidos pegaria timestamp, ID e hash em qualquer repo de código, e um check que grita falso positivo é um check que alguém desliga. A pontuação é o que separa "provavelmente um CPF" de "onze dígitos". O padrão de celular é mais frouxo e pega também o número cru de 11 dígitos — o que, em troca, pode gerar falso positivo em outro número de 11 dígitos; calibre por projeto se incomodar. Cobrir CPF/CNPJ crus exige a mesma calibração e não é o default.
+- **CPF e CNPJ só são pegos formatados.** Um CPF cru (`12345678901`) escapa, de propósito: casar 11 dígitos seguidos pegaria timestamp, ID e hash em qualquer repo de código, e um check que grita falso positivo é um check que alguém desliga. A pontuação é o que separa "provavelmente um CPF" de "onze dígitos". O padrão de celular é mais frouxo e pega também o número cru de 11 dígitos com 9 na terceira posição — delimitado, para não casar dentro de timestamp em milissegundos, ID longo ou hash numérico; ainda pode gerar falso positivo num número isolado de exatamente 11 dígitos, e aí calibre por projeto. Cobrir CPF/CNPJ crus exige a mesma calibração e não é o default.
 - **Não distingue sintético de real** — CPF fake e verdadeiro têm a mesma forma. Nenhuma ferramenta resolve isso; é o motivo de o controle forte ser não ter dado real na máquina, não o scanner.
 - **Não cobre e-mail e nome**, que dariam falso positivo demais para valer.
 - **Não olha o prompt**, que é o vetor principal e continua sendo decisão humana (`praticas/10` §1).

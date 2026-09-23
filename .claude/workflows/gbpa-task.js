@@ -27,6 +27,11 @@ const DIR = `tasks/${T}`
 const MAX_ROUNDS = 2            // HANDOFF-PROTOCOL §4.7: 2 reprovações ⇒ o problema não é implementação
 const events = []               // a sessão principal anexa isto ao run-log.md
 const note = (agent, status, ref) => events.push({ agent, status, ref: ref || '-' })
+// Sensibilidade efetiva: brief OU recon (decisão 2). Vai em TODO retorno, não só no `done`:
+// quando o recon eleva, a sessão principal grava `Sensível: sim` no brief — é o brief que o
+// hook check-reviewer-gate.mjs e a métrica M2 leem.
+let sensitive = args.sensitive === true
+const result = (o) => ({ task_id: T, sensitive, ...o, events })
 
 // ---------- contratos (HANDOFF-PROTOCOL §3.2 como schema) ----------
 const POINTER = {
@@ -125,7 +130,7 @@ Grave o levantamento em ${DIR}/artifacts/recon.md, no máximo 30 linhas.`,
   if (!recon) throw new Error('recon sem retorno — veja /workflows')
   note('architect(recon)', 'completed', 'artifacts/recon.md')
 
-  const sensitive = recon.sensitive || args.sensitive === true   // OR: brief OU recon (decisão 2)
+  sensitive = recon.sensitive || sensitive   // o recon pode elevar; nunca rebaixa
   log(`Recon: ${recon.complexity}${sensitive ? ' · SENSÍVEL' : ''}${recon.needs_spec ? ' · SDD' : ''} · ${recon.files.length} arquivo(s)`)
 
   // ---------- P5: épica não recebe código — é fatiada ----------
@@ -136,10 +141,10 @@ Você é o Planner (multi-agents/agents/02-planner.md). O recon classificou a ta
 Fatie em tasks independentes, cada uma cabendo num PR de 200–400 linhas (GOVERNANCE §2.5), com objetivo verificável e arquivos disjuntos entre fatias (GOVERNANCE §4.1). Grave em ${DIR}/artifacts/planner.md.`,
       { agentType: 'planner-sonnet', schema: SLICES, phase: 'Plan', label: 'fatiar épica' })
     note('planner', out ? 'completed' : 'sem retorno', 'artifacts/planner.md')
-    return {
-      status: 'fatiada', task_id: T, slices: out ? out.slices : [], events,
+    return result({
+      status: 'fatiada', slices: out ? out.slices : [],
       next: 'Abra uma /task por fatia. A task-mãe não recebe código.',
-    }
+    })
   }
 
   // ---------- Plan: só quando não é trivial ----------
@@ -149,17 +154,17 @@ Fatie em tasks independentes, cada uma cabendo num PR de 200–400 linhas (GOVER
       const s = await pointer('spec-writer', `${RULES}
 Você é o Spec-Writer (multi-agents/agents/09-spec-writer.md). Escreva a spec verificável da task (critérios Given/When/Then, contratos, fora de escopo) em ${DIR}/artifacts/spec-writer.md.`,
         { agentType: 'spec-writer-sonnet', phase: 'Plan', label: 'spec' })
-      if (!s || s.status === 'blocked') return { status: 'blocked', task_id: T, em: 'spec-writer', blockers: s ? s.blockers : ['sem retorno'], events }
+      if (!s || s.status === 'blocked') return result({ status: 'blocked', em: 'spec-writer', blockers: s ? s.blockers : ['sem retorno'] })
     }
     const a = await pointer('architect', `${RULES}
 Você é o Architect (multi-agents/agents/01-architect.md). Projete a solução a partir do brief, do recon${recon.needs_spec ? ' e da spec (artifacts/spec-writer.md)' : ''}. Grave em ${DIR}/artifacts/architect.md no formato do seu manual.`,
       { agentType: 'architect-fable', phase: 'Plan', label: 'design' })
-    if (!a || a.status === 'blocked') return { status: 'blocked', task_id: T, em: 'architect', blockers: a ? a.blockers : ['sem retorno'], events }
+    if (!a || a.status === 'blocked') return result({ status: 'blocked', em: 'architect', blockers: a ? a.blockers : ['sem retorno'] })
 
     const p = await pointer('planner', `${RULES}
 Você é o Planner (multi-agents/agents/02-planner.md). Decomponha ${DIR}/artifacts/architect.md em tarefas sequenciadas com critérios de aceitação. Grave em ${DIR}/artifacts/planner.md.`,
       { agentType: 'planner-sonnet', phase: 'Plan', label: 'plan' })
-    if (!p || p.status === 'blocked') return { status: 'blocked', task_id: T, em: 'planner', blockers: p ? p.blockers : ['sem retorno'], events }
+    if (!p || p.status === 'blocked') return result({ status: 'blocked', em: 'planner', blockers: p ? p.blockers : ['sem retorno'] })
   }
 
   // ---------- P2: loop com teto ----------
@@ -169,13 +174,20 @@ Você é o Planner (multi-agents/agents/02-planner.md). Decomponha ${DIR}/artifa
     const fix = round > 1
       ? `\nRODADA ${round}: o review REPROVOU. Corrija EXATAMENTE estes issues, nesta ordem de prioridade: ${JSON.stringify(verdict.issues)}`
       : ''
+    // Um dono por arquivo (GOVERNANCE §4.1): o Tester só roda em paralelo na rodada 1 de task
+    // não-trivial. Fora disso o Coder é o dono também dos testes — senão issue em arquivo de
+    // teste na rodada 2 não teria quem corrigisse.
+    const testerRuns = recon.complexity !== 'trivial' && round === 1
+    const testOwner = testerRuns
+      ? 'Não escreva testes — o Tester faz isso em paralelo.'
+      : 'O Tester não roda nesta rodada: se a mudança pede teste, ou se algum issue aponta arquivo de teste, o dono é você.'
     const jobs = [
       () => pointer('coder', `${RULES}
 Você é o Coder (multi-agents/agents/03-coder.md). Implemente a task conforme ${recon.complexity === 'trivial' ? 'o brief' : `${DIR}/artifacts/planner.md`}.
-Não escreva testes — o Tester faz isso em paralelo. Grave em ${DIR}/artifacts/coder.md com files_changed completo.${fix}`,
+${testOwner} Grave em ${DIR}/artifacts/coder.md com files_changed completo.${fix}`,
         { agentType: 'coder-sonnet', phase: 'Code', label: `coder r${round}` }),
     ]
-    if (recon.complexity !== 'trivial' && round === 1) {
+    if (testerRuns) {
       jobs.push(() => pointer('tester', `${RULES}
 Você é o Tester (multi-agents/agents/05-tester.md). Escreva os testes da task a partir da spec/plano — NÃO a partir da implementação, que está sendo escrita em paralelo agora.
 Edite SÓ arquivos de teste (um dono por arquivo, GOVERNANCE §4.1). Grave em ${DIR}/artifacts/tester.md.`,
@@ -183,7 +195,7 @@ Edite SÓ arquivos de teste (um dono por arquivo, GOVERNANCE §4.1). Grave em ${
     }
     const done = await parallel(jobs)            // barreira justificada: o review precisa do código pronto
     const coder = done[0]
-    if (!coder || coder.status === 'blocked') return { status: 'blocked', task_id: T, em: 'coder', blockers: coder ? coder.blockers : ['sem retorno'], events }
+    if (!coder || coder.status === 'blocked') return result({ status: 'blocked', em: 'coder', blockers: coder ? coder.blockers : ['sem retorno'] })
 
     // ---------- P3 + P4: verificação proporcional ao risco ----------
     phase('Review')
@@ -198,7 +210,9 @@ Edite SÓ arquivos de teste (um dono por arquivo, GOVERNANCE §4.1). Grave em ${
       ])).filter(Boolean)
       lenses.forEach(v => note(v.agent, v.aprovado ? 'APROVADO' : 'REPROVADO', v.artifact_path))
       if (lenses.length < 3) log(`Só ${lenses.length}/3 lentes responderam — contando como REPROVADO`)
-      verdict = { aprovado: lenses.length === 3 && lenses.every(v => v.aprovado), issues: lenses.flatMap(v => v.issues) }
+      const issues = lenses.flatMap(v => v.issues)
+      if (lenses.length < 3) issues.push({ severity: 'HIGH', summary: `${3 - lenses.length} lente(s) de verificação sem retorno — sem veredito não há aprovação` })
+      verdict = { aprovado: lenses.length === 3 && lenses.every(v => v.aprovado), issues }
     } else {
       const v = await agent(reviewPrompt('Reviewer — correção, segurança e qualidade', '04-reviewer.md', 'reviewer.md'),
         { agentType: 'reviewer-fable', schema: VERDICT, phase: 'Review', label: `review r${round}` })
@@ -211,10 +225,10 @@ Edite SÓ arquivos de teste (um dono por arquivo, GOVERNANCE §4.1). Grave em ${
 
   // ---------- P2: escalonamento ----------
   if (!verdict.aprovado) {
-    return {
-      status: 'escalado', task_id: T, para: 'architect', events, issues: verdict.issues,
+    return result({
+      status: 'escalado', para: 'architect', issues: verdict.issues,
       motivo: `REPROVADO em ${MAX_ROUNDS} rodadas — o problema não é implementação (HANDOFF-PROTOCOL §4.7)`,
-    }
+    })
   }
 
   // ---------- decisão 3: contra-verificador cego, só em task sensível ----------
@@ -224,16 +238,23 @@ Você é um Reviewer INDEPENDENTE (multi-agents/agents/04-reviewer.md). NÃO lei
 Leia só o brief e o diff (files_changed em artifacts/coder.md). Sua missão é REFUTAR a aprovação: procure o defeito que passou. Em dúvida, reprove.
 Grave em ${DIR}/artifacts/reviewer-cego.md (primeira linha "**Veredito:** APROVADO" ou "**Veredito:** REPROVADO (n issues)").`,
       { agentType: 'reviewer-fable', schema: VERDICT, phase: 'Review', label: 'refutador cego', effort: 'high' })
-    if (blind) note('reviewer(cego)', blind.aprovado ? 'APROVADO' : 'REPROVADO', blind.artifact_path)
-    if (blind && !blind.aprovado) {
-      return {
-        status: 'divergencia', task_id: T, events, issues: blind.issues,
+    // Fail-closed: sem retorno do refutador, a aprovação não foi contra-verificada — não é `done`.
+    if (!blind) {
+      note('reviewer(cego)', 'sem retorno', '-')
+      return result({
+        status: 'blocked', em: 'refutador cego', blockers: ['refutador cego sem retorno — rode de novo ou decida manualmente'],
+      })
+    }
+    note('reviewer(cego)', blind.aprovado ? 'APROVADO' : 'REPROVADO', blind.artifact_path)
+    if (!blind.aprovado) {
+      return result({
+        status: 'divergencia', issues: blind.issues,
         motivo: 'O refutador cego discorda da aprovação — decisão humana (HANDOFF-PROTOCOL §4.8)',
-      }
+      })
     }
   }
 
-  return { status: 'done', task_id: T, complexity: recon.complexity, sensitive, events }
+  return result({ status: 'done', complexity: recon.complexity })
 } catch (e) {
-  return { status: 'blocked', task_id: T, erro: String((e && e.message) || e), events }
+  return result({ status: 'blocked', erro: String((e && e.message) || e) })
 }

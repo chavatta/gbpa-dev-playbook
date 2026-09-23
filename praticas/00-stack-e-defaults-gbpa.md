@@ -6,7 +6,7 @@
 >
 > **Preenchido por projeto, não uma vez pela organização.** Cada repo que adota o playbook carrega o seu 00 e o preenche no início (`ONBOARDING.md §2`, passo 6) — dois projetos da GBPA podem ter stacks legitimamente diferentes.
 >
-> **Dono:** Tech Lead · **Revisão:** trimestral · **Última revisão:** 2026-08-31
+> **Dono:** Tech Lead · **Revisão:** trimestral · **Última revisão:** 2026-09-23
 
 ## Campo em branco não é blocker — é um menu
 
@@ -61,7 +61,7 @@ Escolhida a opção (ou delegada ao Architect), a decisão vira **ADR** e o valo
 | SCA / updates | `{...}` | ★ **Renovate + osv-scanner** · Dependabot · Snyk Open Source 🔒 | ★ Renovate agrupa e agenda PRs (menos ruído que o Dependabot); osv-scanner cobre a checagem de vulnerabilidade |
 | Secrets | `{...}` | ★ **cofre da própria cloud** (Secrets Manager / Secret Manager / Key Vault) · Doppler / 1Password 🔒 · secrets do CI (só para o CI) | `gitleaks` no hook local **e** no CI, em qualquer opção — não é alternativa, é somatório |
 | Scan de imagem/IaC | `{...}` | ★ **Trivy** (cobre imagem e IaC) · Checkov (IaC) + Grype (imagem) | ★ por ser uma ferramenta só para os dois alvos |
-| **Branch protection** | Obrigatória em `main`/`master` de todo repo: PR obrigatório, ≥1 aprovação, sem force push, status checks verdes | *(não é opcional — sem menu)* | É a trava servidor-side que os hooks locais do playbook **não** substituem |
+| **Branch protection** | Obrigatória em `main`/`master` de todo repo: PR obrigatório, ≥1 aprovação, sem force push, status checks verdes | *(não é opcional — sem menu)* | É a trava servidor-side que os hooks locais do playbook **não** substituem. Repo com um só mantenedor roda em transição — 0 aprovações mantendo o PR obrigatório, subindo para 1 + `enforce_admins` quando houver segundo revisor — com a decisão registrada em `docs/PENDENCIAS-TECH-LEAD.md` (`GOVERNANCE.md` §2.6; `ONBOARDING.md` §2 passo 5) |
 
 ## IA / LLM
 
@@ -81,7 +81,7 @@ Escolhida a opção (ou delegada ao Architect), a decisão vira **ADR** e o valo
 > |---|---|---|
 > | **DPA** | Incorporado automaticamente aos Termos Comerciais, com SCCs | **Não se aplica** |
 > | **Treino com o seu conteúdo** | Não, por padrão | **Escolha de cada usuário**, individualmente |
-> | **Retenção** | Conforme os termos comerciais | 5 anos se o treino estiver ligado; 30 dias se desligado |
+> | **Retenção** | Conforme os termos comerciais | até 5 anos (desidentificado) se o treino estiver ligado; 30 dias se desligado |
 > | **Controle organizacional** | Admin da organização | Nenhum — é conta pessoal |
 >
 > **A consequência, se a subscrição for de consumidor:** falha a condição 2 da [`praticas/10`](10-dados-e-contexto-de-ia.md) §3 (contrato que cubra o subprocessamento). Isso significa que **código e dado de cliente — classe Confidencial — não podem entrar no contexto**, o que inviabiliza o uso normal do playbook em projeto de cliente. Não é uma formalidade de auditoria: é a diferença entre poder e não poder trabalhar com o repositório do cliente aberto.

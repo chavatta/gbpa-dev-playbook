@@ -1,38 +1,67 @@
-# Patches pendentes em arquivos protegidos
+# Patches em arquivos protegidos
 
-Arquivos que agentes não podem escrever (`.claude/hooks/`, `.claude/settings.json`, `GOVERNANCE.md` — `GOVERNANCE.md` §6.2) chegam aqui prontos e testados, para o **Tech Lead aplicar por mão humana**. O racional de cada patch fica em [`../PENDENCIAS-TECH-LEAD.md`](../PENDENCIAS-TECH-LEAD.md).
+> **Dono:** Tech Lead · **Revisão:** esvaziar conforme aplicado — patch pendente é dívida, não acervo · **Última revisão:** 2026-09-23
 
-## Pendente — `GOVERNANCE-fluxo-por-script.md` (ADR-005)
+Arquivos que agentes não podem escrever (`GOVERNANCE.md` §6.2) chegam aqui prontos e testados, para o **Tech Lead aplicar à mão, no próprio terminal, fora da sessão do agente** — de dentro do Claude Code a própria trava bloqueia a cópia, e é para bloquear. O racional de cada patch fica em [`../PENDENCIAS-TECH-LEAD.md`](../PENDENCIAS-TECH-LEAD.md).
 
-Ajusta §3.1, §3.4, §6.2 e §6.4 para o fluxo por script. Texto pronto e verificação de sintaxe no próprio arquivo. Sem banco de payloads: não é trava, é texto.
+## Pendente — lote de 2026-09-23
 
-## Aplicado em 2026-08-31 — `block-dangerous-git.mjs` (mantido como referência da suíte)
+| Arquivo proposto | Destino | O que muda | Prova |
+|---|---|---|---|
+| `block-dangerous-git.mjs` | `.claude/hooks/` | Fecha os falsos positivos do item 5 das pendências (token de argumento atravessava `;`/`&&`; corpo de heredoc e texto multi-linha entre aspas lidos como comando; verbo e caminho protegido casados em comandos diferentes; `ln=5` lido como `ln`). Fecha três bypasses que a suíte nova achou no hook em produção (`git -C repo push --force`, `cd .claude/hooks && cp …`, `cd .claude && cp … settings.json`). Estende a zona protegida a `.claude/workflows/` e `.claude/agents/` | `test-block-dangerous-git.mjs` — proposta 97/97; produção 77/97. Dos 37 casos novos, a produção falha em 20 (12 falsos positivos, 3 bypasses, 5 da zona nova); os outros 17 ela já acertava e ficam como guarda de regressão |
+| `check-reviewer-gate.mjs` | `.claude/hooks/` | O veredito passa a ser lido **na primeira linha** de fato: a flag `m` da regex deixava passar um artifact `REPROVADO` que citasse um `**Veredito:** APROVADO` mais abaixo | `test-check-reviewer-gate.mjs` — proposta 14/14; produção 11/14 |
+| `protect-guardrails.mjs` | `.claude/hooks/` | Bloqueia Write/Edit em `.claude/workflows/` (o script que devolve `done`, ADR-005) e `.claude/agents/` (tools e modelo de cada agente). `.claude/skills/` segue livre: o Documenter autora skill de projeto ali | `test-protect-guardrails.mjs` — proposta 22/22; produção 16/22 |
+| `settings.proposto.json` | `.claude/settings.json` | `deny` de Write/Edit nas duas pastas novas e de `Read` em `.env` / `.env.*` — a evidência que o `ISO-MAPPING` (A.8.12) cita | Diff de 8 linhas acrescentadas, nenhuma removida |
+| `GOVERNANCE.proposto.md` | `GOVERNANCE.md` | Cabeçalho de dono/revisão; §2.6 com a transição de mantenedor único; §3.1/§3.4 com o fluxo por script (ADR-005); §5.4 com a lista única de cópia; §6.2 com a zona protegida nova e a regra de mudança do script; §6.4 com Dynamic workflows | `git diff --no-index` — 7 trechos, todos listados aqui |
 
-> A versão abaixo já está em produção (arquivo idêntico ao de `.claude/hooks/`) e a suíte cresceu para 60 casos. O texto original fica como registro do processo.
+O smoke test do fluxo, [`scripts/test-gbpa-task.mjs`](../../scripts/test-gbpa-task.mjs), não é patch — o script ainda não está na zona protegida —, mas passa a ser a prova exigida para qualquer mudança futura em `.claude/workflows/`.
 
+### Aplicar
 
-O hook em produção casa o padrão perigoso em qualquer posição da linha, então `grep "git clean -f" arquivo.md` é bloqueado mesmo sendo busca, não execução. Esta versão casa por posição de comando e, de quebra, fecha dois bypasses reais (ofuscação por aspas e `eval "rm -rf …"`).
-
-**Rodar a suíte antes de aplicar** — compara a versão em produção com a corrigida:
+**1. Rodar as suítes** — cada uma contra a versão em produção e contra a proposta. Aplicar só se a proposta fechar 100%: caso de bloqueio falhando significa que o patch afrouxou uma trava.
 
 ```bash
 node docs/patches/test-block-dangerous-git.mjs .claude/hooks/block-dangerous-git.mjs
-```
-
-```bash
 node docs/patches/test-block-dangerous-git.mjs docs/patches/block-dangerous-git.mjs
+node docs/patches/test-check-reviewer-gate.mjs .claude/hooks/check-reviewer-gate.mjs
+node docs/patches/test-check-reviewer-gate.mjs docs/patches/check-reviewer-gate.mjs
+node docs/patches/test-protect-guardrails.mjs .claude/hooks/protect-guardrails.mjs
+node docs/patches/test-protect-guardrails.mjs docs/patches/protect-guardrails.mjs
+node scripts/test-gbpa-task.mjs
 ```
 
-Esperado: a de produção passa 38/45, a corrigida 45/45. **Aplicar só se a corrigida fechar 45/45** — se algum caso de bloqueio falhar, o patch afrouxou uma trava e não deve entrar.
-
-**Aplicar:**
+**2. Ler os diffs de texto** — são lei, não código, e ninguém além do Tech Lead os revisa na forma final:
 
 ```bash
-cp docs/patches/block-dangerous-git.mjs .claude/hooks/block-dangerous-git.mjs
+git diff --no-index GOVERNANCE.md docs/patches/GOVERNANCE.proposto.md
+git diff --no-index .claude/settings.json docs/patches/settings.proposto.json
 ```
 
-Hooks carregam no startup: **reinicie as sessões do Claude Code** depois de aplicar, ou elas seguem com o hook antigo em memória.
+**3. Copiar** — numa branch, fora do Claude Code:
+
+```bash
+cp docs/patches/block-dangerous-git.mjs docs/patches/check-reviewer-gate.mjs docs/patches/protect-guardrails.mjs .claude/hooks/
+cp docs/patches/settings.proposto.json .claude/settings.json
+cp docs/patches/GOVERNANCE.proposto.md GOVERNANCE.md
+```
+
+**4. Fechar o ciclo:** rodar a suíte de novo contra `.claude/hooks/` (tem de dar 100%), apagar daqui os três `.mjs` propostos e os dois `.proposto.*` — as suítes `test-*.mjs` ficam: são o teste de regressão das travas —, registrar a linha no histórico do `PENDENCIAS-TECH-LEAD.md` e **reiniciar as sessões do Claude Code**: hooks e `settings.json` carregam no startup.
+
+**Opcional:** para `/task` não pedir aprovação a cada execução em sessão não-interativa, acrescente `Workflow(gbpa-task)` em `permissions.allow` do `settings.json`. Em sessão interativa não é necessário.
+
+## Limites conhecidos das travas (não corrigidos, de propósito)
+
+- **Variável de shell esconde o caminho:** `H=.claude/hooks; cp x $H/y` passa. Casar variável exigiria interpretar shell; a trava primária é a branch protection no servidor, e o PR mostra a mudança.
+- **`Read` negado não impede `cat .env`** pela ferramenta de shell. O deny cobre a ferramenta de leitura; o que protege o segredo de fato é ele não estar no disco do dev (`praticas/06`) e o `gitleaks` no CI.
+- **Heredoc para interpretador liga o modo conservador:** o corpo de `python3 - <<EOF` é analisado em qualquer posição, então um script Python que *mencione* `git push origin main` num comentário é bloqueado. Para gravar documentação, use a ferramenta de escrita ou `cat > arquivo <<EOF`, que não interpreta o corpo.
 
 ## Manutenção
 
-O banco de payloads é o teste de regressão das travas — toda mudança futura em `block-dangerous-git.mjs` acrescenta o caso novo aqui e roda a suíte inteira antes de aplicar. Caso que deve bloquear e caso que deve passar têm o mesmo peso: guardrail que gera falso positivo é contornado, e guardrail contornado não protege nada.
+As suítes são o teste de regressão das travas — toda mudança futura acrescenta o caso novo ao banco e roda tudo contra a versão antiga e a nova antes de aplicar. Caso que deve bloquear e caso que deve passar têm o mesmo peso: guardrail que gera falso positivo é contornado, e guardrail contornado não protege nada.
+
+## Histórico
+
+| Data | Patch | Suíte |
+|---|---|---|
+| 2026-08-04 | `check-reviewer-gate.mjs`, `block-dangerous-git.mjs`, `settings.json`, `GOVERNANCE.md` | 26 casos |
+| 2026-08-31 | `block-dangerous-git.mjs` — casamento por posição de comando, ofuscação por aspas, wrappers, escrita em zona protegida via shell; `GOVERNANCE.md` §7 | 60 casos (38/45 na versão anterior) |

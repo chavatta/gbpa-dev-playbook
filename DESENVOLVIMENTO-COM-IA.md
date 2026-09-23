@@ -2,7 +2,7 @@
 
 > **Leia este documento antes de qualquer outro.** Ele explica por que nosso fluxo de desenvolvimento com IA é estruturado do jeito que é.
 >
-> **Dono:** Tech Lead · **Revisão:** semestral · **Última revisão:** 2026-08-31
+> **Dono:** Tech Lead · **Revisão:** semestral · **Última revisão:** 2026-09-23
 
 ---
 
@@ -56,8 +56,10 @@ DEBUGGER  DOCUMENTER   DEVOPS  DATA-ENGINEER AI-ENGINEER SECURITY-SRE
 
 1. **Especialização** — cada agente faz uma coisa e faz bem; não mistura responsabilidades.
 2. **Revisão cruzada** — quem escreve o código nunca é quem aprova. O Coder não revisa o próprio trabalho, exatamente como num time maduro.
-3. **Escopo limitado por ferramenta** — cada agente só tem acesso às ferramentas do seu papel. O Reviewer não edita código (só lê); o Planner não executa comandos; o Debugger não corrige em produção (entrega diagnóstico ao Coder).
+3. **Escopo limitado por ferramenta** — cada agente só tem acesso às ferramentas do seu papel. O Reviewer não tem ferramenta de edição de código (sem `Edit`); grava só o próprio artifact (`tasks/{id}/artifacts/reviewer.md` — o `Write` é geral, a restrição é do manual, não da ferramenta) e lê o que precisar (`Read`/`Glob`/`Grep`/`Bash`); o Planner não executa comandos; o Debugger não corrige em produção (entrega diagnóstico ao Coder).
 4. **Handoff estruturado** — o trabalho passa de agente para agente via artifacts gravados em disco, com rastro auditável (`tasks/{id}/run-log.md`). Nada se perde em "telefone sem fio".
+
+O Orchestrator continua no topo do time, mas deixou de ser o ponto de entrada literal: sob o `docs/ADR-005-orquestracao-nativa-do-fluxo.md`, quem abre a task é a skill `/task` (`.claude/workflows/gbpa-task.js`), que roda o recon e roteia por código — vigência plena depende do patch pendente em `docs/patches/GOVERNANCE.proposto.md` e do piloto. O fluxo manual pelo Orchestrator segue como fallback quando o Workflow não está disponível.
 
 Detalhe completo: [multi-agents/ARCHITECTURE.md](multi-agents/ARCHITECTURE.md) e [multi-agents/HANDOFF-PROTOCOL.md](multi-agents/HANDOFF-PROTOCOL.md).
 
@@ -110,7 +112,7 @@ Racional completo e alternativas descartadas: [docs/ADR-001-modelos-por-agente.m
 
 Regra de processo depende de obediência; **trava mecânica não**. O kit traz as duas camadas:
 
-- **`.claude/settings.json` → `permissions.deny`** — nega de saída: push direto em `main`, force push, `rm -rf`, `git reset --hard`, `git clean -f` (qualquer variante com `-f`, incluindo `-fd`), e qualquer escrita em `GOVERNANCE.md`, `.claude/settings.json` e `.claude/hooks/`.
+- **`.claude/settings.json` → `permissions.deny`** — nega de saída: push direto em `main`, force push, `rm -rf`, `git reset --hard`, `git clean -f`, e qualquer escrita em `GOVERNANCE.md`, `.claude/settings.json` e `.claude/hooks/`. O deny simples só casa `git clean -fd` literal; as demais variantes com `-f` (`-fdx`, `-f -d`, flags reordenadas) são bloqueadas pelo `block-dangerous-git.mjs` logo abaixo, não pelo deny.
 - **Hooks (scripts Node que interceptam as ações da IA — a mesma implementação roda em macOS, Linux e Windows, sem configuração por sistema):**
   - `block-dangerous-git.mjs` — analisa cada comando antes de executar; bloqueia variações que burlam o deny simples (ex.: `git push origin HEAD:main`, flags reordenadas, ofuscação por aspas) e os equivalentes Windows (`Remove-Item -Recurse -Force`, `rmdir /s`). O casamento é **por posição de comando**: o padrão perigoso só bloqueia quando está no início da linha ou logo após um separador (`;`, `&&`, `|`), de modo que *citar* o comando como texto — um `grep` na documentação, um `echo` explicativo — não dispara a trava. A exceção são os wrappers que executam string como código (`sh -c`, `eval`, `xargs`): neles o conteúdo citado **é** comando, e a checagem volta a valer em qualquer posição.
   - `protect-guardrails.mjs` — impede a IA de editar as próprias travas e a governança, cobrindo caminhos absolutos e caminhos Windows (`C:\...\.claude\settings.json`). Ele intercepta as ferramentas de escrita; o caminho por shell (`cp`, `tee`, `>`, `sed -i` para `.claude/` ou `GOVERNANCE.md`) é fechado pelo `block-dangerous-git.mjs`, que continua permitindo **ler** esses arquivos.

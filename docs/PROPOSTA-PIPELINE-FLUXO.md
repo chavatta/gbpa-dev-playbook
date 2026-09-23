@@ -1,7 +1,7 @@
 # Proposta — pipeline do fluxo de desenvolvimento
 
-> **Status:** em implementação — `docs/ADR-005`, branch `feat/pipeline-fluxo-nativo`. O que ainda depende do Tech Lead: o patch do `GOVERNANCE.md` (`docs/patches/`) e o piloto.
-> **Dono:** Tech Lead · **Última revisão:** 2026-09-01
+> **Status:** em implementação — `docs/ADR-005`, branch `feat/pipeline-fluxo-nativo`. O que ainda depende do Tech Lead: o patch do `GOVERNANCE.md` (`docs/patches/GOVERNANCE.proposto.md`) e o piloto. Este documento se arquiva quando o ADR-005 estiver em vigor plena e o piloto tiver rodado (`docs/EVIDENCIAS-E-METRICAS.md` §4).
+> **Dono:** Tech Lead · **Revisão:** por evento · **Última revisão:** 2026-09-15
 
 ---
 

@@ -4,12 +4,13 @@
 **Data:** 2026-07-31
 **Decisores:** Tech Lead
 **Revisão:** trimestral
+**Última revisão:** 2026-09-23
 
 > **Nota (2026-08-04):** este ADR cobre os 9 agentes originais. O quadro atual é de **13 agentes** (1 orchestrator + 12 especialistas); os modelos dos 4 agentes posteriores estão nos ADRs 002 e 003, que seguem o mesmo racional. O quadro consolidado está em `DESENVOLVIMENTO-COM-IA.md §3`.
 
 ## Contexto
 
-O fluxo multi-agent tem 9 agentes com custos de erro muito diferentes. A cota de uso dos modelos (plano Claude Max) é compartilhada pela equipe, e os modelos disponíveis têm capacidades e custos distintos: **Fable 5** (topo de linha), **Sonnet 5** (equilíbrio) e **Haiku 4.5** (rápido e barato).
+O fluxo multi-agent tem 9 agentes com custos de erro muito diferentes. A cota de uso dos modelos (plano de subscrição — ⚠️ classe a confirmar, ver `docs/PENDENCIAS-TECH-LEAD.md` item 1) é compartilhada pela equipe, e os modelos disponíveis têm capacidades e custos distintos: **Fable 5** (topo de linha), **Sonnet 5** (equilíbrio) e **Haiku 4.5** (rápido e barato).
 
 O gargalo de um fluxo assim não é velocidade de geração de código — é a **qualidade das decisões nos nós de alto impacto**: a decomposição do problema, o design da solução e o gate de review. Um erro nesses nós se propaga (ou passa despercebido) por todo o resto; um erro na execução é barato, porque o Reviewer o intercepta.
 
@@ -57,7 +58,7 @@ Os arquivos em `.claude/agents/` mantêm o **sufixo de modelo** no nome (`review
 2. **Auto-verificação** — todo agente tem a seção "Modelo designado (ADR-001)" e confere, no próprio system prompt, em que modelo está rodando. Divergência do designado devolve `status: blocked` com o blocker `"modelo divergente: esperado {X}, rodando em {Y}"` em vez de seguir — o downgrade silencioso vira bloqueio visível.
 3. **Ponteiro de handoff** — `model` é campo **obrigatório** (`multi-agents/HANDOFF-PROTOCOL.md` §3.2) e registra o modelo em que o subagente efetivamente rodou, não o designado. É o que fica no `run-log.md` como evidência.
 
-**Custo aceito:** se este ADR trocar o modelo de um agente, o nome do arquivo muda junto e as referências que usam nome-base seguem válidas — mas qualquer menção ao nome sufixado (documentação, scripts) precisa ser atualizada na mesma mudança. A revisão trimestral deste ADR é o momento de verificar isso.
+**Custo aceito:** se este ADR trocar o modelo de um agente, o **arquivo mantém o nome-base** (`reviewer.md`, `coder.md`, …) — só o `name:` no frontmatter carrega o sufixo, e é ele que muda. As referências que usam nome-base seguem válidas sem alteração; qualquer menção ao nome sufixado (documentação, scripts) precisa ser atualizada na mesma mudança. Em particular, `.claude/workflows/gbpa-task.js` (ADR-005) hard-codeia os `agentType` sufixados (`architect-fable`, `planner-sonnet`, `spec-writer-sonnet`, `coder-sonnet`, `tester-sonnet`, `reviewer-fable`, `security-sre-fable`) — troca de modelo precisa atualizar esses valores no script junto. A revisão trimestral deste ADR é o momento de verificar isso.
 
 ## Notas operacionais
 

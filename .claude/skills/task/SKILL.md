@@ -40,12 +40,12 @@ O roteamento, o loop e o gate são do script. Não os refaça à mão.
 4. **Registre no run-log**: anexe a linha `| <timestamp> | orchestr. | task_created | - | brief.md |`.
 5. **Dispare o workflow** com a ferramenta Workflow, por nome, passando `args` como objeto (não como string):
    `{ "name": "gbpa-task", "args": { "task_id": "<task_id>", "sensitive": <true|false> } }`
-6. **Ao receber o retorno**, anexe ao `run-log.md` uma linha por item de `events` (`| ts | agent | status | - | ref |`), depois trate o `status`:
+6. **Ao receber o retorno**, anexe ao `run-log.md` uma linha por item de `events` (`| ts | agent | status | - | ref |`). Se o retorno trouxer `sensitive: true` e o brief disser `Sensível (security gate): não`, **troque para `sim`** e acrescente "— elevado pelo recon (artifacts/recon.md)": é o brief que o hook `check-reviewer-gate.mjs` e a métrica M2 leem. Nunca troque de `sim` para `não`. Depois trate o `status`:
    - `done` → anexe `| ts | orchestr. | done | done | artifacts/reviewer.md |` e sintetize (formato do `00-orchestrator.md` → "Formato de Saída").
    - `fatiada` → liste as fatias e diga: "abra uma `/task` por fatia". Não anexe `done`.
    - `escalado` → registre `rerouted → architect` e apresente os issues ao dev. Não anexe `done`.
    - `divergencia` → registre e apresente os dois vereditos ao dev: a decisão é humana. Não anexe `done`.
-   - `blocked` → registre o blocker e pare.
+   - `blocked` → registre o blocker (`em` diz onde parou) e pare. `em: refutador cego` significa que a aprovação não foi contra-verificada: não é `done` — rode de novo ou leve ao dev.
 7. **Nunca escreva `done` sem `artifacts/reviewer.md` com `**Veredito:** APROVADO`** na primeira linha — o hook `check-reviewer-gate.mjs` impede o encerramento da sessão se você o fizer.
 
 ## Exemplo
@@ -56,4 +56,5 @@ O roteamento, o loop e o gate são do script. Não os refaça à mão.
 - Passar `args` como string JSON: o script recebe texto e falha na validação. Passe objeto.
 - Reescrever o `run-log.md` com Write: ele é append-only. Use Edit para anexar.
 - Rodar o workflow sem a pasta criada: o recon não acha o brief e devolve `blocked`.
-- Achar que `sensitive: false` no brief impede o rigor extra: o recon pode elevar. É OR, por desenho.
+- Achar que `sensitive: false` no brief impede o rigor extra: o recon pode elevar. É OR, por desenho — e o brief tem de refletir a elevação (passo 6).
+- Mudar o script sem rodar `node scripts/test-gbpa-task.mjs`: o smoke test simula os agentes e cobre todos os status de retorno, sem gastar quota.
