@@ -15,43 +15,46 @@ try {
 }
 
 // ---------- heredoc ----------
-// O corpo de um heredoc é DADO para quem o consome — a menos que o consumidor seja
-// um interpretador, caso em que o corpo é código. Corpo de dado sai da análise:
-// senão uma mensagem de commit (`git commit -F - <<EOF`) ou um documento gravado por
-// `cat > x.md <<EOF` que *fale* de "push em main" dispara a trava. Corpo de código
-// fica, e liga o modo conservador (casa em qualquer posição), como nos wrappers.
-// Na dúvida sobre o consumidor, o corpo fica. Delimitador sem fechamento → nada é
-// removido (conservador).
+// O corpo de um heredoc é DADO para quem o consome — a menos que algo no comando o
+// execute, caso em que o corpo é código. Corpo de dado sai da análise: senão uma
+// mensagem de commit (`git commit -F - <<EOF`) ou um documento gravado por
+// `cat > x.md <<EOF` que *fale* de "push em main" dispara a trava.
+// "Algo no comando o executa" olha o comando INTEIRO fora dos corpos, não só a linha
+// do `<<`: `cat <<EOF | bash` entrega o corpo pelo pipe, e `cat > s.sh <<EOF … ; sh s.sh`
+// grava um script e o roda depois. Conta como executor: interpretador, `eval`/`xargs`/
+// `source`, caminho `./…` e arquivo com extensão de script. Aí nada é removido e o modo
+// conservador liga (casa em qualquer posição), como nos wrappers.
+// Na dúvida, o corpo fica. Delimitador sem fechamento → nada é removido.
 const EXECUTOR = /^(?:(?:ba|z|k|da|fi)?sh|python[\d.]*|node|deno|bun|perl|ruby|php|pwsh|powershell|ssh|eval|xargs|source|\.)$/;
+const SCRIPT = /^\.\/|\.(?:sh|bash|zsh|py|js|mjs|cjs|ts|pl|rb|php|ps1)$/;
+// `<` e `>` também separam palavra: `bash<<'EOF'` sem espaço é shell válido.
+const executa = (texto) => texto.replace(/['"]/g, "").split(/[\s;&|(){}`<>]+/)
+  .some((w) => w !== "" && (EXECUTOR.test(w.replace(/^.*\//, "")) || SCRIPT.test(w)));
 let execHeredoc = false;
 const stripHeredocs = (text) => {
   const lines = String(text).split(/\r?\n/);
-  const out = [];
+  const corpo = new Array(lines.length).fill(false);
+  let achou = false;
   for (let i = 0; i < lines.length; i++) {
-    const line = lines[i];
-    out.push(line);
-    const opens = [...line.matchAll(/<<(?!<)(-?)\s*(['"]?)([A-Za-z_][\w-]*)\2/g)];
-    for (const m of opens) {
+    if (corpo[i]) continue;
+    // vários heredocs na mesma linha: os corpos vêm um depois do outro
+    let cursor = i + 1;
+    for (const m of lines[i].matchAll(/<<(?!<)(-?)\s*(['"]?)([A-Za-z_][\w-]*)\2/g)) {
       const tabs = m[1] === "-";
-      const delim = m[3];
       let end = -1;
-      for (let j = i + 1; j < lines.length; j++) {
-        if ((tabs ? lines[j].replace(/^\t+/, "") : lines[j]) === delim) { end = j; break; }
+      for (let j = cursor; j < lines.length; j++) {
+        if ((tabs ? lines[j].replace(/^\t+/, "") : lines[j]) === m[3]) { end = j; break; }
       }
       if (end === -1) return String(text);
-      // Quem consome o corpo: olha a LINHA inteira, não só o que vem antes do `<<` —
-      // `cat <<EOF | bash` entrega o corpo a um shell pelo pipe.
-      const isExec = line.replace(/['"]/g, "").split(/[\s;&|(){}`]+/).some((w) => EXECUTOR.test(w.replace(/^.*\//, "")));
-      if (isExec) {
-        execHeredoc = true;
-        for (let j = i + 1; j <= end; j++) out.push(lines[j]);
-      } else {
-        out.push(delim);
-      }
-      i = end;
+      for (let j = cursor; j < end; j++) corpo[j] = true;   // o delimitador fica
+      cursor = end + 1;
+      achou = true;
     }
   }
-  return out.join("\n");
+  if (!achou) return String(text);
+  const fora = lines.filter((_, i) => !corpo[i]).join("\n");
+  if (executa(fora)) { execHeredoc = true; return String(text); }
+  return fora;
 };
 const body = stripHeredocs(cmd);
 
@@ -78,7 +81,8 @@ const norm = splitLines(body).replace(/\s+/g, " ");
 // Remove só os CARACTERES de aspas, preservando o conteúdo, para que ofuscação
 // por citação (`git clean -"f"`) continue casando. O texto citado deixa de ser
 // perigoso pelo ancoramento em posição de comando (abaixo), não por ser apagado.
-const flat = norm.replace(/['"]/g, "");
+// `.claude/./hooks` e `.claude//hooks` são o mesmo caminho: normaliza antes de casar.
+const flat = norm.replace(/['"]/g, "").replace(/\/(?:\.\/)+/g, "/").replace(/\/{2,}/g, "/");
 
 // Um comando perigoso só conta quando está em POSIÇÃO DE COMANDO: início da
 // entrada ou logo após um separador de shell, admitindo prefixo de variável de
@@ -95,7 +99,9 @@ const GITOPTS = "(?: +(?:-[Cc] +" + TOK + "|--(?:git-dir|work-tree|namespace) +"
 
 // Wrappers que executam string como código: aí o conteúdo citado É comando, e o
 // ancoramento não vale — voltamos a casar em qualquer posição (mais conservador).
-const WRAPPER = execHeredoc || new RegExp(`(?:^|${SEP})\\s*(?:\\w+=\\S* +)*(?:eval|xargs|(?:ba|z|k|da)?sh +-c|command +-[pv]* *\\w*sh)\\b`).test(flat);
+// Herestring para interpretador (`bash <<< "rm -rf x"`) é o mesmo caso: a string é código.
+const HERESTRING = /(?:^|[\s\/;&|(){}`])(?:(?:ba|z|k|da|fi)?sh|python[\d.]*|node|deno|bun|perl|ruby|php|pwsh|ssh)\b[^;&|]*<<</.test(flat);
+const WRAPPER = execHeredoc || HERESTRING || new RegExp(`(?:^|${SEP})\\s*(?:\\w+=\\S* +)*(?:eval|xargs|(?:ba|z|k|da)?sh +-c|command +-[pv]* *\\w*sh)\\b`).test(flat);
 
 const hit = (re) => {
   if (WRAPPER) return new RegExp(re).test(flat);
@@ -159,7 +165,7 @@ if (hit("(psql|mysql)\\b") && /(DROP +(TABLE|DATABASE|SCHEMA)|TRUNCATE +)/i.test
 // `.claude/agents/` porque o frontmatter define tools e modelo de cada agente.
 const PROTEGIDO = "(\\.claude\\/(settings\\.json|(hooks|workflows|agents)(\\/|\\b))|(^|[ \\/])GOVERNANCE\\.md)";
 // O verbo é palavra inteira seguida de espaço: `ln=5` é variável, `platform` não é `rm`.
-const MUTANTES = "(?<![\\w.=-])(cp|mv|tee|install|ln|dd|truncate|rm|chmod|chown|sed +-[a-z]*i|perl +-[a-z]*[ip]|python3? +-c)(?=\\s|$)";
+const MUTANTES = "(?<![\\w.=-])(cp|mv|tee|install|ln|dd|truncate|rm|chmod|chown|rsync|sed +-[a-z]*i|perl +-[a-z]*[ip]|python3? +-c|git +(?:checkout|restore|apply|mv|rm))(?=\\s|$)";
 const REDIRECT = new RegExp(">>?\\s*\\S*" + PROTEGIDO);
 // Só `.claude` ou uma pasta protegida — `.claude/worktrees/` é onde o Claude Code cria worktrees.
 const entrouNaZona = hit("(cd|pushd) +\\S*\\.claude(\\/(hooks|workflows|agents))?\\/?( |$|[;&|)])");
@@ -169,7 +175,31 @@ const escreveNaZona = (texto, ancorado) =>
   && (new RegExp((ancorado ? CMD : "") + MUTANTES).test(texto) || REDIRECT.test(texto));
 
 const zonaViaCd = entrouNaZona && (hit(MUTANTES) || />>?\s*\S/.test(flat));
-if (zonaViaCd || flat.split(new RegExp(SEP)).some((s) => escreveNaZona(s.trim(), !WRAPPER))) {
+// "Mesmo comando" = entre separadores de COMANDO (; && || | &) no nível de cima: fora de
+// aspas, de `$(…)` e de crase. Parêntese, `$(` e o que vai entre aspas estão DENTRO do
+// comando em `python3 -c "import shutil; shutil.copy('x','.claude/settings.json')"`,
+// `cp $(ls x) .claude/hooks/y` e `sed -i 's/\(a\)/b/' GOVERNANCE.md`. Aspas desbalanceadas
+// → o comando inteiro é um segmento só (conservador).
+const comandos = (s) => {
+  const out = [];
+  let cur = "", q = null, sub = 0, crase = false;
+  for (let i = 0; i < s.length; i++) {
+    const c = s[i];
+    if (c === "\\" && q !== "'" && i + 1 < s.length) { cur += c + s[++i]; continue; }
+    if (q) { if (c === q) q = null; cur += c; continue; }
+    if (c === "'" || c === '"') { q = c; cur += c; continue; }
+    if (c === "`") { crase = !crase; cur += c; continue; }
+    if (c === "$" && s[i + 1] === "(") { sub++; cur += "$("; i++; continue; }
+    if (c === ")" && sub > 0) { sub--; cur += c; continue; }
+    if (!sub && !crase && (c === ";" || c === "|" || c === "&")) { out.push(cur); cur = ""; continue; }
+    cur += c;
+  }
+  out.push(cur);
+  if (q || sub || crase) return [s];
+  return out;
+};
+const paraCasar = (s) => s.replace(/['"]/g, "").replace(/\/(?:\.\/)+/g, "/").replace(/\/{2,}/g, "/").trim();
+if (zonaViaCd || comandos(norm).some((s) => escreveNaZona(paraCasar(s), !WRAPPER))) {
   block("BLOQUEADO: escrita em zona protegida (.claude/settings.json, .claude/hooks/, .claude/workflows/, .claude/agents/, GOVERNANCE.md) via shell. Estes arquivos são as travas do playbook e só o Tech Lead os altera, à mão, fora da sessão do agente (GOVERNANCE.md §6). Patch pronto vai para docs/patches/.");
 }
 

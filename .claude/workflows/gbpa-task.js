@@ -141,6 +141,7 @@ Você é o Planner (multi-agents/agents/02-planner.md). O recon classificou a ta
 Fatie em tasks independentes, cada uma cabendo num PR de 200–400 linhas (GOVERNANCE §2.5), com objetivo verificável e arquivos disjuntos entre fatias (GOVERNANCE §4.1). Grave em ${DIR}/artifacts/planner.md.`,
       { agentType: 'planner-sonnet', schema: SLICES, phase: 'Plan', label: 'fatiar épica' })
     note('planner', out ? 'completed' : 'sem retorno', 'artifacts/planner.md')
+    if (!out || !out.slices.length) return result({ status: 'blocked', em: 'planner', blockers: ['fatiamento da épica sem retorno'] })
     return result({
       status: 'fatiada', slices: out ? out.slices : [],
       next: 'Abra uma /task por fatia. A task-mãe não recebe código.',
@@ -209,15 +210,24 @@ Edite SÓ arquivos de teste (um dono por arquivo, GOVERNANCE §4.1). Grave em ${
           { agentType: 'tester-sonnet', schema: VERDICT, phase: 'Review', label: 'lente: reprodução' }),
       ])).filter(Boolean)
       lenses.forEach(v => note(v.agent, v.aprovado ? 'APROVADO' : 'REPROVADO', v.artifact_path))
-      if (lenses.length < 3) log(`Só ${lenses.length}/3 lentes responderam — contando como REPROVADO`)
-      const issues = lenses.flatMap(v => v.issues)
-      if (lenses.length < 3) issues.push({ severity: 'HIGH', summary: `${3 - lenses.length} lente(s) de verificação sem retorno — sem veredito não há aprovação` })
-      verdict = { aprovado: lenses.length === 3 && lenses.every(v => v.aprovado), issues }
+      // Verificador sem retorno é falha de execução, não de implementação: não consome rodada
+      // do Coder nem vira `escalado` com diagnóstico falso — é `blocked`, como o refutador cego.
+      if (lenses.length < 3) {
+        return result({
+          status: 'blocked', em: 'lentes', issues: lenses.flatMap(v => v.issues),
+          blockers: [`${3 - lenses.length} de 3 lentes sem retorno na rodada ${round} — rode de novo`],
+        })
+      }
+      verdict = { aprovado: lenses.every(v => v.aprovado), issues: lenses.flatMap(v => v.issues) }
     } else {
       const v = await agent(reviewPrompt('Reviewer — correção, segurança e qualidade', '04-reviewer.md', 'reviewer.md'),
         { agentType: 'reviewer-fable', schema: VERDICT, phase: 'Review', label: `review r${round}` })
-      verdict = v || { aprovado: false, issues: [{ severity: 'HIGH', summary: 'Reviewer sem retorno' }] }
-      note('reviewer', verdict.aprovado ? 'APROVADO' : 'REPROVADO', v ? v.artifact_path : '-')
+      if (!v) {
+        note('reviewer', 'sem retorno', '-')
+        return result({ status: 'blocked', em: 'reviewer', blockers: [`Reviewer sem retorno na rodada ${round} — rode de novo`] })
+      }
+      verdict = v
+      note('reviewer', verdict.aprovado ? 'APROVADO' : 'REPROVADO', v.artifact_path)
     }
     if (verdict.aprovado) break
     log(`Rodada ${round}: REPROVADO (${verdict.issues.length} issue(s))`)

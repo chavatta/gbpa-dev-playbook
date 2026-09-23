@@ -21,7 +21,7 @@ O roteamento, o loop e o gate são do script. Não os refaça à mão.
 ## Quando NÃO usar
 - Pergunta ou exploração sem mudança de código.
 - Mudança só em documentação do playbook (fluxo enxuto manual basta).
-- Arquivo protegido (`GOVERNANCE.md`, `.claude/settings.json`, `.claude/hooks/`): vai para `docs/patches/`.
+- Arquivo protegido (`GOVERNANCE.md`, `.claude/settings.json`, `.claude/hooks/` e, com o lote de patches de 2026-09-23, `.claude/workflows/` e `.claude/agents/`): vai para `docs/patches/`.
 
 ## Pré-requisitos
 - Sessão aberta na raiz do repo (hooks carregam no startup).
@@ -45,7 +45,7 @@ O roteamento, o loop e o gate são do script. Não os refaça à mão.
    - `fatiada` → liste as fatias e diga: "abra uma `/task` por fatia". Não anexe `done`.
    - `escalado` → registre `rerouted → architect` e apresente os issues ao dev. Não anexe `done`.
    - `divergencia` → registre e apresente os dois vereditos ao dev: a decisão é humana. Não anexe `done`.
-   - `blocked` → registre o blocker (`em` diz onde parou) e pare. `em: refutador cego` significa que a aprovação não foi contra-verificada: não é `done` — rode de novo ou leve ao dev.
+   - `blocked` → registre o blocker (`em` diz onde parou) e pare. `em: lentes`, `em: reviewer` ou `em: refutador cego` significam que um verificador não devolveu veredito — falha de execução, não de código: não é `done` e não conta como reprovação; rode de novo ou leve ao dev.
 7. **Nunca escreva `done` sem `artifacts/reviewer.md` com `**Veredito:** APROVADO`** na primeira linha — o hook `check-reviewer-gate.mjs` impede o encerramento da sessão se você o fizer.
 
 ## Exemplo

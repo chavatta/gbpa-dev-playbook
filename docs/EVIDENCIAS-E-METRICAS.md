@@ -109,7 +109,7 @@ Documento sem dono e sem data de revisão é documento morto — e auditor pergu
 | `docs/PROPOSTA-PIPELINE-FLUXO.md` | Tech Lead | Por evento — arquivar quando o ADR-005 estiver em vigor e o piloto rodado |
 | `docs/patches/` | Tech Lead | Esvaziar conforme aplicado — patch pendente é dívida, não acervo |
 
-**O cabeçalho é a evidência.** Todo documento da tabela carrega, na abertura, a linha `**Dono:** … · **Revisão:** … · **Última revisão:** AAAA-MM-DD` (os ADRs usam `**Decisores:**` e `**Revisão:**`, que cumprem o mesmo papel). Revisão feita = data atualizada nesse cabeçalho, mesmo que o conteúdo não mude. "Revisado em, sem alterações" é resultado válido e é evidência.
+**O cabeçalho é a evidência.** Todo documento `.md` da tabela carrega, na abertura, a linha `**Dono:** … · **Revisão:** … · **Última revisão:** AAAA-MM-DD` (os ADRs usam `**Decisores:**` e `**Revisão:**`, que cumprem o mesmo papel). Revisão feita = data atualizada nesse cabeçalho, mesmo que o conteúdo não mude. "Revisado em, sem alterações" é resultado válido e é evidência.
 
 Para achar o que está vencido:
 

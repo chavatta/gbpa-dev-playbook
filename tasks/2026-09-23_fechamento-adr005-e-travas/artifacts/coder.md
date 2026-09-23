@@ -8,7 +8,7 @@ A parte de consistência documental está em `coder-docs.md` (segundo Coder, arq
 | Arquivo | Mudança |
 |---|---|
 | `docs/patches/block-dangerous-git.mjs` | Proposta nova: heredoc (corpo de dado sai da análise; corpo para interpretador liga modo conservador, olhando a linha inteira — `cat <<EOF \| bash` conta); quebra de linha só é separador fora de aspas (aspas desbalanceadas → comportamento anterior); token de argumento não atravessa separador; opções globais do git (`-C`, `-c`, `--git-dir`…) antes do subcomando; zona protegida por **segmento** de comando, com exceção para `cd`/`pushd` para dentro da zona; verbo mutante como palavra inteira; zona estendida a `.claude/workflows/` e `.claude/agents/` |
-| `docs/patches/test-block-dangerous-git.mjs` | +37 casos (17 ALLOW, 20 BLOCK) — os 2 FPs reportados, 5 variações deles, 3 FPs novos, 3 bypasses do hook em produção, 5 da zona nova, e guardas de regressão para cada relaxamento |
+| `docs/patches/test-block-dangerous-git.mjs` | +46 casos — os 2 FPs reportados, 5 variações deles, 4 FPs novos, 5 bypasses do hook em produção, 5 da zona nova, e guardas de regressão para cada relaxamento (inclusive os 5 de `<<` colado, do retrabalho) |
 | `docs/patches/check-reviewer-gate.mjs` | Regex sem flag `m` — veredito na primeira linha de fato (admite BOM e linhas em branco) |
 | `docs/patches/test-check-reviewer-gate.mjs` | Novo — 14 casos com `tasks/` temporário |
 | `docs/patches/protect-guardrails.mjs` | Bloqueia `.claude/workflows/` e `.claude/agents/`; `.claude/skills/` e `.claude/worktrees/` seguem livres |
@@ -29,10 +29,10 @@ A parte de consistência documental está em `coder-docs.md` (segundo Coder, arq
 
 | Prova | Proposta | Produção / versão do PR #6 |
 |---|---|---|
-| `test-block-dangerous-git.mjs` | 97/97 | 77/97 |
+| `test-block-dangerous-git.mjs` | 128/128 | 97/128 |
 | `test-check-reviewer-gate.mjs` | 14/14 | 11/14 |
 | `test-protect-guardrails.mjs` | 22/22 | 16/22 |
-| `scripts/test-gbpa-task.mjs` | 13/13 | 8/13 (a versão do PR #6 devolve `done` sem refutador) |
+| `scripts/test-gbpa-task.mjs` | 15/15 | 8/15 (a versão do PR #6 devolve `done` sem refutador) |
 | `check-pii.sh`, 11 cenários | timestamp 13 díg., ID 12 díg., hash, CPF cru, versão → 0; celular cru/formatado, CPF/CNPJ formatados → 1; repo → 0 | — |
 | `check-reviewer-gate` proposto contra o `tasks/` real | exit 0 | — |
 | Links relativos | 0 quebrados | — |
@@ -43,3 +43,28 @@ A parte de consistência documental está em `coder-docs.md` (segundo Coder, arq
 ## Não feito (fora do alcance de agente)
 
 Aplicar os patches; confirmar a classe do plano; preencher `COMPETENCIA.md`; replicar branch protection; piloto do `/task`. Tudo em `PENDENCIAS-TECH-LEAD.md`, em ordem.
+
+## Retrabalho — rodada 2 (achados do security-sre)
+
+| Achado | Correção | Prova |
+|---|---|---|
+| HIGH — `interpretador<<'EOF'` sem espaço: corpo descartado como dado (regressão vs produção) | `isExec` separa palavra também em `<` e `>` | 5 casos BLOCK novos (`bash`, `sh`, `/bin/bash<<-`, `python3`, `node`), proposta bloqueia, produção também — guarda de regressão |
+| MEDIUM — herestring para interpretador sem análise (proposta e produção) | `HERESTRING` liga o modo conservador, como `bash -c` | 2 casos BLOCK (com e sem espaço) que a produção deixa passar; `grep main <<< '…'` segue ALLOW |
+| LOW — `node -e`/`perl -e`/`ruby -e` escrevendo na zona | Documentado em "Limites conhecidos" do `docs/patches/README.md`, com o porquê de não bloquear | — |
+| LOW — prefixo `./` em `Read(./.env)` | Mantido: redundante com `Read(**/.env)`, não afrouxa | — |
+
+Suíte após o retrabalho: proposta 106/106 · produção 83/106.
+
+## Retrabalho — rodada 2 (achados do reviewer)
+
+| Achado | Correção | Prova |
+|---|---|---|
+| HIGH-1 — split por segmento usava o `SEP` de ancoramento (`(`, `)`, `{`, `}`, crase, `$(`): verbo e caminho em segmentos diferentes, 8 payloads que a produção bloqueia passavam | Divisão em comandos por scanner próprio (`comandos()`): só `;`, `&`, `\|` no nível de cima — fora de aspas, `$(…)` e crase; aspas/`$(` desbalanceados → segmento único. Normalização de `/./` e `//` | Os 8 payloads como BLOCK + 2 guardas ALLOW (leitura em subshell) |
+| (achado próprio ao corrigir o HIGH-1) — `cat > s.sh <<EOF … EOF; sh s.sh` descartava o corpo: regressão vs produção | "Executa o corpo" passa a olhar o comando inteiro fora dos corpos, incluindo `./…` e extensão de script; vários heredocs na mesma linha com corpos sequenciais | 2 BLOCK + 1 ALLOW |
+| SUG-1 — outras vias de escrita na zona | `rsync` e `git checkout\|restore\|apply\|mv\|rm` entram nos verbos que mutam; `node -e` fica documentado como limite (bloquearia leitura) | 6 BLOCK + 3 ALLOW |
+| MEDIUM-1 — tabelas de complexidade atrasadas | `HANDOFF §6` (o que o script executa e o que não), `ONBOARDING §4`, `00-orchestrator`, `ARCHITECTURE` alinhados: Tester em toda não-trivial, três lentes em paralelo, épica fatiada | Leitura |
+| MEDIUM-2 — lente ausente gastava rodada e escalava com motivo falso | Verificador sem retorno (lente, Reviewer ou refutador) → `blocked`, sem consumir rodada; `SKILL.md` passo 6 explica | Smoke: 2 cenários novos |
+| MEDIUM-3 — épica com Planner nulo devolvia `fatiada` vazia | `blocked em planner` | Smoke: 1 cenário novo |
+| LOW-1 a LOW-5, SUG-2 | Referência ao item 2 das pendências; escalonamento só ao Architect; timestamp carimbado pela sessão principal; "esvazie" em vez de "nascem vazios" no `GOVERNANCE.proposto` e no `ONBOARDING`; zona nova na `SKILL.md`; "todo documento `.md`" no `EVIDENCIAS` | — |
+
+Suítes após a rodada 2: `block-dangerous-git` 128/128 (produção 97/128) · `check-reviewer-gate` 14/14 · `protect-guardrails` 22/22 · smoke 15/15.

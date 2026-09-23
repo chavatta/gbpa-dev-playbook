@@ -35,7 +35,7 @@ Um padrão de desenvolvimento com IA baseado em **um time de agentes especializa
 
 Os campos marcados 🔒 no 00 escalam ao **Tech Lead**, não ao Architect — custo recorrente, contrato com terceiro, risco jurídico ou de dados pessoais não são decisão de projeto.
 
-Para adotar o playbook em um repo que ainda não o tem: copie `.claude/`, `multi-agents/`, `praticas/`, `scripts/`, `tasks/_TEMPLATE/` (não as tasks deste próprio playbook), `docs/`, `GOVERNANCE.md`, `README.md`, `DESENVOLVIMENTO-COM-IA.md` e este arquivo para a raiz do repo — detalhe completo em [README.md](README.md#adotando-em-um-repositório). No repo novo, `docs/PENDENCIAS-TECH-LEAD.md` e `docs/patches/` nascem vazios (são o backlog deste playbook) e `docs/COMPETENCIA.md` fica no repo do playbook. Preencha o `praticas/00` do projeto novo (passo 6), que não vem preenchido do repo de origem.
+Para adotar o playbook em um repo que ainda não o tem: copie `.claude/`, `multi-agents/`, `praticas/`, `scripts/`, `tasks/_TEMPLATE/` (não as tasks deste próprio playbook), `docs/`, `GOVERNANCE.md`, `README.md`, `DESENVOLVIMENTO-COM-IA.md` e este arquivo para a raiz do repo — detalhe completo em [README.md](README.md#adotando-em-um-repositório). No repo novo, esvazie `docs/PENDENCIAS-TECH-LEAD.md` e `docs/patches/` (são o backlog deste playbook) e apague `docs/COMPETENCIA.md`, que fica só no repo do playbook. Preencha o `praticas/00` do projeto novo (passo 6), que não vem preenchido do repo de origem.
 
 ---
 
@@ -74,12 +74,11 @@ Sob o ADR-005, `/task` é o ponto de entrada: o script `.claude/workflows/gbpa-t
 | Complexidade | Fluxo |
 |---|---|
 | Trivial (1 linha) | Coder → Reviewer (gate continua) |
-| Simples / média | Plan (architect+planner) → Coder → Reviewer |
-| Complexa | + Tester em paralelo; Debugger sob demanda |
+| Simples / média / complexa | Plan (architect+planner) → Coder ∥ Tester → Reviewer; Debugger sob demanda |
 | Feature não-trivial (SDD) | Spec-Writer antes do Architect |
 | Dados / IA como foco | + Data-Engineer / AI-Engineer nos seus gatilhos |
-| Sensível (auth, dados, dinheiro, superfície externa, infra) | + Security-SRE antes do `done` |
-| Épica | Todos, em ciclos |
+| Sensível (auth, dados, dinheiro, superfície externa, infra) | Reviewer ∥ Security-SRE ∥ Tester em paralelo, com unanimidade, + refutador cego |
+| Épica | Fatiada pelo Planner — cada fatia vira uma `/task`; a task-mãe não recebe código |
 
 ### Anatomia de uma task
 

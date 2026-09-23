@@ -79,7 +79,7 @@ Campos obrigatórios: `agent`, `model`, `task_id`, `status`, `artifact_path`, `n
 4. Anexa uma linha ao `run-log.md` a cada handoff (ver §5).
 5. **Não marca a task como `done` sem `artifacts/reviewer.md` presente** (quality gate — `GOVERNANCE.md §3`). Task sensível (auth, dados pessoais, dinheiro, superfície externa, infra) exige também `artifacts/security-sre.md` com veredito `APROVADO`.
 6. Em `blocker`, re-roteia para o agente capaz de resolver — não tenta resolver sozinho.
-7. **Convergência do retrabalho (ADR-005, P2).** REPROVADO volta ao Coder **uma** vez, com os issues priorizados. Na **segunda** reprovação o problema deixou de ser implementação: o fluxo devolve `escalado` ao Architect (spec ou design errado) ou ao Planner (task grande demais). A terceira decisão é do Tech Lead. O script `gbpa-task.js` aplica este teto por código (`MAX_ROUNDS = 2`).
+7. **Convergência do retrabalho (ADR-005, P2).** REPROVADO volta ao Coder **uma** vez, com os issues priorizados. Na **segunda** reprovação o problema deixou de ser implementação: o fluxo devolve `escalado` ao Architect, que decide se o problema é de spec/design (refaz) ou de tamanho (manda ao Planner fatiar). A terceira decisão é do Tech Lead. O script `gbpa-task.js` aplica este teto por código (`MAX_ROUNDS = 2`).
 8. **Divergência é decisão humana.** Em task sensível, após a aprovação em três lentes, um refutador cego (que não lê os vereditos anteriores) tenta derrubar a aprovação. Se discordar, o fluxo devolve `divergencia` e ninguém marca `done` até um humano decidir — o objetivo é impedir que o review vire carimbo sem esperar a métrica M3 trimestral.
 
 ---
@@ -104,17 +104,16 @@ Isso materializa a seção "Observabilidade" do `ARCHITECTURE.md`: quem rodou, q
 
 Não acione os 13 agentes por reflexo. Escale o esforço à complexidade (`ARCHITECTURE.md` → Scaling de Esforço).
 
-**Quem executa esta tabela é o script `gbpa-task.js`** (`docs/ADR-005`): a coluna *Complexidade* vem do **recon** — o Architect em modo levantamento, que lê o código antes de qualquer roteamento — e não do enunciado da task. *Sensível* é OR entre o flag do `brief.md` e o recon: o brief pode marcar, o recon pode elevar, nenhum dos dois rebaixa. Em task sensível a verificação muda de forma (três lentes em paralelo + refutador cego), não só de tamanho.
+**O script `gbpa-task.js` executa as linhas Trivial, Simples/Média/Complexa, SDD, Sensível e Épica desta tabela** (`docs/ADR-005`); Data-Engineer, AI-Engineer, DevOps, Documenter e Debugger continuam sendo acionados pela sessão principal nos seus gatilhos — o script não os chama. a coluna *Complexidade* vem do **recon** — o Architect em modo levantamento, que lê o código antes de qualquer roteamento — e não do enunciado da task. *Sensível* é OR entre o flag do `brief.md` e o recon: o brief pode marcar, o recon pode elevar, nenhum dos dois rebaixa. Em task sensível a verificação muda de forma (três lentes em paralelo + refutador cego), não só de tamanho.
 
 | Complexidade | Fluxo |
 |--------------|-------|
 | Trivial (1 linha) | Coder → Reviewer (gate ainda obrigatório) |
-| Simples / Média | Orchestrator → **Plan** (architect+planner) → Coder → Reviewer |
-| Complexa | + Tester (paralelo ao Coder), Debugger sob demanda |
+| Simples / Média / Complexa | **Plan** (architect+planner) → Coder ∥ Tester → Reviewer. No script o Tester roda em paralelo ao Coder em toda task não-trivial; Debugger sob demanda |
 | Feature não-trivial (SDD) | **Spec-Writer** antes do Architect |
 | Camada de dados como foco | + **Data-Engineer** entre Architect e Planner |
 | Subsistema de IA/LLM | + **AI-Engineer** (com Tester rodando as evals) |
-| Sensível (auth, dados pessoais, dinheiro, superfície externa, infra) | + **Security-SRE** antes do `done` (após Reviewer em feature; após DevOps em infra) |
+| Sensível (auth, dados pessoais, dinheiro, superfície externa, infra) | Verificação em **três lentes paralelas** (Reviewer ∥ Security-SRE ∥ Tester) com unanimidade + **refutador cego**; em infra, Security-SRE também após o DevOps |
 | Épica | **Fatiada, não executada:** o Planner devolve fatias de 200–400 linhas e cada uma vira uma `/task` própria. A task-mãe não recebe código |
 
 Documenter e DevOps entram só quando a task pede docs ou infra; Spec-Writer, Data-Engineer, AI-Engineer e Security-SRE só nos seus gatilhos acima.

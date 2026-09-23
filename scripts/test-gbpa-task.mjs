@@ -84,12 +84,19 @@ const CASES = [
         "lente: correção": OK("reviewer"), "lente: segurança": OK("security-sre"), "lente: reprodução": OK("tester"), "refutador cego": NOK("reviewer") } },
     (r) => r.res.status === "divergencia" && r.res.issues.length === 1],
 
-  ["lente ausente nunca aprova, e vira issue para o Coder",
+  ["lente ausente → blocked em lentes, sem gastar rodada do Coder",
     { args: { task_id: T, sensitive: true }, answers: {
         recon: RECON(), design: PTR("architect"), plan: PTR("planner"), coder: PTR("coder"), tester: PTR("tester"),
         "lente: correção": OK("reviewer"), "lente: segurança": null, "lente: reprodução": OK("tester") } },
-    (r) => r.res.status === "escalado" && r.res.issues.some((i) => /sem retorno/.test(i.summary))
-      && /sem retorno/.test(r.calls.find((c) => c.label === "coder r2").prompt)],
+    (r) => r.res.status === "blocked" && r.res.em === "lentes" && !r.labels.includes("coder r2") && !r.labels.includes("refutador cego")],
+
+  ["reviewer sem retorno (task normal) → blocked em reviewer",
+    { args: { task_id: T }, answers: { recon: RECON(), design: PTR("architect"), plan: PTR("planner"), coder: PTR("coder"), tester: PTR("tester"), review: null } },
+    (r) => r.res.status === "blocked" && r.res.em === "reviewer" && !r.labels.includes("coder r2")],
+
+  ["épica com Planner sem retorno → blocked, nunca fatiada vazia",
+    { args: { task_id: T }, answers: { recon: RECON({ complexity: "epica" }), "fatiar épica": null } },
+    (r) => r.res.status === "blocked" && r.res.em === "planner"],
 
   ["brief sensível e recon não → segue sensível (nunca rebaixa)",
     { args: { task_id: T, sensitive: true }, answers: {

@@ -182,7 +182,7 @@ O que o script faz que a prosa não conseguia garantir:
 | Épica | fatiada pelo Planner; cada fatia é uma `/task` |
 | Ponteiro | o bloco YAML do §3.2 vira JSON Schema validado na chamada |
 
-O script **não toca disco**: cada agente grava seu artifact em `tasks/{id}/artifacts/` por instrução, e a sessão principal anexa ao `run-log.md` os `events` que o script devolve (escritor único, `GOVERNANCE.md §4.3`). Restrições da ferramenta: sem `fs`, sem `Date`/`Math.random` (timestamps entram por `args`), até 16 agentes simultâneos, plano pago com Dynamic workflows habilitados.
+O script **não toca disco**: cada agente grava seu artifact em `tasks/{id}/artifacts/` por instrução, e a sessão principal anexa ao `run-log.md` os `events` que o script devolve (escritor único, `GOVERNANCE.md §4.3`). Restrições da ferramenta: sem `fs`, sem `Date`/`Math.random` (os `events` saem sem hora; a sessão principal carimba o timestamp ao anexar ao `run-log.md`), até 16 agentes simultâneos, plano pago com Dynamic workflows habilitados.
 
 ---
 
@@ -261,7 +261,7 @@ Quando o contexto de um agente se aproximar do limite:
 | Simples (bug fix, small change) | 2–3 | 5–15 por agente |
 | Média (nova feature pequena) | 3–5 | 10–30 por agente |
 | Complexa (sistema novo, refactor grande) | 5–8 | 20–50 por agente |
-| Épica (arquitetura de produto) | Todos | Múltiplos ciclos |
+| Épica (arquitetura de produto) | Planner (fatiar) | Nenhum na task-mãe — cada fatia é uma `/task` própria |
 
 ---
 

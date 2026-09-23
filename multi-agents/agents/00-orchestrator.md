@@ -130,7 +130,7 @@ OBJETIVO: fazer o login funcionar
 | **Simples** — bug fix, ajuste de config      | 2–3     | Nenhum                               |
 | **Média** — nova feature pequena             | 3–5     | Coder + Tester em paralelo           |
 | **Complexa** — feature com múltiplos módulos | 5–7     | Múltiplos Coders, Architect + DevOps |
-| **Épica** — novo produto, refactor grande    | Todos   | Múltiplos ciclos completos           |
+| **Épica** — novo produto, refactor grande    | Planner (fatiar) | Nenhum — cada fatia é uma `/task` própria; a task-mãe não recebe código |
 
 > Regra de ouro: o esforço (número de agentes e tool calls) deve ser proporcional à complexidade. Subescalar trava a entrega; superescalar queima contexto e introduz ruído.
 
