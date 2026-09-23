@@ -15,5 +15,10 @@ Append-only. Uma linha por evento.
 | 2026-09-23 22:25 | reviewer     | completed    | REPROVADO | artifacts/reviewer.md — 1 HIGH (split por segmento no SEP de ancoramento: 8 regressões), 3 MEDIUM, 5 LOW, 2 SUGGESTION |
 | 2026-09-23 23:05 | coder        | rerouted     | -      | rodada 2: todos os achados do reviewer + regressão própria (heredoc grava script e executa) — suítes 128/128, 14/14, 22/22, 15/15 |
 | 2026-09-23 23:05 | coder        | needs_review | -      | re-review: security-sre ∥ reviewer (última rodada antes de escalar — HANDOFF §4.7) |
+| 2026-09-23 23:15 | security-sre | completed    | REPROVADO | artifacts/security-sre.md (r2) — achados da r1 fechados; 1 HIGH novo: heredoc para psql/mysql cega a trava de DDL |
+| 2026-09-23 23:15 | reviewer     | completed    | APROVADO | artifacts/reviewer.md (r2) — 0 HIGH; 1 MEDIUM, 2 LOW, 2 SUGGESTION não-bloqueantes |
+| 2026-09-23 23:20 | orchestrator | rerouted     | -      | 3ª rodada, fora do teto do HANDOFF §4.7: decisão tomada sob a autonomia total delegada pelo usuário nesta sessão. Racional: o achado é estreito (uma lista de executores), com correção e prova diretas — não é problema de design |
+| 2026-09-23 23:25 | coder        | rerouted     | -      | rodada 3: CLIs de banco como consumidores de heredoc + não-bloqueantes do reviewer — suíte 135/135 (produção 104/135) |
+| 2026-09-23 23:25 | coder        | needs_review | -      | re-auditoria do security-sre restrita à rodada 3 |
 
 <!-- Eventos: started, completed, blocked, needs_review, rerouted, done -->

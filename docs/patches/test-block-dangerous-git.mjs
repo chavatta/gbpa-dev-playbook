@@ -125,7 +125,15 @@ const CASES = [
   // heredoc grava script e o roda depois — o corpo é código
   ["heredoc grava .sh e roda",      "cat > s.sh <<'EOF'\nrm -rf /tmp/x\nEOF\nsh s.sh", "BLOCK"],
   ["heredoc grava e ./roda",        "cat > s <<'EOF'\ngit clean -fd\nEOF\nchmod +x s && ./s", "BLOCK"],
-  ["dois heredocs na mesma linha",  "cat <<A <<B\nx\nA\ngit clean -fd\nB", "ALLOW"],
+  ["heredoc grava .mjs citando push", "cat > docs/patches/x.mjs <<'EOF'\n// git push origin main e bloqueado\nEOF", "ALLOW"],
+  ["dois heredocs na mesma linha","cat <<A <<B\nx\nA\ngit clean -fd\nB", "ALLOW"],
+  // achado HIGH do security-sre, rodada 2: heredoc para CLI de banco é SQL executado
+  ["psql <<EOF DROP TABLE",         "psql dbname <<'EOF'\nDROP TABLE users;\nEOF", "BLOCK"],
+  ["psql <<EOF TRUNCATE",           "psql <<'EOF'\nTRUNCATE logs;\nEOF", "BLOCK"],
+  ["mysql <<EOF DROP DATABASE",     "mysql db <<'EOF'\nDROP DATABASE app;\nEOF", "BLOCK"],
+  ["psql -f - <<EOF DROP",          "psql -f - <<'EOF'\nDROP TABLE users;\nEOF", "BLOCK"],
+  ["psql<<EOF colado DROP",         "psql<<'EOF'\nDROP SCHEMA public;\nEOF", "BLOCK"],
+  ["psql <<EOF SELECT",             "psql dbname <<'EOF'\nSELECT count(*) FROM users;\nEOF", "ALLOW"],
   // SUG-1 do reviewer: outras vias de escrita na zona
   ["rsync para hooks",              "rsync -a /tmp/h/ .claude/hooks/", "BLOCK"],
   ["caminho com /./",               "cp /tmp/x .claude/./hooks/x.mjs", "BLOCK"],

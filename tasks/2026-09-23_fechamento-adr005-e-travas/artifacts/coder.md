@@ -8,7 +8,7 @@ A parte de consistência documental está em `coder-docs.md` (segundo Coder, arq
 | Arquivo | Mudança |
 |---|---|
 | `docs/patches/block-dangerous-git.mjs` | Proposta nova: heredoc (corpo de dado sai da análise; corpo para interpretador liga modo conservador, olhando a linha inteira — `cat <<EOF \| bash` conta); quebra de linha só é separador fora de aspas (aspas desbalanceadas → comportamento anterior); token de argumento não atravessa separador; opções globais do git (`-C`, `-c`, `--git-dir`…) antes do subcomando; zona protegida por **segmento** de comando, com exceção para `cd`/`pushd` para dentro da zona; verbo mutante como palavra inteira; zona estendida a `.claude/workflows/` e `.claude/agents/` |
-| `docs/patches/test-block-dangerous-git.mjs` | +46 casos — os 2 FPs reportados, 5 variações deles, 4 FPs novos, 5 bypasses do hook em produção, 5 da zona nova, e guardas de regressão para cada relaxamento (inclusive os 5 de `<<` colado, do retrabalho) |
+| `docs/patches/test-block-dangerous-git.mjs` | +75 casos (estado final, após as três rodadas) — produção falha em 31 (15 falsos positivos, 11 bypasses, 5 da zona nova); os outros 44 são guardas de regressão, inclusive tudo o que os gates pegaram |
 | `docs/patches/check-reviewer-gate.mjs` | Regex sem flag `m` — veredito na primeira linha de fato (admite BOM e linhas em branco) |
 | `docs/patches/test-check-reviewer-gate.mjs` | Novo — 14 casos com `tasks/` temporário |
 | `docs/patches/protect-guardrails.mjs` | Bloqueia `.claude/workflows/` e `.claude/agents/`; `.claude/skills/` e `.claude/worktrees/` seguem livres |
@@ -17,7 +17,7 @@ A parte de consistência documental está em `coder-docs.md` (segundo Coder, arq
 | `docs/patches/GOVERNANCE.proposto.md` | Arquivo inteiro proposto; 7 trechos diferentes do vigente (cabeçalho, §2.6, §3.1, §3.4, §5.4, §6.2, §6.4) |
 | `docs/patches/GOVERNANCE-fluxo-por-script.md` | Removido — absorvido pelo `GOVERNANCE.proposto.md` |
 | `docs/patches/README.md` | Reescrito: lote pendente com prova por arquivo, passo a passo de aplicação, limites conhecidos, histórico |
-| `.claude/workflows/gbpa-task.js` | Refutador cego sem retorno → `blocked` (era `done`: fail-open); lente ausente vira issue HIGH explícito para o Coder da rodada 2; Coder é dono dos testes quando o Tester não roda (trivial, rodada 2); `sensitive` e `task_id` em todo retorno via `result()` |
+| `.claude/workflows/gbpa-task.js` | Refutador cego sem retorno → `blocked` (era `done`: fail-open); lente ou Reviewer sem retorno → `blocked` sem gastar rodada (estado final, rodada 2); épica sem fatias → `blocked`; Coder é dono dos testes quando o Tester não roda (trivial, rodada 2); `sensitive` e `task_id` em todo retorno via `result()` |
 | `.claude/skills/task/SKILL.md` | Passo 6 grava `Sensível: sim` no brief quando o recon eleva; `blocked em refutador cego` explicado; smoke test nas armadilhas |
 | `scripts/test-gbpa-task.mjs` | Novo — smoke test com `agent()` simulado, 13 cenários, todos os status de retorno |
 | `scripts/check-pii.sh` | Padrões delimitados por não-dígito (SUGGESTION da task 2026-08-31) |
@@ -29,7 +29,7 @@ A parte de consistência documental está em `coder-docs.md` (segundo Coder, arq
 
 | Prova | Proposta | Produção / versão do PR #6 |
 |---|---|---|
-| `test-block-dangerous-git.mjs` | 128/128 | 97/128 |
+| `test-block-dangerous-git.mjs` | 135/135 | 104/135 |
 | `test-check-reviewer-gate.mjs` | 14/14 | 11/14 |
 | `test-protect-guardrails.mjs` | 22/22 | 16/22 |
 | `scripts/test-gbpa-task.mjs` | 15/15 | 8/15 (a versão do PR #6 devolve `done` sem refutador) |
@@ -68,3 +68,13 @@ Suíte após o retrabalho: proposta 106/106 · produção 83/106.
 | LOW-1 a LOW-5, SUG-2 | Referência ao item 2 das pendências; escalonamento só ao Architect; timestamp carimbado pela sessão principal; "esvazie" em vez de "nascem vazios" no `GOVERNANCE.proposto` e no `ONBOARDING`; zona nova na `SKILL.md`; "todo documento `.md`" no `EVIDENCIAS` | — |
 
 Suítes após a rodada 2: `block-dangerous-git` 128/128 (produção 97/128) · `check-reviewer-gate` 14/14 · `protect-guardrails` 22/22 · smoke 15/15.
+
+## Retrabalho — rodada 3 (achado do security-sre na re-auditoria + não-bloqueantes do reviewer)
+
+| Achado | Correção | Prova |
+|---|---|---|
+| HIGH (security-sre r2) — heredoc para `psql`/`mysql` descartava o corpo e cegava a trava de DDL: regressão vs produção | CLIs de banco (`psql`, `mysql`, `mariadb`, `mongosh`, `sqlite3`, `sqlplus`, `sqlcmd`…) contam como consumidores que executam o corpo | 5 BLOCK (DROP/TRUNCATE, com e sem espaço, `-f -`) + 1 ALLOW (`SELECT`) |
+| MEDIUM (reviewer r2) — extensão de script como executor só gerava falso positivo | `SCRIPT` reduzido a `./…`; quem roda o arquivo aparece como interpretador | 1 ALLOW (`cat > x.mjs <<EOF` citando push) |
+| LOW-A/B, SUG-A/B (reviewer r2) | Maiúscula no `HANDOFF §6`; linhas 11 e 20 deste artifact; "Limites conhecidos" ganha escape/crase/`git apply` e cópia *da* zona | — |
+
+Suítes após a rodada 3: `block-dangerous-git` 135/135 (produção 104/135) · `check-reviewer-gate` 14/14 · `protect-guardrails` 22/22 · smoke 15/15.

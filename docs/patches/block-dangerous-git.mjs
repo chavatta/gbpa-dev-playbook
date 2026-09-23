@@ -25,8 +25,12 @@ try {
 // `source`, caminho `./…` e arquivo com extensão de script. Aí nada é removido e o modo
 // conservador liga (casa em qualquer posição), como nos wrappers.
 // Na dúvida, o corpo fica. Delimitador sem fechamento → nada é removido.
-const EXECUTOR = /^(?:(?:ba|z|k|da|fi)?sh|python[\d.]*|node|deno|bun|perl|ruby|php|pwsh|powershell|ssh|eval|xargs|source|\.)$/;
-const SCRIPT = /^\.\/|\.(?:sh|bash|zsh|py|js|mjs|cjs|ts|pl|rb|php|ps1)$/;
+// CLI de banco também executa o stdin: `psql <<EOF … DROP TABLE …` é a forma canônica de
+// rodar DDL multi-statement, e a trava de DDL abaixo precisa ver o corpo.
+const EXECUTOR = /^(?:(?:ba|z|k|da|fi)?sh|python[\d.]*|node|deno|bun|perl|ruby|php|pwsh|powershell|ssh|eval|xargs|source|\.|psql|mysql|mariadb|mongosh|mongo|sqlite3|sqlplus|sqlcmd|clickhouse-client|redis-cli)$/;
+// Script local rodado por caminho (`./s`). Extensão não conta: gravar `x.mjs` não é
+// executá-lo, e quem o roda aparece como interpretador (`node x.mjs`, `sh s.sh`).
+const SCRIPT = /^\.\//;
 // `<` e `>` também separam palavra: `bash<<'EOF'` sem espaço é shell válido.
 const executa = (texto) => texto.replace(/['"]/g, "").split(/[\s;&|(){}`<>]+/)
   .some((w) => w !== "" && (EXECUTOR.test(w.replace(/^.*\//, "")) || SCRIPT.test(w)));

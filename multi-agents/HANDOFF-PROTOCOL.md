@@ -104,7 +104,7 @@ Isso materializa a seção "Observabilidade" do `ARCHITECTURE.md`: quem rodou, q
 
 Não acione os 13 agentes por reflexo. Escale o esforço à complexidade (`ARCHITECTURE.md` → Scaling de Esforço).
 
-**O script `gbpa-task.js` executa as linhas Trivial, Simples/Média/Complexa, SDD, Sensível e Épica desta tabela** (`docs/ADR-005`); Data-Engineer, AI-Engineer, DevOps, Documenter e Debugger continuam sendo acionados pela sessão principal nos seus gatilhos — o script não os chama. a coluna *Complexidade* vem do **recon** — o Architect em modo levantamento, que lê o código antes de qualquer roteamento — e não do enunciado da task. *Sensível* é OR entre o flag do `brief.md` e o recon: o brief pode marcar, o recon pode elevar, nenhum dos dois rebaixa. Em task sensível a verificação muda de forma (três lentes em paralelo + refutador cego), não só de tamanho.
+**O script `gbpa-task.js` executa as linhas Trivial, Simples/Média/Complexa, SDD, Sensível e Épica desta tabela** (`docs/ADR-005`); Data-Engineer, AI-Engineer, DevOps, Documenter e Debugger continuam sendo acionados pela sessão principal nos seus gatilhos — o script não os chama. A coluna *Complexidade* vem do **recon** — o Architect em modo levantamento, que lê o código antes de qualquer roteamento — e não do enunciado da task. *Sensível* é OR entre o flag do `brief.md` e o recon: o brief pode marcar, o recon pode elevar, nenhum dos dois rebaixa. Em task sensível a verificação muda de forma (três lentes em paralelo + refutador cego), não só de tamanho.
 
 | Complexidade | Fluxo |
 |--------------|-------|
