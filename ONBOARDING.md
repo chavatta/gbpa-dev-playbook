@@ -45,16 +45,16 @@ Para adotar o playbook em um repo que ainda não o tem: copie `.claude/`, `multi
 |---|---|---|---|
 | `orchestrator` | Opus 5.5 | Decompõe, delega, coordena, sintetiza | Sempre — ponto de entrada |
 | `architect` | Opus 5.5 | Design e decisões técnicas | Feature nova, refactor, decisão de stack |
-| `planner` | Sonnet 5 | Fatia design em tasks INVEST com critérios | Depois do Architect |
-| `coder` | Sonnet 5 | Implementa a spec | Depois do Planner |
+| `planner` | Opus 5.5 | Fatia design em tasks INVEST com critérios | Depois do Architect |
+| `coder` | Opus 5.5 | Implementa a spec | Depois do Planner |
 | `reviewer` | Opus 5.5 | **Gate de qualidade obrigatório** | Depois do Coder, sempre |
-| `tester` | Sonnet 5 | Testes e validação | Em paralelo ou após o Coder |
-| `debugger` | Sonnet 5 | Root cause de bugs | Teste falhou / bug reportado |
+| `tester` | Opus 5.5 | Testes e validação | Em paralelo ou após o Coder |
+| `debugger` | Opus 5.5 | Root cause de bugs | Teste falhou / bug reportado |
 | `documenter` | Haiku 4.5 | Docs técnicos | Após aprovação do Reviewer |
-| `devops` | Sonnet 5 | CI/CD, deploy, infra | Tasks de infra |
-| `spec-writer` | Sonnet 5 | Spec formal e verificável antes de arquitetura e código (SDD) | Primeiro passo de feature não-trivial |
-| `data-engineer` | Sonnet 5 | Schema Postgres, migrations expand-contract, RLS, pgvector | Camada de dados é o foco da task |
-| `ai-engineer` | Sonnet 5 | RAG, agentes, prompts, evals, guardrails | Task envolve subsistema de IA/LLM |
+| `devops` | Opus 5.5 | CI/CD, deploy, infra | Tasks de infra |
+| `spec-writer` | Opus 5.5 | Spec formal e verificável antes de arquitetura e código (SDD) | Primeiro passo de feature não-trivial |
+| `data-engineer` | Opus 5.5 | Schema Postgres, migrations expand-contract, RLS, pgvector | Camada de dados é o foco da task |
+| `ai-engineer` | Opus 5.5 | RAG, agentes, prompts, evals, guardrails | Task envolve subsistema de IA/LLM |
 | `security-sre` | Fable 5.1 | **Gate de segurança sistêmico** (threat model, supply chain, secrets, pipeline) + prontidão de produção | Task toca auth, dados pessoais, dinheiro, superfície externa ou infra |
 
 Por que esses modelos: [docs/ADR-001-modelos-por-agente.md](docs/ADR-001-modelos-por-agente.md), [docs/ADR-002-agente-security-sre.md](docs/ADR-002-agente-security-sre.md) e [docs/ADR-003-agentes-sdd-dados-ia.md](docs/ADR-003-agentes-sdd-dados-ia.md).

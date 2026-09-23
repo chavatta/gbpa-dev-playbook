@@ -16,7 +16,7 @@ const body = new AsyncFunction("args", "agent", "parallel", "pipeline", "phase",
 const OK = (agent) => ({ agent, aprovado: true, issues: [], artifact_path: `artifacts/${agent}.md` });
 const NOK = (agent) => ({ agent, aprovado: false, issues: [{ severity: "HIGH", summary: `defeito visto por ${agent}` }], artifact_path: `artifacts/${agent}.md` });
 const PTR = (agent, status = "completed") => ({
-  agent, model: "sonnet", task_id: "t", status, artifact_path: `artifacts/${agent}.md`,
+  agent, model: "claude-opus-5-5", task_id: "t", status, artifact_path: `artifacts/${agent}.md`,
   files_changed: [], next_agent: "-", context_for_next: "-", blockers: status === "blocked" ? ["falta X"] : [], skill_candidates: [],
 });
 const RECON = (o = {}) => ({ complexity: "media", sensitive: false, sensitive_reasons: [], needs_spec: false, data_migration: false, files: ["a.ts"], summary: "-", ...o });
