@@ -128,6 +128,10 @@ const CASES = [
   ["heredoc grava e roda por caminho absoluto", "cat > /tmp/s <<'EOF'\nrm -rf /tmp/x\nEOF\nchmod +x /tmp/s; /tmp/s", "BLOCK"],
   ["heredoc grava e roda via $PWD",  "cat > s <<'EOF'\ngit clean -fd\nEOF\n$PWD/s", "BLOCK"],
   ["heredoc grava e exec",          "cat > /tmp/s <<'EOF'\ngit reset --hard\nEOF\nexec /tmp/s", "BLOCK"],
+  ["heredoc | tee e roda por caminho", "cat <<'EOF' | tee /tmp/s\nrm -rf /tmp/x\nEOF\nchmod +x /tmp/s; /tmp/s", "BLOCK"],
+  ["heredoc dd of= e roda por caminho", "dd of=/tmp/s <<'EOF'\ngit clean -fd\nEOF\nchmod +x /tmp/s; /tmp/s", "BLOCK"],
+  ["heredoc grava e roda via env",  "tee /tmp/s <<'EOF'\ngit reset --hard\nEOF\nenv /tmp/s", "BLOCK"],
+  ["doc em caminho absoluto, sem rodar", "cat > /tmp/notas.md <<'EOF'\ngit push origin main e bloqueado\nEOF", "ALLOW"],
   ["heredoc grava .mjs citando push","cat > docs/patches/x.mjs <<'EOF'\n// git push origin main e bloqueado\nEOF", "ALLOW"],
   ["dois heredocs na mesma linha","cat <<A <<B\nx\nA\ngit clean -fd\nB", "ALLOW"],
   // achado HIGH do security-sre, rodada 2: heredoc para CLI de banco é SQL executado

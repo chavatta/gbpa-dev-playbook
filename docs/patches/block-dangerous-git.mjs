@@ -36,6 +36,9 @@ const executa = (texto) => {
   const limpo = texto.replace(/['"]/g, "");
   const palavras = limpo.split(/[\s;&|(){}`<>]+/).filter((w) => w !== "");
   if (palavras.some((w) => EXECUTOR.test(w.replace(/^.*\//, "")) || SCRIPT.test(w))) return true;
+  // Caminho em posição de comando é execução por caminho (`/tmp/s`, `$PWD/s`, `exec ~/s`),
+  // seja qual for o comando que gravou o arquivo (`>`, `tee`, `dd of=`, `install`…).
+  if (/(?:^|[\n;&|(])\s*(?:(?:exec|env|nohup|sudo|time|command)\s+(?:-\S+\s+)*)*[^\s;&|()<>=]*\/[^\s;&|()<>]*/.test(limpo)) return true;
   // Arquivo gravado por redirect que reaparece no comando pode estar sendo executado por
   // caminho (`cat > /tmp/s <<EOF … ; /tmp/s`, `$PWD/s`): na dúvida, o corpo é código.
   const nome = (w) => w.replace(/^.*\//, "");
