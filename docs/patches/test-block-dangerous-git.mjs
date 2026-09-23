@@ -167,7 +167,7 @@ const CASES = [
   ["bash -c cp para hooks",         'bash -c "cp /tmp/x .claude/hooks/x.mjs"', "BLOCK"],
   ["cp para workflows",             "cp /tmp/x.js .claude/workflows/gbpa-task.js", "BLOCK"],
   ["redirect para agents",          "echo x > .claude/agents/reviewer.md", "BLOCK"],
-  ["sed -i em agents",              "sed -i s/fable/haiku/ .claude/agents/reviewer.md", "BLOCK"],
+  ["sed -i em agents",              "sed -i s/opus/haiku/ .claude/agents/reviewer.md", "BLOCK"],
   ["cd workflows && mv",            "cd .claude/workflows && mv /tmp/x.js gbpa-task.js", "BLOCK"],
   ["heredoc grava workflow",        "cat > .claude/workflows/gbpa-task.js <<'EOF'\nexport const meta = {}\nEOF", "BLOCK"],
 ];

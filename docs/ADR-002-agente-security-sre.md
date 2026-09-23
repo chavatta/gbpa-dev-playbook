@@ -19,7 +19,7 @@ O `multi-agents/ARCHITECTURE.md` (atualização 2026-06-29) já previa o agente 
 2. **Fronteira com o Reviewer:** Reviewer = segurança **do diff** (OWASP no código mudado, gate universal). Security-SRE = segurança **do sistema** (threat model, supply chain, pipeline, runtime, SRE), acionado por sensibilidade.
 3. **Fronteira com o DevOps:** DevOps **implementa** os controles (scanners no CI, secret manager, policies); Security-SRE **especifica e audita**. Auditor não implementa o que audita.
 4. **Gatilho de ativação:** features que tocam auth, dados pessoais, dinheiro ou superfície externa; toda task de infra/pipeline; sistemas com IA. Fora disso, o gate do Reviewer basta — Security-SRE em toda task trivial seria agent spam.
-5. **Modelo: `fable`.** Mesmo racional do Reviewer no ADR-001 — é um gate; um falso "APROVADO" de segurança é o erro mais caro do fluxo (vulnerabilidade em produção). O custo extra é limitado porque o agente só entra em tasks sensíveis.
+5. **Modelo: `fable` — desde 2026-09-23, Opus 5.5 (`claude-opus-5-5`), ver ADR-001 → "Revisão de 2026-09-23".** Mesmo racional do Reviewer no ADR-001 — é um gate; um falso "APROVADO" de segurança é o erro mais caro do fluxo (vulnerabilidade em produção). O custo extra é limitado porque o agente só entra em tasks sensíveis.
 
 ## Alternativas consideradas
 

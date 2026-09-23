@@ -39,7 +39,7 @@ const POINTER = {
   required: ['agent', 'model', 'task_id', 'status', 'artifact_path', 'files_changed', 'next_agent', 'context_for_next', 'blockers', 'skill_candidates'],
   properties: {
     agent: { type: 'string', description: 'nome-base: coder, reviewer, planner…' },
-    model: { type: 'string', description: 'família do modelo em que rodou: fable | sonnet | haiku' },
+    model: { type: 'string', description: 'família do modelo em que rodou: opus | sonnet | haiku' },
     task_id: { type: 'string' },
     status: { type: 'string', enum: ['completed', 'blocked', 'needs_review'] },
     artifact_path: { type: 'string' },
@@ -126,7 +126,7 @@ try {
 Você é o Architect em MODO LEVANTAMENTO (multi-agents/agents/01-architect.md → "Modo levantamento (recon)"). NÃO projete, NÃO proponha solução.
 Leia o brief e o código relevante do repositório e responda só o que o roteamento precisa: complexidade real (épica = não cabe num PR de 200–400 linhas, GOVERNANCE §2.5), se é sensível e por quê, se merece spec formal, se há migração de dados, arquivos prováveis.
 Grave o levantamento em ${DIR}/artifacts/recon.md, no máximo 30 linhas.`,
-    { agentType: 'architect-fable', schema: RECON, effort: 'low', label: 'recon' })
+    { agentType: 'architect-opus', schema: RECON, effort: 'low', label: 'recon' })
   if (!recon) throw new Error('recon sem retorno — veja /workflows')
   note('architect(recon)', 'completed', 'artifacts/recon.md')
 
@@ -159,7 +159,7 @@ Você é o Spec-Writer (multi-agents/agents/09-spec-writer.md). Escreva a spec v
     }
     const a = await pointer('architect', `${RULES}
 Você é o Architect (multi-agents/agents/01-architect.md). Projete a solução a partir do brief, do recon${recon.needs_spec ? ' e da spec (artifacts/spec-writer.md)' : ''}. Grave em ${DIR}/artifacts/architect.md no formato do seu manual.`,
-      { agentType: 'architect-fable', phase: 'Plan', label: 'design' })
+      { agentType: 'architect-opus', phase: 'Plan', label: 'design' })
     if (!a || a.status === 'blocked') return result({ status: 'blocked', em: 'architect', blockers: a ? a.blockers : ['sem retorno'] })
 
     const p = await pointer('planner', `${RULES}
@@ -203,9 +203,9 @@ Edite SÓ arquivos de teste (um dono por arquivo, GOVERNANCE §4.1). Grave em ${
     if (sensitive) {
       const lenses = (await parallel([
         () => agent(reviewPrompt('Reviewer — correção, qualidade e arquitetura', '04-reviewer.md', 'reviewer.md'),
-          { agentType: 'reviewer-fable', schema: VERDICT, phase: 'Review', label: 'lente: correção' }),
+          { agentType: 'reviewer-opus', schema: VERDICT, phase: 'Review', label: 'lente: correção' }),
         () => agent(reviewPrompt('Security-SRE — segurança, secrets, supply chain, superfície', '12-security-sre.md', 'security-sre.md'),
-          { agentType: 'security-sre-fable', schema: VERDICT, phase: 'Review', label: 'lente: segurança' }),
+          { agentType: 'security-sre-opus', schema: VERDICT, phase: 'Review', label: 'lente: segurança' }),
         () => agent(reviewPrompt('Tester — reprodução: rode os testes e tente quebrar o comportamento', '05-tester.md', 'tester-review.md'),
           { agentType: 'tester-sonnet', schema: VERDICT, phase: 'Review', label: 'lente: reprodução' }),
       ])).filter(Boolean)
@@ -221,7 +221,7 @@ Edite SÓ arquivos de teste (um dono por arquivo, GOVERNANCE §4.1). Grave em ${
       verdict = { aprovado: lenses.every(v => v.aprovado), issues: lenses.flatMap(v => v.issues) }
     } else {
       const v = await agent(reviewPrompt('Reviewer — correção, segurança e qualidade', '04-reviewer.md', 'reviewer.md'),
-        { agentType: 'reviewer-fable', schema: VERDICT, phase: 'Review', label: `review r${round}` })
+        { agentType: 'reviewer-opus', schema: VERDICT, phase: 'Review', label: `review r${round}` })
       if (!v) {
         note('reviewer', 'sem retorno', '-')
         return result({ status: 'blocked', em: 'reviewer', blockers: [`Reviewer sem retorno na rodada ${round} — rode de novo`] })
@@ -247,7 +247,7 @@ Edite SÓ arquivos de teste (um dono por arquivo, GOVERNANCE §4.1). Grave em ${
 Você é um Reviewer INDEPENDENTE (multi-agents/agents/04-reviewer.md). NÃO leia ${DIR}/artifacts/reviewer.md, security-sre.md nem tester-review.md — você não pode ser ancorado por veredito anterior.
 Leia só o brief e o diff (files_changed em artifacts/coder.md). Sua missão é REFUTAR a aprovação: procure o defeito que passou. Em dúvida, reprove.
 Grave em ${DIR}/artifacts/reviewer-cego.md (primeira linha "**Veredito:** APROVADO" ou "**Veredito:** REPROVADO (n issues)").`,
-      { agentType: 'reviewer-fable', schema: VERDICT, phase: 'Review', label: 'refutador cego', effort: 'high' })
+      { agentType: 'reviewer-opus', schema: VERDICT, phase: 'Review', label: 'refutador cego', effort: 'high' })
     // Fail-closed: sem retorno do refutador, a aprovação não foi contra-verificada — não é `done`.
     if (!blind) {
       note('reviewer(cego)', 'sem retorno', '-')

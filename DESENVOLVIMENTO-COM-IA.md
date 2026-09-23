@@ -71,19 +71,19 @@ Modelos de IA têm capacidades e custos diferentes. Concentramos o modelo mais c
 
 | Agente | Modelo | Por quê |
 |---|---|---|
-| Orchestrator | **Fable 5** | A decomposição define a qualidade de tudo que vem depois |
-| Architect | **Fable 5** | Decisões de arquitetura são caras de reverter |
-| Reviewer | **Fable 5** | É o gate: um falso "aprovado" é o erro mais caro do fluxo |
+| Orchestrator | **Opus 5.5** | A decomposição define a qualidade de tudo que vem depois |
+| Architect | **Opus 5.5** | Decisões de arquitetura são caras de reverter |
+| Reviewer | **Opus 5.5** | É o gate: um falso "aprovado" é o erro mais caro do fluxo |
 | Planner | Sonnet 5 | Estrutura trabalho sobre design já decidido |
 | Coder | Sonnet 5 | Implementa spec fechada; erro é pego pelo Reviewer |
 | Tester | Sonnet 5 | Método estruturado, critérios já definidos |
 | Debugger | Sonnet 5 | Segue metodologia científica de debugging |
 | DevOps | Sonnet 5 | Procedural, com checklist |
 | Documenter | Haiku 4.5 | Alto volume, insumo já aprovado |
-| Spec-Writer | Sonnet 5 | A spec é validada na sequência pelo Architect (Fable) |
-| Data-Engineer | Sonnet 5 | Trabalha sob design fechado; passa pelo Reviewer (Fable) |
-| AI-Engineer | Sonnet 5 | Trabalha sob spec e evals; passa por Reviewer e Security-SRE (Fable) |
-| Security-SRE | **Fable 5** | É um gate: um falso "aprovado" de segurança é vulnerabilidade em produção. Só entra em tasks sensíveis, o que limita o custo |
+| Spec-Writer | Sonnet 5 | A spec é validada na sequência pelo Architect (Opus 5.5) |
+| Data-Engineer | Sonnet 5 | Trabalha sob design fechado; passa pelo Reviewer (Opus 5.5) |
+| AI-Engineer | Sonnet 5 | Trabalha sob spec e evals; passa por Reviewer e Security-SRE (Opus 5.5) |
+| Security-SRE | **Opus 5.5** | É um gate: um falso "aprovado" de segurança é vulnerabilidade em produção. Só entra em tasks sensíveis, o que limita o custo |
 
 Racional completo e alternativas descartadas: [docs/ADR-001-modelos-por-agente.md](docs/ADR-001-modelos-por-agente.md), [docs/ADR-002-agente-security-sre.md](docs/ADR-002-agente-security-sre.md) e [docs/ADR-003-agentes-sdd-dados-ia.md](docs/ADR-003-agentes-sdd-dados-ia.md).
 
@@ -93,7 +93,7 @@ Racional completo e alternativas descartadas: [docs/ADR-001-modelos-por-agente.m
 
 | Risco real de dev com IA | Nossa mitigação |
 |---|---|
-| Código errado ou alucinado que "parece certo" | **Reviewer obrigatório** (Fable 5): nenhuma task fecha sem `artifacts/reviewer.md` com aprovação explícita — verificado por hook, não por boa vontade |
+| Código errado ou alucinado que "parece certo" | **Reviewer obrigatório** (Opus 5.5): nenhuma task fecha sem `artifacts/reviewer.md` com aprovação explícita — verificado por hook, não por boa vontade |
 | Ação destrutiva no repositório | Hooks **bloqueiam** push em `main`/`master` (inclusive `HEAD:main`), force push, `rm -rf`, `git reset --hard` |
 | Mudança grande demais para revisar | Planner fatia em mudanças de ~200–400 linhas; diff maior que isso é sinalizado no review |
 | Escopo descontrolado (IA "aproveita para arrumar" o que ninguém pediu) | Delegação com **LIMITES explícitos**; um dono por arquivo; agente fora do escopo = anti-padrão registrado |
