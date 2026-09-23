@@ -4,13 +4,14 @@
 **Data:** 2026-07-31
 **Decisores:** Tech Lead
 **Revisão:** semestral
+**Última revisão:** 2026-09-23
 **Relacionado:** complementa ADR-001 (modelos por agente) — não o supersede.
 
 ## Contexto
 
 A revisão de escopo dos 9 agentes mostrou que a responsabilidade de segurança estava **diluída em três agentes sem dono sistêmico**: o Reviewer cobre OWASP no diff, o Coder evita secrets no código, o DevOps cita scanning e least privilege como domínio. Ninguém era dono de: threat modeling, auditoria de supply chain, segurança do pipeline (4 camadas DevSecOps), postura de runtime e prontidão de produção (SLOs, incident readiness).
 
-O `multi-agents/ARCHITECTURE.md` (atualização 2026-06-29) já previa o agente **Security-SRE** (nº 12), mas o manual e a definição operacional nunca foram criados. Os agentes 09–11 (Spec-Writer, Data-Engineer, AI-Engineer) previstos na mesma atualização permanecem como backlog.
+O `multi-agents/ARCHITECTURE.md` (atualização 2026-06-29) já previa o agente **Security-SRE** (nº 12), mas o manual e a definição operacional nunca foram criados. Os agentes 09–11 (Spec-Writer, Data-Engineer, AI-Engineer) previstos na mesma atualização permanecem como backlog. *[Superado — ADR-003]*
 
 ## Decisão
 
@@ -18,7 +19,7 @@ O `multi-agents/ARCHITECTURE.md` (atualização 2026-06-29) já previa o agente 
 2. **Fronteira com o Reviewer:** Reviewer = segurança **do diff** (OWASP no código mudado, gate universal). Security-SRE = segurança **do sistema** (threat model, supply chain, pipeline, runtime, SRE), acionado por sensibilidade.
 3. **Fronteira com o DevOps:** DevOps **implementa** os controles (scanners no CI, secret manager, policies); Security-SRE **especifica e audita**. Auditor não implementa o que audita.
 4. **Gatilho de ativação:** features que tocam auth, dados pessoais, dinheiro ou superfície externa; toda task de infra/pipeline; sistemas com IA. Fora disso, o gate do Reviewer basta — Security-SRE em toda task trivial seria agent spam.
-5. **Modelo: `fable`.** Mesmo racional do Reviewer no ADR-001 — é um gate; um falso "APROVADO" de segurança é o erro mais caro do fluxo (vulnerabilidade em produção). O custo extra é limitado porque o agente só entra em tasks sensíveis.
+5. **Modelo: Fable — desde 2026-09-23 fixado em Fable 5.1 (`claude-fable-5-1`), enquanto os demais agentes de topo passaram a Opus 5.5; ver ADR-001 → "Revisão de 2026-09-23".** Mesmo racional do Reviewer no ADR-001 — é um gate; um falso "APROVADO" de segurança é o erro mais caro do fluxo (vulnerabilidade em produção). O custo extra é limitado porque o agente só entra em tasks sensíveis.
 
 ## Alternativas consideradas
 

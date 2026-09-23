@@ -4,7 +4,7 @@
 >
 > Insumo da cláusula 9 (monitoramento e análise crítica) da ISO/IEC 27001 e da ISO/IEC 42001. A análise crítica em si é da direção; o que está aqui é a matéria-prima que este repositório produz.
 >
-> **Dono:** Tech Lead · **Revisão:** semestral · **Última revisão:** 2026-08-31
+> **Dono:** Tech Lead · **Revisão:** semestral · **Última revisão:** 2026-09-23
 
 ---
 
@@ -100,16 +100,21 @@ Documento sem dono e sem data de revisão é documento morto — e auditor pergu
 | `docs/RUNBOOK-INCIDENTE-IA.md` | Tech Lead | Semestral, **e depois de todo incidente real** |
 | `praticas/00`, `04`, `05`, `06`, `10`, `11` | Tech Lead | Trimestral (cloud, ferramentas, segurança e IA giram rápido) |
 | `praticas/01`, `02`, `03`, `07`, `08`, `09`, `praticas/README.md` | Tech Lead | Anual |
-| `docs/ADR-*` | Autor do ADR | Por evento (revisão do ADR-001 é trimestral; ADR-002 a 004, semestral) |
-| `.claude/agents/`, `.claude/hooks/` | Tech Lead | A cada mudança de modelo ou de trava |
+| `docs/ADR-*` | Autor do ADR | Por evento (ADR-001 e 005 trimestral; 002 a 004 semestral) |
+| `multi-agents/templates/` | Tech Lead | Anual |
+| `tasks/_TEMPLATE/` | Tech Lead | Anual, ou a cada mudança no protocolo de handoff |
+| `scripts/check-pii.sh` | Tech Lead | Trimestral (junto com `praticas/06`) |
+| `.claude/agents/`, `.claude/hooks/` | Tech Lead | A cada mudança de modelo ou de trava. `.claude/hooks/` já é zona protegida contra escrita por agentes; `.claude/agents/` passa a ser pelo patch pendente em `docs/patches/settings.proposto.json` |
+| `.claude/workflows/gbpa-task.js`, `.claude/skills/task/`, `scripts/test-gbpa-task.mjs` | Tech Lead | A cada mudança no fluxo (ADR-005) — em branch, com o smoke test (`scripts/test-gbpa-task.mjs`) rodado e o caso novo acrescentado a ele, como os hooks. `.claude/workflows/` passa a ser zona protegida contra escrita por agentes pelo mesmo patch pendente; `.claude/skills/` segue writável (Documenter autora skills de projeto ali) |
+| `docs/PROPOSTA-PIPELINE-FLUXO.md` | Tech Lead | Por evento — arquivar quando o ADR-005 estiver em vigor e o piloto rodado |
 | `docs/patches/` | Tech Lead | Esvaziar conforme aplicado — patch pendente é dívida, não acervo |
 
-**O cabeçalho é a evidência.** Todo documento da tabela carrega, na abertura, a linha `**Dono:** … · **Revisão:** … · **Última revisão:** AAAA-MM-DD` (os ADRs usam `**Decisores:**` e `**Revisão:**`, que cumprem o mesmo papel). Revisão feita = data atualizada nesse cabeçalho, mesmo que o conteúdo não mude. "Revisado em, sem alterações" é resultado válido e é evidência.
+**O cabeçalho é a evidência.** Todo documento `.md` da tabela carrega, na abertura, a linha `**Dono:** … · **Revisão:** … · **Última revisão:** AAAA-MM-DD` (os ADRs usam `**Decisores:**` e `**Revisão:**`, que cumprem o mesmo papel). Revisão feita = data atualizada nesse cabeçalho, mesmo que o conteúdo não mude. "Revisado em, sem alterações" é resultado válido e é evidência.
 
 Para achar o que está vencido:
 
 ```bash
-grep -rn "Última revisão" --include="*.md" . | sort -t: -k3
+grep -rn "Última revisão\|\*\*Revisão:\*\*" --include="*.md" . | sort -t: -k3
 ```
 
 ---

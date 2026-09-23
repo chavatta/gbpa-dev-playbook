@@ -6,7 +6,9 @@
 # Saída: 0 = limpo (inclusive quando não há pasta de dado de teste) · 1 = achou.
 set -u
 
-PADRAO='[0-9]{3}\.[0-9]{3}\.[0-9]{3}-[0-9]{2}|[0-9]{2}\.[0-9]{3}\.[0-9]{3}/[0-9]{4}-[0-9]{2}|\(?[0-9]{2}\)? ?9[0-9]{4}-?[0-9]{4}'
+# Cada forma só casa delimitada por não-dígito: sem isso o celular cru (11 dígitos com 9
+# na terceira posição) casava dentro de timestamp em ms, ID longo e hash numérico.
+PADRAO='(^|[^0-9])([0-9]{3}\.[0-9]{3}\.[0-9]{3}-[0-9]{2}|[0-9]{2}\.[0-9]{3}\.[0-9]{3}/[0-9]{4}-[0-9]{2}|\(?[0-9]{2}\)? ?9[0-9]{4}-?[0-9]{4})([^0-9]|$)'
 
 # Poda .git, node_modules e afins antes de casar os alvos — varrer isso gera
 # falso positivo (spec de dependência de terceiro) e custo à toa. -I ignora

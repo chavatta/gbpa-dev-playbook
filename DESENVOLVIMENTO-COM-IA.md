@@ -2,7 +2,7 @@
 
 > **Leia este documento antes de qualquer outro.** Ele explica por que nosso fluxo de desenvolvimento com IA é estruturado do jeito que é.
 >
-> **Dono:** Tech Lead · **Revisão:** semestral · **Última revisão:** 2026-08-31
+> **Dono:** Tech Lead · **Revisão:** semestral · **Última revisão:** 2026-09-23
 
 ---
 
@@ -56,8 +56,10 @@ DEBUGGER  DOCUMENTER   DEVOPS  DATA-ENGINEER AI-ENGINEER SECURITY-SRE
 
 1. **Especialização** — cada agente faz uma coisa e faz bem; não mistura responsabilidades.
 2. **Revisão cruzada** — quem escreve o código nunca é quem aprova. O Coder não revisa o próprio trabalho, exatamente como num time maduro.
-3. **Escopo limitado por ferramenta** — cada agente só tem acesso às ferramentas do seu papel. O Reviewer não edita código (só lê); o Planner não executa comandos; o Debugger não corrige em produção (entrega diagnóstico ao Coder).
+3. **Escopo limitado por ferramenta** — cada agente só tem acesso às ferramentas do seu papel. O Reviewer não tem ferramenta de edição de código (sem `Edit`); grava só o próprio artifact (`tasks/{id}/artifacts/reviewer.md` — o `Write` é geral, a restrição é do manual, não da ferramenta) e lê o que precisar (`Read`/`Glob`/`Grep`/`Bash`); o Planner não executa comandos; o Debugger não corrige em produção (entrega diagnóstico ao Coder).
 4. **Handoff estruturado** — o trabalho passa de agente para agente via artifacts gravados em disco, com rastro auditável (`tasks/{id}/run-log.md`). Nada se perde em "telefone sem fio".
+
+O Orchestrator continua no topo do time, mas deixou de ser o ponto de entrada literal: sob o `docs/ADR-005-orquestracao-nativa-do-fluxo.md`, quem abre a task é a skill `/task` (`.claude/workflows/gbpa-task.js`), que roda o recon e roteia por código — vigência plena depende do patch pendente em `docs/patches/GOVERNANCE.proposto.md` e do piloto. O fluxo manual pelo Orchestrator segue como fallback quando o Workflow não está disponível.
 
 Detalhe completo: [multi-agents/ARCHITECTURE.md](multi-agents/ARCHITECTURE.md) e [multi-agents/HANDOFF-PROTOCOL.md](multi-agents/HANDOFF-PROTOCOL.md).
 
@@ -69,19 +71,19 @@ Modelos de IA têm capacidades e custos diferentes. Concentramos o modelo mais c
 
 | Agente | Modelo | Por quê |
 |---|---|---|
-| Orchestrator | **Fable 5** | A decomposição define a qualidade de tudo que vem depois |
-| Architect | **Fable 5** | Decisões de arquitetura são caras de reverter |
-| Reviewer | **Fable 5** | É o gate: um falso "aprovado" é o erro mais caro do fluxo |
+| Orchestrator | **Opus 5.5** | A decomposição define a qualidade de tudo que vem depois |
+| Architect | **Opus 5.5** | Decisões de arquitetura são caras de reverter |
+| Reviewer | **Opus 5.5** | É o gate: um falso "aprovado" é o erro mais caro do fluxo |
 | Planner | Sonnet 5 | Estrutura trabalho sobre design já decidido |
 | Coder | Sonnet 5 | Implementa spec fechada; erro é pego pelo Reviewer |
 | Tester | Sonnet 5 | Método estruturado, critérios já definidos |
 | Debugger | Sonnet 5 | Segue metodologia científica de debugging |
 | DevOps | Sonnet 5 | Procedural, com checklist |
 | Documenter | Haiku 4.5 | Alto volume, insumo já aprovado |
-| Spec-Writer | Sonnet 5 | A spec é validada na sequência pelo Architect (Fable) |
-| Data-Engineer | Sonnet 5 | Trabalha sob design fechado; passa pelo Reviewer (Fable) |
-| AI-Engineer | Sonnet 5 | Trabalha sob spec e evals; passa por Reviewer e Security-SRE (Fable) |
-| Security-SRE | **Fable 5** | É um gate: um falso "aprovado" de segurança é vulnerabilidade em produção. Só entra em tasks sensíveis, o que limita o custo |
+| Spec-Writer | Sonnet 5 | A spec é validada na sequência pelo Architect (Opus 5.5) |
+| Data-Engineer | Sonnet 5 | Trabalha sob design fechado; passa pelo Reviewer (Opus 5.5) |
+| AI-Engineer | Sonnet 5 | Trabalha sob spec e evals; passa por Reviewer (Opus 5.5) e Security-SRE (Fable 5.1) |
+| Security-SRE | **Fable 5.1** | É um gate: um falso "aprovado" de segurança é vulnerabilidade em produção. Só entra em tasks sensíveis, o que limita o custo |
 
 Racional completo e alternativas descartadas: [docs/ADR-001-modelos-por-agente.md](docs/ADR-001-modelos-por-agente.md), [docs/ADR-002-agente-security-sre.md](docs/ADR-002-agente-security-sre.md) e [docs/ADR-003-agentes-sdd-dados-ia.md](docs/ADR-003-agentes-sdd-dados-ia.md).
 
@@ -91,7 +93,7 @@ Racional completo e alternativas descartadas: [docs/ADR-001-modelos-por-agente.m
 
 | Risco real de dev com IA | Nossa mitigação |
 |---|---|
-| Código errado ou alucinado que "parece certo" | **Reviewer obrigatório** (Fable 5): nenhuma task fecha sem `artifacts/reviewer.md` com aprovação explícita — verificado por hook, não por boa vontade |
+| Código errado ou alucinado que "parece certo" | **Reviewer obrigatório** (Opus 5.5): nenhuma task fecha sem `artifacts/reviewer.md` com aprovação explícita — verificado por hook, não por boa vontade |
 | Ação destrutiva no repositório | Hooks **bloqueiam** push em `main`/`master` (inclusive `HEAD:main`), force push, `rm -rf`, `git reset --hard` |
 | Mudança grande demais para revisar | Planner fatia em mudanças de ~200–400 linhas; diff maior que isso é sinalizado no review |
 | Escopo descontrolado (IA "aproveita para arrumar" o que ninguém pediu) | Delegação com **LIMITES explícitos**; um dono por arquivo; agente fora do escopo = anti-padrão registrado |
@@ -110,7 +112,7 @@ Racional completo e alternativas descartadas: [docs/ADR-001-modelos-por-agente.m
 
 Regra de processo depende de obediência; **trava mecânica não**. O kit traz as duas camadas:
 
-- **`.claude/settings.json` → `permissions.deny`** — nega de saída: push direto em `main`, force push, `rm -rf`, `git reset --hard`, `git clean -f` (qualquer variante com `-f`, incluindo `-fd`), e qualquer escrita em `GOVERNANCE.md`, `.claude/settings.json` e `.claude/hooks/`.
+- **`.claude/settings.json` → `permissions.deny`** — nega de saída: push direto em `main`, force push, `rm -rf`, `git reset --hard`, `git clean -f`, e qualquer escrita em `GOVERNANCE.md`, `.claude/settings.json` e `.claude/hooks/`. O deny simples só casa `git clean -fd` literal; as demais variantes com `-f` (`-fdx`, `-f -d`, flags reordenadas) são bloqueadas pelo `block-dangerous-git.mjs` logo abaixo, não pelo deny.
 - **Hooks (scripts Node que interceptam as ações da IA — a mesma implementação roda em macOS, Linux e Windows, sem configuração por sistema):**
   - `block-dangerous-git.mjs` — analisa cada comando antes de executar; bloqueia variações que burlam o deny simples (ex.: `git push origin HEAD:main`, flags reordenadas, ofuscação por aspas) e os equivalentes Windows (`Remove-Item -Recurse -Force`, `rmdir /s`). O casamento é **por posição de comando**: o padrão perigoso só bloqueia quando está no início da linha ou logo após um separador (`;`, `&&`, `|`), de modo que *citar* o comando como texto — um `grep` na documentação, um `echo` explicativo — não dispara a trava. A exceção são os wrappers que executam string como código (`sh -c`, `eval`, `xargs`): neles o conteúdo citado **é** comando, e a checagem volta a valer em qualquer posição.
   - `protect-guardrails.mjs` — impede a IA de editar as próprias travas e a governança, cobrindo caminhos absolutos e caminhos Windows (`C:\...\.claude\settings.json`). Ele intercepta as ferramentas de escrita; o caminho por shell (`cp`, `tee`, `>`, `sed -i` para `.claude/` ou `GOVERNANCE.md`) é fechado pelo `block-dangerous-git.mjs`, que continua permitindo **ler** esses arquivos.

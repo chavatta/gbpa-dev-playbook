@@ -2,6 +2,7 @@
 
 **Status:** Aceito
 **Data:** 2026-07-31
+**Última revisão:** 2026-09-23
 **Decisores:** Tech Lead
 **Revisão:** semestral
 **Relacionado:** completa o quadro de 13 agentes previsto em `multi-agents/ARCHITECTURE.md` (atualização 2026-06-29); complementa ADR-001 (modelos) e ADR-002 (Security-SRE) — não os supersede.
@@ -17,11 +18,11 @@ O `ARCHITECTURE.md` previa 13 agentes (0–12) desde junho, mas três nunca fora
    - **Data-Engineer** — camada de dados: schema Postgres, migrations expand-contract com rollback, RLS default-deny provada por teste, índices justificados, pgvector. Fronteira: não escreve código de aplicação (Coder) nem provisiona infra (DevOps); destrutivo só com aprovação do Tech Lead.
    - **AI-Engineer** — subsistemas LLM: RAG, agentes/tools, prompts versionados, evals com golden set, guardrails. Fronteira: padrão mínimo primeiro; segurança (injeção/vazamento) auditada pelo Security-SRE; camada vetorial com o Data-Engineer.
 2. **Gatilhos de ativação:** Spec-Writer no início de feature não-trivial (fluxo SDD); Data-Engineer quando a camada de dados é o foco; AI-Engineer quando há subsistema de IA. Nenhum entra em task que não os exige.
-3. **Modelo: `sonnet` para os três.** Pelo racional do ADR-001, Fable fica nos nós cujo erro escapa sem gate: decomposição (Orchestrator), design (Architect) e os gates (Reviewer, Security-SRE). Os três novos agentes produzem trabalho **consumido e auditado por um nó Fable imediatamente a jusante**: a spec é validada pelo Architect-fable, e schema/subsistema de IA passam pelo Reviewer-fable (e Security-SRE-fable quando sensível). O Orchestrator pode sobrescrever o modelo na delegação em tasks épicas, como já previsto no ADR-001.
+3. **Modelo: `sonnet` para os três.** Pelo racional do ADR-001, o modelo de topo (Fable até 2026-09-23; desde então Opus 5.5, e Fable 5.1 no Security-SRE) fica nos nós cujo erro escapa sem gate: decomposição (Orchestrator), design (Architect) e os gates (Reviewer, Security-SRE). Os três novos agentes produzem trabalho **consumido e auditado por um nó no modelo de topo imediatamente a jusante**: a spec é validada pelo Architect-opus, e schema/subsistema de IA passam pelo Reviewer-opus (e Security-SRE-fable quando sensível). O Orchestrator pode sobrescrever o modelo na delegação em tasks épicas, como já previsto no ADR-001.
 
 ## Alternativas consideradas
 
-1. **Spec-Writer em Fable** — a spec é nó de alavancagem, mas tem gate imediato (Architect-fable lê a spec inteira antes de projetar); o ganho não justifica o consumo de cota em todo início de feature.
+1. **Spec-Writer no modelo de topo** — a spec é nó de alavancagem, mas tem gate imediato (Architect-opus lê a spec inteira antes de projetar); o ganho não justifica o consumo de cota em todo início de feature.
 2. **Não criar e enxugar o ARCHITECTURE para 10 agentes** — removeria os fluxos 5 e 6; rejeitada porque SDD, camada de dados e sistemas com IA fazem parte do roadmap da equipe.
 3. **Fundir Data-Engineer no Coder e AI-Engineer no Architect** — mantém a contagem menor, mas mistura responsabilidades com custos de erro muito distintos (migration destrutiva ≠ código de app; evals ≠ design de sistema).
 

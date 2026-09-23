@@ -2,7 +2,7 @@
 
 > Based on research from Anthropic Engineering, AgentForge, AgentMesh, and academic literature on LLM-based multi-agent systems (2025–2026).
 >
-> **Dono:** Tech Lead · **Revisão:** semestral · **Última revisão:** 2026-08-31
+> **Dono:** Tech Lead · **Revisão:** semestral · **Última revisão:** 2026-09-23
 
 ---
 
@@ -17,7 +17,7 @@ Agentes únicos têm limites: contexto limitado, raciocínio sequencial, e tend�
 - **Separação de concerns** — menos chance de um agente contaminar o raciocínio de outro
 - **Escalabilidade** — adicionar capacidade = adicionar agentes
 
-> Dado da Anthropic: um sistema multi-agent com um modelo de topo como lead e Sonnet como subagentes superou um sistema single-agent em **90.2%** em tarefas de pesquisa complexas. (O estudo original usou Opus; no quadro atual do playbook o papel de lead é do **Fable 5** — ver `ADR-001`.)
+> Dado da Anthropic: um sistema multi-agent com um modelo de topo como lead e Sonnet como subagentes superou um sistema single-agent em **90.2%** em tarefas de pesquisa complexas. (O estudo original usou Opus; no quadro atual do playbook o papel de lead é do **Opus 5.5** — ver `ADR-001`.)
 
 ---
 
@@ -57,7 +57,7 @@ Agentes únicos têm limites: contexto limitado, raciocínio sequencial, e tend�
 
 ## Os 13 Agentes (1 Orchestrator + 12 Especialistas)
 
-> **Atualizado em 2026-06-29** com base no estudo `03-TECHNOLOGY/Stacks-Arquiteturas-Estado-Da-Arte-2026.md`. Os 8 originais foram revisados e ancorados nos defaults de stack 2026; 4 novos (Spec-Writer, Data-Engineer, AI-Engineer, Security-SRE) cobrem as lacunas que o estudo revelou (SDD, camada de dados, sistemas de IA/RAG, segurança aprofundada + SRE).
+> **Atualizado em 2026-06-29** com base no estudo `03-TECHNOLOGY/Stacks-Arquiteturas-Estado-Da-Arte-2026.md` (vault externo, fora deste repo). Os 8 originais foram revisados e ancorados nos defaults de stack 2026; 4 novos (Spec-Writer, Data-Engineer, AI-Engineer, Security-SRE) cobrem as lacunas que o estudo revelou (SDD, camada de dados, sistemas de IA/RAG, segurança aprofundada + SRE).
 
 | # | Agente | Responsabilidade Principal | Quando Ativar |
 |---|--------|--------------------------|---------------|
@@ -166,6 +166,26 @@ User → Orchestrator
 
 ---
 
+## Execução: o script `gbpa-task` (ADR-005)
+
+Os fluxos acima **explicam**; quem **decide** é `.claude/workflows/gbpa-task.js`, executado pela ferramenta nativa Workflow e disparado pela skill `/task`. A prosa desta página é a documentação do script, não uma segunda fonte de verdade — se divergirem, o script está certo e esta página está desatualizada.
+
+O que o script faz que a prosa não conseguia garantir:
+
+| Propriedade | Como |
+|---|---|
+| Roteamento com informação | `recon` (Architect, modo levantamento, esforço baixo) roda **antes** de classificar; o `if` decide com escopo real |
+| Teto do retrabalho | `for (round ≤ 2)`; na 2ª reprovação devolve `escalado` |
+| Verificação proporcional ao risco | `if (sensitive)` → Reviewer ∥ Security-SRE ∥ Tester, unanimidade; senão voto único |
+| Anti-carimbo | refutador cego após a aprovação em task sensível; discordância devolve `divergencia` |
+| Gate por código | `done` só é retornado após veredito validado por schema; o hook `check-reviewer-gate.mjs` é a segunda linha |
+| Épica | fatiada pelo Planner; cada fatia é uma `/task` |
+| Ponteiro | o bloco YAML do §3.2 vira JSON Schema validado na chamada |
+
+O script **não toca disco**: cada agente grava seu artifact em `tasks/{id}/artifacts/` por instrução, e a sessão principal anexa ao `run-log.md` os `events` que o script devolve (escritor único, `GOVERNANCE.md §4.3`). Restrições da ferramenta: sem `fs`, sem `Date`/`Math.random` (os `events` saem sem hora; a sessão principal carimba o timestamp ao anexar ao `run-log.md`), até 16 agentes simultâneos, plano pago com Dynamic workflows habilitados.
+
+---
+
 ## Protocolo de Handoff
 
 O contrato completo está em **`HANDOFF-PROTOCOL.md`** — ele é a fonte de verdade. Resumo: cada agente grava seu trabalho completo em `tasks/{task_id}/artifacts/{agente}.md` e devolve ao Orchestrator **apenas o ponteiro leve** (nunca o conteúdo bruto — isso causaria os anti-padrões *Context Bloat* e *Telephone Game* listados abaixo):
@@ -241,7 +261,7 @@ Quando o contexto de um agente se aproximar do limite:
 | Simples (bug fix, small change) | 2–3 | 5–15 por agente |
 | Média (nova feature pequena) | 3–5 | 10–30 por agente |
 | Complexa (sistema novo, refactor grande) | 5–8 | 20–50 por agente |
-| Épica (arquitetura de produto) | Todos | Múltiplos ciclos |
+| Épica (arquitetura de produto) | Planner (fatiar) | Nenhum na task-mãe — cada fatia é uma `/task` própria |
 
 ---
 
@@ -309,6 +329,6 @@ projeto/
 - [LLM-Based Multi-Agent Systems for Software Engineering — ACM](https://dl.acm.org/doi/10.1145/3712003)
 - [Designing LLM-based Multi-Agent Systems — arXiv](https://arxiv.org/pdf/2511.08475)
 - [Choosing the Right Multi-Agent Architecture — LangChain](https://blog.langchain.com/choosing-the-right-multi-agent-architecture/)
-- `03-TECHNOLOGY/Stacks-Arquiteturas-Estado-Da-Arte-2026.md` — estudo interno que ancora os defaults de stack 2026 e motivou os 4 novos agentes.
+- `03-TECHNOLOGY/Stacks-Arquiteturas-Estado-Da-Arte-2026.md` (vault externo, fora deste repo) — estudo interno que ancora os defaults de stack 2026 e motivou os 4 novos agentes.
 
 

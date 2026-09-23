@@ -3,7 +3,7 @@
 > Complemento operacional de `ARCHITECTURE.md`. Define **como** os agentes trocam trabalho na prática.
 > Regra de ouro: **artifacts são arquivos no disco, não JSON no contexto.** O Orchestrator nunca carrega o conteúdo bruto de um subagente — só referências leves.
 >
-> **Dono:** Tech Lead · **Revisão:** semestral, ou a cada mudança no protocolo · **Última revisão:** 2026-08-31
+> **Dono:** Tech Lead · **Revisão:** semestral, ou a cada mudança no protocolo · **Última revisão:** 2026-09-23
 
 ---
 
@@ -52,7 +52,7 @@ A mensagem final do subagente ao Orchestrator deve conter **apenas** este bloco 
 
 ```yaml
 agent: coder
-model: sonnet            # modelo em que o agente REALMENTE rodou (ver ADR-001)
+model: claude-sonnet-5   # ID exato do modelo em que o agente REALMENTE rodou (ver ADR-001)
 task_id: 2026-06-29_auth-jwt
 status: completed        # completed | blocked | needs_review
 artifact_path: tasks/2026-06-29_auth-jwt/artifacts/coder.md
@@ -65,7 +65,9 @@ skill_candidates: []     # skills existentes usadas e/ou candidatas a criar (ver
 
 Campos obrigatórios: `agent`, `model`, `task_id`, `status`, `artifact_path`, `next_agent`, `context_for_next`, `blockers`, `skill_candidates`.
 
-**Sobre `agent` e `model`:** `agent` é sempre o **nome-base** (`coder`, `reviewer`, …) — sem sufixo de modelo — porque os hooks e o `artifact_path` dependem dele. `model` é a família do modelo em que o subagente efetivamente rodou (`fable`, `sonnet`, `haiku`), verificada por ele no próprio system prompt. Se divergir do modelo designado no ADR-001, o subagente devolve `status: blocked` com o blocker `"modelo divergente: esperado {X}, rodando em {Y}"` em vez de seguir — assim o downgrade silencioso vira um bloqueio visível no `run-log.md`, não um resultado de qualidade menor passando por aprovado.
+**No fluxo por script** (`/task` → `.claude/workflows/gbpa-task.js`, `docs/ADR-005`), este bloco é o JSON Schema `POINTER` do script, validado na chamada: o subagente é obrigado a devolver o objeto completo e o modelo tenta de novo se errar o formato. Ponteiro malformado deixa de existir.
+
+**Sobre `agent` e `model`:** `agent` é sempre o **nome-base** (`coder`, `reviewer`, …) — sem sufixo de modelo — porque os hooks e o `artifact_path` dependem dele. `model` é o modelo em que o subagente efetivamente rodou — o **ID exato** lido no próprio system prompt (`claude-opus-5-5`, `claude-sonnet-5`, `claude-haiku-4-5-…`), não só a família: desde 2026-09-23 o ADR-001 fixa a versão dos agentes de topo, e a evidência precisa ter a mesma granularidade da regra. Sufixo de janela de contexto (`claude-opus-5-5[1m]`) é o mesmo modelo — registre como aparece, mas não é divergência. Se divergir do modelo designado no ADR-001, o subagente devolve `status: blocked` com o blocker `"modelo divergente: esperado {X}, rodando em {Y}"` em vez de seguir — assim o downgrade silencioso vira um bloqueio visível no `run-log.md`, não um resultado de qualidade menor passando por aprovado.
 
 ---
 
@@ -77,6 +79,8 @@ Campos obrigatórios: `agent`, `model`, `task_id`, `status`, `artifact_path`, `n
 4. Anexa uma linha ao `run-log.md` a cada handoff (ver §5).
 5. **Não marca a task como `done` sem `artifacts/reviewer.md` presente** (quality gate — `GOVERNANCE.md §3`). Task sensível (auth, dados pessoais, dinheiro, superfície externa, infra) exige também `artifacts/security-sre.md` com veredito `APROVADO`.
 6. Em `blocker`, re-roteia para o agente capaz de resolver — não tenta resolver sozinho.
+7. **Convergência do retrabalho (ADR-005, P2).** REPROVADO volta ao Coder **uma** vez, com os issues priorizados. Na **segunda** reprovação o problema deixou de ser implementação: o fluxo devolve `escalado` ao Architect, que decide se o problema é de spec/design (refaz) ou de tamanho (manda ao Planner fatiar). A terceira decisão é do Tech Lead. O script `gbpa-task.js` aplica este teto por código (`MAX_ROUNDS = 2`).
+8. **Divergência é decisão humana.** Em task sensível, após a aprovação em três lentes, um refutador cego (que não lê os vereditos anteriores) tenta derrubar a aprovação. Se discordar, o fluxo devolve `divergencia` e ninguém marca `done` até um humano decidir — o objetivo é impedir que o review vire carimbo sem esperar a métrica M3 trimestral.
 
 ---
 
@@ -98,18 +102,19 @@ Isso materializa a seção "Observabilidade" do `ARCHITECTURE.md`: quem rodou, q
 
 ## 6. Fluxo enxuto (default)
 
-Não acione os 13 agentes por reflexo. Escale o esforço à complexidade (`ARCHITECTURE.md` → Scaling de Esforço):
+Não acione os 13 agentes por reflexo. Escale o esforço à complexidade (`ARCHITECTURE.md` → Scaling de Esforço).
+
+**O script `gbpa-task.js` executa as linhas Trivial, Simples/Média/Complexa, SDD, Sensível e Épica desta tabela** (`docs/ADR-005`); Data-Engineer, AI-Engineer, DevOps, Documenter e Debugger continuam sendo acionados pela sessão principal nos seus gatilhos — o script não os chama. A coluna *Complexidade* vem do **recon** — o Architect em modo levantamento, que lê o código antes de qualquer roteamento — e não do enunciado da task. *Sensível* é OR entre o flag do `brief.md` e o recon: o brief pode marcar, o recon pode elevar, nenhum dos dois rebaixa. Em task sensível a verificação muda de forma (três lentes em paralelo + refutador cego), não só de tamanho.
 
 | Complexidade | Fluxo |
 |--------------|-------|
 | Trivial (1 linha) | Coder → Reviewer (gate ainda obrigatório) |
-| Simples / Média | Orchestrator → **Plan** (architect+planner) → Coder → Reviewer |
-| Complexa | + Tester (paralelo ao Coder), Debugger sob demanda |
+| Simples / Média / Complexa | **Plan** (architect+planner) → Coder ∥ Tester → Reviewer. No script o Tester roda em paralelo ao Coder em toda task não-trivial; Debugger sob demanda |
 | Feature não-trivial (SDD) | **Spec-Writer** antes do Architect |
 | Camada de dados como foco | + **Data-Engineer** entre Architect e Planner |
 | Subsistema de IA/LLM | + **AI-Engineer** (com Tester rodando as evals) |
-| Sensível (auth, dados pessoais, dinheiro, superfície externa, infra) | + **Security-SRE** antes do `done` (após Reviewer em feature; após DevOps em infra) |
-| Épica | Todos os 12 especialistas, em ciclos |
+| Sensível (auth, dados pessoais, dinheiro, superfície externa, infra) | Verificação em **três lentes paralelas** (Reviewer ∥ Security-SRE ∥ Tester) com unanimidade + **refutador cego**; em infra, Security-SRE também após o DevOps |
+| Épica | **Fatiada, não executada:** o Planner devolve fatias de 200–400 linhas e cada uma vira uma `/task` própria. A task-mãe não recebe código |
 
 Documenter e DevOps entram só quando a task pede docs ou infra; Spec-Writer, Data-Engineer, AI-Engineer e Security-SRE só nos seus gatilhos acima.
 
@@ -139,7 +144,8 @@ Governança completa em `SKILLS-GOVERNANCE.md`. No handoff:
 ## 8. Checklist rápido (cole no início de cada run)
 
 - [ ] `task_id` definido e `tasks/{task_id}/` criado a partir do `_TEMPLATE`
-- [ ] `brief.md` preenchido pelo Orchestrator
+- [ ] `brief.md` preenchido pelo Orchestrator (pela sessão principal, via `/task`)
+- [ ] `artifacts/recon.md` existe antes de qualquer roteamento — complexidade e sensibilidade vêm dele
 - [ ] Cada subagente grava em `artifacts/{agente}.md` e devolve só o ponteiro
 - [ ] `run-log.md` atualizado a cada handoff
 - [ ] Paralelismo só em trabalho independente, com worktree/dono único
