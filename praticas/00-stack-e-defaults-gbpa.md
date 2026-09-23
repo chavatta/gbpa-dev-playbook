@@ -67,7 +67,7 @@ Escolhida a opção (ou delegada ao Architect), a decisão vira **ADR** e o valo
 
 | Default | Valor | Opções (★ = ponto de partida) | Nota |
 |---|---|---|---|
-| Provedor/modelos 🔒 | **Anthropic — Opus 5.5 / Sonnet 5 / Haiku 4.5** | ★ **Anthropic** · outro provedor | Trocar exige revisar ADR-001/002/003 e a designação de modelo dos 13 agentes |
+| Provedor/modelos 🔒 | **Anthropic — Opus 5.5 / Fable 5.1 / Sonnet 5 / Haiku 4.5** | ★ **Anthropic** · outro provedor | Trocar exige revisar ADR-001/002/003 e a designação de modelo dos 13 agentes |
 | Contrato/DPA 🔒 | **Plano de subscrição — ⚠️ classe a confirmar (ver nota abaixo)** | Comercial (Team / Enterprise / API) · Consumidor (Pro / Max) | O DPA da Anthropic é **incorporado automaticamente aos Termos Comerciais**, com SCCs — não exige assinatura separada. Planos de consumidor **não** são cobertos por ele |
 | Dados em prompt | Dado pessoal real **nunca**; fixture sintética por seed é a única fonte em desenvolvimento | *(decidido — sem menu)* | Ver seção LGPD do [06](06-devsecops.md). Verificação no CI: `gitleaks` (segredo) **+** check de padrão de PII sobre fixtures e seeds — somatório, não alternativa |
 | Framework de agentes/RAG | `{...}` | ★ **SDK do provedor, direto** · framework de orquestração (LangGraph, LlamaIndex) | ★ é o "padrão mínimo que atende" do manual do AI-Engineer. Framework entra quando o SDK direto já não dá conta — via ADR do Architect, não por antecipação |

@@ -55,7 +55,7 @@ Para adotar o playbook em um repo que ainda não o tem: copie `.claude/`, `multi
 | `spec-writer` | Sonnet 5 | Spec formal e verificável antes de arquitetura e código (SDD) | Primeiro passo de feature não-trivial |
 | `data-engineer` | Sonnet 5 | Schema Postgres, migrations expand-contract, RLS, pgvector | Camada de dados é o foco da task |
 | `ai-engineer` | Sonnet 5 | RAG, agentes, prompts, evals, guardrails | Task envolve subsistema de IA/LLM |
-| `security-sre` | Opus 5.5 | **Gate de segurança sistêmico** (threat model, supply chain, secrets, pipeline) + prontidão de produção | Task toca auth, dados pessoais, dinheiro, superfície externa ou infra |
+| `security-sre` | Fable 5.1 | **Gate de segurança sistêmico** (threat model, supply chain, secrets, pipeline) + prontidão de produção | Task toca auth, dados pessoais, dinheiro, superfície externa ou infra |
 
 Por que esses modelos: [docs/ADR-001-modelos-por-agente.md](docs/ADR-001-modelos-por-agente.md), [docs/ADR-002-agente-security-sre.md](docs/ADR-002-agente-security-sre.md) e [docs/ADR-003-agentes-sdd-dados-ia.md](docs/ADR-003-agentes-sdd-dados-ia.md).
 

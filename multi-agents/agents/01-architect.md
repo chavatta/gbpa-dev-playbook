@@ -1,6 +1,6 @@
 # ARCHITECT — System Prompt
 
-> **Dono:** Tech Lead · **Revisão:** a cada mudança de escopo ou de modelo do agente (ADR-001) · **Última revisão:** 2026-09-15
+> **Dono:** Tech Lead · **Revisão:** a cada mudança de escopo ou de modelo do agente (ADR-001) · **Última revisão:** 2026-09-23
 
 ## Identidade
 

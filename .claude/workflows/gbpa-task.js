@@ -39,7 +39,7 @@ const POINTER = {
   required: ['agent', 'model', 'task_id', 'status', 'artifact_path', 'files_changed', 'next_agent', 'context_for_next', 'blockers', 'skill_candidates'],
   properties: {
     agent: { type: 'string', description: 'nome-base: coder, reviewer, planner…' },
-    model: { type: 'string', description: 'família do modelo em que rodou: opus | sonnet | haiku' },
+    model: { type: 'string', description: 'ID exato do modelo em que rodou, lido no system prompt (ex.: claude-opus-5-5, claude-sonnet-5)' },
     task_id: { type: 'string' },
     status: { type: 'string', enum: ['completed', 'blocked', 'needs_review'] },
     artifact_path: { type: 'string' },
@@ -205,7 +205,7 @@ Edite SÓ arquivos de teste (um dono por arquivo, GOVERNANCE §4.1). Grave em ${
         () => agent(reviewPrompt('Reviewer — correção, qualidade e arquitetura', '04-reviewer.md', 'reviewer.md'),
           { agentType: 'reviewer-opus', schema: VERDICT, phase: 'Review', label: 'lente: correção' }),
         () => agent(reviewPrompt('Security-SRE — segurança, secrets, supply chain, superfície', '12-security-sre.md', 'security-sre.md'),
-          { agentType: 'security-sre-opus', schema: VERDICT, phase: 'Review', label: 'lente: segurança' }),
+          { agentType: 'security-sre-fable', schema: VERDICT, phase: 'Review', label: 'lente: segurança' }),
         () => agent(reviewPrompt('Tester — reprodução: rode os testes e tente quebrar o comportamento', '05-tester.md', 'tester-review.md'),
           { agentType: 'tester-sonnet', schema: VERDICT, phase: 'Review', label: 'lente: reprodução' }),
       ])).filter(Boolean)

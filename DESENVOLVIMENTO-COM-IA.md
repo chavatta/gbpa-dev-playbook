@@ -82,8 +82,8 @@ Modelos de IA têm capacidades e custos diferentes. Concentramos o modelo mais c
 | Documenter | Haiku 4.5 | Alto volume, insumo já aprovado |
 | Spec-Writer | Sonnet 5 | A spec é validada na sequência pelo Architect (Opus 5.5) |
 | Data-Engineer | Sonnet 5 | Trabalha sob design fechado; passa pelo Reviewer (Opus 5.5) |
-| AI-Engineer | Sonnet 5 | Trabalha sob spec e evals; passa por Reviewer e Security-SRE (Opus 5.5) |
-| Security-SRE | **Opus 5.5** | É um gate: um falso "aprovado" de segurança é vulnerabilidade em produção. Só entra em tasks sensíveis, o que limita o custo |
+| AI-Engineer | Sonnet 5 | Trabalha sob spec e evals; passa por Reviewer (Opus 5.5) e Security-SRE (Fable 5.1) |
+| Security-SRE | **Fable 5.1** | É um gate: um falso "aprovado" de segurança é vulnerabilidade em produção. Só entra em tasks sensíveis, o que limita o custo |
 
 Racional completo e alternativas descartadas: [docs/ADR-001-modelos-por-agente.md](docs/ADR-001-modelos-por-agente.md), [docs/ADR-002-agente-security-sre.md](docs/ADR-002-agente-security-sre.md) e [docs/ADR-003-agentes-sdd-dados-ia.md](docs/ADR-003-agentes-sdd-dados-ia.md).
 

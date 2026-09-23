@@ -52,7 +52,7 @@ A mensagem final do subagente ao Orchestrator deve conter **apenas** este bloco 
 
 ```yaml
 agent: coder
-model: sonnet            # modelo em que o agente REALMENTE rodou (ver ADR-001)
+model: claude-sonnet-5   # ID exato do modelo em que o agente REALMENTE rodou (ver ADR-001)
 task_id: 2026-06-29_auth-jwt
 status: completed        # completed | blocked | needs_review
 artifact_path: tasks/2026-06-29_auth-jwt/artifacts/coder.md
@@ -67,7 +67,7 @@ Campos obrigatórios: `agent`, `model`, `task_id`, `status`, `artifact_path`, `n
 
 **No fluxo por script** (`/task` → `.claude/workflows/gbpa-task.js`, `docs/ADR-005`), este bloco é o JSON Schema `POINTER` do script, validado na chamada: o subagente é obrigado a devolver o objeto completo e o modelo tenta de novo se errar o formato. Ponteiro malformado deixa de existir.
 
-**Sobre `agent` e `model`:** `agent` é sempre o **nome-base** (`coder`, `reviewer`, …) — sem sufixo de modelo — porque os hooks e o `artifact_path` dependem dele. `model` é a família do modelo em que o subagente efetivamente rodou (`opus`, `sonnet`, `haiku`), verificada por ele no próprio system prompt. Se divergir do modelo designado no ADR-001, o subagente devolve `status: blocked` com o blocker `"modelo divergente: esperado {X}, rodando em {Y}"` em vez de seguir — assim o downgrade silencioso vira um bloqueio visível no `run-log.md`, não um resultado de qualidade menor passando por aprovado.
+**Sobre `agent` e `model`:** `agent` é sempre o **nome-base** (`coder`, `reviewer`, …) — sem sufixo de modelo — porque os hooks e o `artifact_path` dependem dele. `model` é o modelo em que o subagente efetivamente rodou — o **ID exato** lido no próprio system prompt (`claude-opus-5-5`, `claude-sonnet-5`, `claude-haiku-4-5-…`), não só a família: desde 2026-09-23 o ADR-001 fixa a versão dos agentes de topo, e a evidência precisa ter a mesma granularidade da regra. Se divergir do modelo designado no ADR-001, o subagente devolve `status: blocked` com o blocker `"modelo divergente: esperado {X}, rodando em {Y}"` em vez de seguir — assim o downgrade silencioso vira um bloqueio visível no `run-log.md`, não um resultado de qualidade menor passando por aprovado.
 
 ---
 

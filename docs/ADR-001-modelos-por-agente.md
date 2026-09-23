@@ -1,6 +1,6 @@
 # ADR-001 — Modelo de IA por Agente
 
-**Status:** Aceito — complementado por ADR-002 (Security-SRE) e ADR-003 (Spec-Writer, Data-Engineer, AI-Engineer: sonnet); **revisado em 2026-09-23: Fable → Opus 5.5** nos nós críticos (seção "Revisão de 2026-09-23")
+**Status:** Aceito — complementado por ADR-002 (Security-SRE) e ADR-003 (Spec-Writer, Data-Engineer, AI-Engineer: sonnet); **revisado em 2026-09-23: Fable → Opus 5.5** no Orchestrator, Architect e Reviewer; Security-SRE fixado em Fable 5.1 (seção "Revisão de 2026-09-23")
 **Data:** 2026-07-31
 **Decisores:** Tech Lead
 **Revisão:** trimestral
@@ -10,7 +10,7 @@
 
 ## Contexto
 
-O fluxo multi-agent tem 9 agentes com custos de erro muito diferentes. A cota de uso dos modelos (plano de subscrição — ⚠️ classe a confirmar, ver `docs/PENDENCIAS-TECH-LEAD.md` item 1) é compartilhada pela equipe, e os modelos disponíveis têm capacidades e custos distintos: **Opus 5.5** (topo de linha; até 2026-09-23 era o **Fable 5**), **Sonnet 5** (equilíbrio) e **Haiku 4.5** (rápido e barato).
+O fluxo multi-agent tem 9 agentes com custos de erro muito diferentes. A cota de uso dos modelos (plano de subscrição — ⚠️ classe a confirmar, ver `docs/PENDENCIAS-TECH-LEAD.md` item 1) é compartilhada pela equipe, e os modelos disponíveis têm capacidades e custos distintos: **Opus 5.5** e **Fable 5.1** (topo de linha; até 2026-09-23 o topo era só o **Fable 5**), **Sonnet 5** (equilíbrio) e **Haiku 4.5** (rápido e barato).
 
 O gargalo de um fluxo assim não é velocidade de geração de código — é a **qualidade das decisões nos nós de alto impacto**: a decomposição do problema, o design da solução e o gate de review. Um erro nesses nós se propaga (ou passa despercebido) por todo o resto; um erro na execução é barato, porque o Reviewer o intercepta.
 
@@ -58,20 +58,20 @@ Os arquivos em `.claude/agents/` mantêm o **sufixo de modelo** no nome (`review
 2. **Auto-verificação** — todo agente tem a seção "Modelo designado (ADR-001)" e confere, no próprio system prompt, em que modelo está rodando. Divergência do designado devolve `status: blocked` com o blocker `"modelo divergente: esperado {X}, rodando em {Y}"` em vez de seguir — o downgrade silencioso vira bloqueio visível.
 3. **Ponteiro de handoff** — `model` é campo **obrigatório** (`multi-agents/HANDOFF-PROTOCOL.md` §3.2) e registra o modelo em que o subagente efetivamente rodou, não o designado. É o que fica no `run-log.md` como evidência.
 
-**Custo aceito:** se este ADR trocar o modelo de um agente, o **arquivo mantém o nome-base** (`reviewer.md`, `coder.md`, …) — só o `name:` no frontmatter carrega o sufixo, e é ele que muda. As referências que usam nome-base seguem válidas sem alteração; qualquer menção ao nome sufixado (documentação, scripts) precisa ser atualizada na mesma mudança. Em particular, `.claude/workflows/gbpa-task.js` (ADR-005) hard-codeia os `agentType` sufixados (`architect-opus`, `planner-sonnet`, `spec-writer-sonnet`, `coder-sonnet`, `tester-sonnet`, `reviewer-opus`, `security-sre-opus`) — troca de modelo precisa atualizar esses valores no script junto. A revisão trimestral deste ADR é o momento de verificar isso.
+**Custo aceito:** se este ADR trocar o modelo de um agente, o **arquivo mantém o nome-base** (`reviewer.md`, `coder.md`, …) — só o `name:` no frontmatter carrega o sufixo, e é ele que muda. As referências que usam nome-base seguem válidas sem alteração; qualquer menção ao nome sufixado (documentação, scripts) precisa ser atualizada na mesma mudança. Em particular, `.claude/workflows/gbpa-task.js` (ADR-005) hard-codeia os `agentType` sufixados (`architect-opus`, `planner-sonnet`, `spec-writer-sonnet`, `coder-sonnet`, `tester-sonnet`, `reviewer-opus`, `security-sre-fable`) — troca de modelo precisa atualizar esses valores no script junto. A revisão trimestral deste ADR é o momento de verificar isso.
 
-## Revisão de 2026-09-23 — Fable 5 → Opus 5.5
+## Revisão de 2026-09-23 — Opus 5.5 nos nós críticos, Fable 5.1 no gate de segurança
 
 *(decidido pelo Tech Lead)*
 
-Os quatro agentes em modelo de topo — `orchestrator`, `architect`, `reviewer` (ADR-001) e `security-sre` (ADR-002) — passam de **Fable 5** para **Opus 5.5**. O racional de *onde* fica o modelo de topo não muda: decomposição, design e os dois gates. Muda *qual* modelo ocupa esses nós.
+`orchestrator`, `architect` e `reviewer` passam de **Fable 5** para **Opus 5.5**. O `security-sre` (ADR-002) **fica em Fable**, agora fixado em **Fable 5.1**. O racional de *onde* fica o modelo de topo não muda: decomposição, design e os dois gates. Muda *qual* modelo ocupa esses nós — e os dois gates passam a rodar em famílias diferentes: em task sensível, a lente de correção (Reviewer, Opus) e a de segurança (Security-SRE, Fable) não compartilham os pontos cegos de um mesmo modelo.
 
-- **ID completo, não alias.** O frontmatter usa `model: claude-opus-5-5`. O alias `opus` seguiria automaticamente a próxima versão da família — e herdaria a versão exata da conversa principal quando ela já roda em Opus —, o que tira da revisão deste ADR a decisão de trocar o modelo de um gate. Fixar o ID troca conveniência por controle: o upgrade seguinte é uma revisão explícita deste ADR, não um efeito colateral.
-- **Sufixo segue a família:** `architect-opus`, `reviewer-opus`, `security-sre-opus`. O `orchestrator` continua sem sufixo. O campo `model` do ponteiro de handoff passa a registrar `opus`.
-- **Auto-verificação:** o agente confere se roda em Opus 5.5; outra versão ou família devolve `status: blocked` com modelo divergente.
-- **Mudou junto:** `name:`/`model:` dos quatro agentes, os `agentType` do `gbpa-task.js`, e as tabelas de modelo do `DESENVOLVIMENTO-COM-IA`, do `ONBOARDING`, do `README` e da `praticas/00`.
-- **Sessões abertas:** a definição dos agentes carrega no startup do Claude Code — reinicie as sessões para que os nomes `-opus` e o modelo novo valham.
-- **Evidência antiga não muda:** artifacts em `tasks/` anteriores a esta data registram `fable` porque foi nele que rodaram.
+- **ID completo, não alias.** O frontmatter usa `model: claude-opus-5-5` e, no Security-SRE, `model: claude-fable-5-1`. O alias seguiria automaticamente a próxima versão da família — e herdaria a versão exata da conversa principal quando ela já roda naquela família —, o que tira da revisão deste ADR a decisão de trocar o modelo de um gate. Fixar o ID troca conveniência por controle: o upgrade seguinte é uma revisão explícita deste ADR, não um efeito colateral.
+- **Sufixo segue a família:** `architect-opus`, `reviewer-opus`; `security-sre-fable` não muda de nome. O `orchestrator` continua sem sufixo. O campo `model` do ponteiro de handoff passa a registrar o ID exato (`claude-opus-5-5`, `claude-fable-5-1`).
+- **Auto-verificação:** cada agente confere se roda na versão designada (Opus 5.5; Fable 5.1 no Security-SRE); outra versão ou família devolve `status: blocked` com modelo divergente.
+- **Mudou junto:** `name:`/`model:` dos três agentes em Opus e o `model:` do Security-SRE; os `agentType` e a descrição do campo `model` no `gbpa-task.js`; ADR-002, 003 e 005; `HANDOFF-PROTOCOL` (o campo `model` do ponteiro passa a registrar o ID exato); `ARCHITECTURE`; as tabelas de modelo do `DESENVOLVIMENTO-COM-IA`, do `ONBOARDING`, do `README` e da `praticas/00`; as decisões 2 e 4 do `PENDENCIAS-TECH-LEAD`; e um payload da suíte em `docs/patches/`.
+- **Sessões abertas:** a definição dos agentes carrega no startup do Claude Code — reinicie as sessões para que os nomes `-opus` e os modelos fixados valham.
+- **Evidência antiga não muda:** artifacts em `tasks/` anteriores a esta data registram `fable` nos quatro agentes porque foi nele que rodaram.
 
 ## Notas operacionais
 
