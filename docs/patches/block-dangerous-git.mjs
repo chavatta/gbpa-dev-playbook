@@ -32,8 +32,16 @@ const EXECUTOR = /^(?:(?:ba|z|k|da|fi)?sh|python[\d.]*|node|deno|bun|perl|ruby|p
 // executá-lo, e quem o roda aparece como interpretador (`node x.mjs`, `sh s.sh`).
 const SCRIPT = /^\.\//;
 // `<` e `>` também separam palavra: `bash<<'EOF'` sem espaço é shell válido.
-const executa = (texto) => texto.replace(/['"]/g, "").split(/[\s;&|(){}`<>]+/)
-  .some((w) => w !== "" && (EXECUTOR.test(w.replace(/^.*\//, "")) || SCRIPT.test(w)));
+const executa = (texto) => {
+  const limpo = texto.replace(/['"]/g, "");
+  const palavras = limpo.split(/[\s;&|(){}`<>]+/).filter((w) => w !== "");
+  if (palavras.some((w) => EXECUTOR.test(w.replace(/^.*\//, "")) || SCRIPT.test(w))) return true;
+  // Arquivo gravado por redirect que reaparece no comando pode estar sendo executado por
+  // caminho (`cat > /tmp/s <<EOF … ; /tmp/s`, `$PWD/s`): na dúvida, o corpo é código.
+  const nome = (w) => w.replace(/^.*\//, "");
+  const alvos = [...limpo.matchAll(/>{1,2}\s*([^\s;&|<>()`]+)/g)].map((m) => nome(m[1]));
+  return alvos.some((a) => palavras.filter((w) => nome(w) === a).length >= 2);
+};
 let execHeredoc = false;
 const stripHeredocs = (text) => {
   const lines = String(text).split(/\r?\n/);

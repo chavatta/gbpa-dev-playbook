@@ -125,7 +125,10 @@ const CASES = [
   // heredoc grava script e o roda depois — o corpo é código
   ["heredoc grava .sh e roda",      "cat > s.sh <<'EOF'\nrm -rf /tmp/x\nEOF\nsh s.sh", "BLOCK"],
   ["heredoc grava e ./roda",        "cat > s <<'EOF'\ngit clean -fd\nEOF\nchmod +x s && ./s", "BLOCK"],
-  ["heredoc grava .mjs citando push", "cat > docs/patches/x.mjs <<'EOF'\n// git push origin main e bloqueado\nEOF", "ALLOW"],
+  ["heredoc grava e roda por caminho absoluto", "cat > /tmp/s <<'EOF'\nrm -rf /tmp/x\nEOF\nchmod +x /tmp/s; /tmp/s", "BLOCK"],
+  ["heredoc grava e roda via $PWD",  "cat > s <<'EOF'\ngit clean -fd\nEOF\n$PWD/s", "BLOCK"],
+  ["heredoc grava e exec",          "cat > /tmp/s <<'EOF'\ngit reset --hard\nEOF\nexec /tmp/s", "BLOCK"],
+  ["heredoc grava .mjs citando push","cat > docs/patches/x.mjs <<'EOF'\n// git push origin main e bloqueado\nEOF", "ALLOW"],
   ["dois heredocs na mesma linha","cat <<A <<B\nx\nA\ngit clean -fd\nB", "ALLOW"],
   // achado HIGH do security-sre, rodada 2: heredoc para CLI de banco é SQL executado
   ["psql <<EOF DROP TABLE",         "psql dbname <<'EOF'\nDROP TABLE users;\nEOF", "BLOCK"],
