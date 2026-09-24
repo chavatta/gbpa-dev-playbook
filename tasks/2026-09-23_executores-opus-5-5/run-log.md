@@ -15,5 +15,8 @@ Append-only. Uma linha por evento.
 | 2026-09-24 00:45 | orchestrator | rerouted     | -      | 3ª rodada, fora do teto do HANDOFF §4.7: achados são frases pontuais, não design; sob a autonomia delegada pelo Tech Lead |
 | 2026-09-24 00:45 | coder        | rerouted     | -      | rodada 3: 4 achados (artifacts/coder.md) |
 | 2026-09-24 00:45 | coder        | needs_review | -      | re-review restrito ao diff da rodada 3 |
+| 2026-09-24 00:50 | reviewer     | completed    | APROVADO | artifacts/reviewer.md (r3) — rodou em `claude-opus-5-5[1m]`; 4 achados fechados; 1 LOW |
+| 2026-09-24 00:52 | coder        | completed    | -      | LOW aplicado: ordem da frase de abertura da revisão no ADR-001 |
+| 2026-09-24 00:52 | orchestrator | done         | done   | reviewer APROVADO; merge sob a autorização do Tech Lead ("se tiver tudo ok, pode subir") |
 
 <!-- Eventos: started, completed, blocked, needs_review, rerouted, done -->
