@@ -37,7 +37,7 @@ gbpa-dev-playbook/
 │   ├── check-pii.sh               # Padrão de PII (CPF, CNPJ, celular) em fixtures/seeds — no CI, ao lado do gitleaks
 │   └── test-gbpa-task.mjs         # Smoke test do fluxo por script, com agentes simulados — sem gastar quota
 ├── docs/
-│   ├── ADR-001-modelos-por-agente.md … ADR-005-orquestracao-nativa-do-fluxo.md
+│   ├── ADR-001-modelos-por-agente.md … ADR-006-uso-proprio-de-assinatura-individual.md
 │   ├── ISO-MAPPING.md             # Rastreabilidade ISO 27001 / ISO 42001 → evidência → status
 │   ├── EVIDENCIAS-E-METRICAS.md   # Retenção de evidência, métricas do playbook, cadência de revisão
 │   ├── COMPETENCIA.md             # Registro de quem leu o onboarding e quando (ISO 42001 A.4.6)

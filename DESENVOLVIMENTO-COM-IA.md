@@ -166,6 +166,8 @@ Ajustar uma trava é, ele próprio, um fluxo com gate: a mudança nasce em branc
 | [docs/ADR-002-agente-security-sre.md](docs/ADR-002-agente-security-sre.md) | Escopo e fronteiras do gate de segurança |
 | [docs/ADR-003-agentes-sdd-dados-ia.md](docs/ADR-003-agentes-sdd-dados-ia.md) | Escopo e modelos do Spec-Writer, Data-Engineer e AI-Engineer |
 | [docs/ADR-004-conformidade-iso.md](docs/ADR-004-conformidade-iso.md) | Como o playbook se posiciona perante ISO 27001 e ISO 42001 |
+| [docs/ADR-005-orquestracao-nativa-do-fluxo.md](docs/ADR-005-orquestracao-nativa-do-fluxo.md) | Por que o fluxo roda como script nativo do Claude Code (`/task`), e não por orquestrador externo |
+| [docs/ADR-006-uso-proprio-de-assinatura-individual.md](docs/ADR-006-uso-proprio-de-assinatura-individual.md) | Quando a automação com a própria assinatura, em servidor próprio, dispensa a API key — e as cinco condições que a sustentam |
 | [docs/ISO-MAPPING.md](docs/ISO-MAPPING.md) | Rastreabilidade controle → evidência → status; o documento que vai ao auditor |
 | [docs/EVIDENCIAS-E-METRICAS.md](docs/EVIDENCIAS-E-METRICAS.md) | O que é evidência, por quanto tempo se retém, e como medir se o playbook funciona |
 | [praticas/README.md](praticas/README.md) | Biblioteca de boas práticas: código, arquitetura, repos, infra, segurança |
