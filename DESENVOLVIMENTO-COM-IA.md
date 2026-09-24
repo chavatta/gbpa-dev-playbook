@@ -67,22 +67,22 @@ Detalhe completo: [multi-agents/ARCHITECTURE.md](multi-agents/ARCHITECTURE.md) e
 
 ## 3. O modelo certo para cada função
 
-Modelos de IA têm capacidades e custos diferentes. Concentramos o modelo mais capaz **onde o erro custa caro** — decisão, design e o gate de qualidade — e usamos modelos eficientes na execução, que já trabalha sob spec fechada e passa pelo Reviewer de qualquer forma.
+Modelos de IA têm capacidades e custos diferentes. Desde 2026-09-23, quase todo o time roda no modelo mais capaz disponível (**Opus 5.5**), por decisão do Tech Lead. Ficam de fora o gate de segurança, em **Fable 5.1**, que é outra família e não compartilha os pontos cegos do resto do time, e a documentação, em **Haiku 4.5**, que é alto volume sobre insumo já aprovado. O racional e o custo em cota estão no ADR-001.
 
 | Agente | Modelo | Por quê |
 |---|---|---|
 | Orchestrator | **Opus 5.5** | A decomposição define a qualidade de tudo que vem depois |
 | Architect | **Opus 5.5** | Decisões de arquitetura são caras de reverter |
 | Reviewer | **Opus 5.5** | É o gate: um falso "aprovado" é o erro mais caro do fluxo |
-| Planner | Sonnet 5 | Estrutura trabalho sobre design já decidido |
-| Coder | Sonnet 5 | Implementa spec fechada; erro é pego pelo Reviewer |
-| Tester | Sonnet 5 | Método estruturado, critérios já definidos |
-| Debugger | Sonnet 5 | Segue metodologia científica de debugging |
-| DevOps | Sonnet 5 | Procedural, com checklist |
+| Planner | Opus 5.5 | Estrutura trabalho sobre o design; erro de plano custa uma volta inteira do fluxo |
+| Coder | Opus 5.5 | Implementa a spec no mesmo nível do Reviewer que o audita — menos retrabalho |
+| Tester | Opus 5.5 | Testa a partir da spec, em paralelo ao Coder; também é uma das lentes em task sensível |
+| Debugger | Opus 5.5 | Diagnóstico de causa-raiz é raciocínio, não execução |
+| DevOps | Opus 5.5 | Pipeline e infra errados atingem todas as tasks seguintes |
 | Documenter | Haiku 4.5 | Alto volume, insumo já aprovado |
-| Spec-Writer | Sonnet 5 | A spec é validada na sequência pelo Architect (Opus 5.5) |
-| Data-Engineer | Sonnet 5 | Trabalha sob design fechado; passa pelo Reviewer (Opus 5.5) |
-| AI-Engineer | Sonnet 5 | Trabalha sob spec e evals; passa por Reviewer (Opus 5.5) e Security-SRE (Fable 5.1) |
+| Spec-Writer | Opus 5.5 | A spec é o contrato de tudo que vem depois; uma ambiguidade nela vira retrabalho em todos os agentes seguintes |
+| Data-Engineer | Opus 5.5 | Migration e RLS erradas são caras de reverter e podem expor dado entre tenants |
+| AI-Engineer | Opus 5.5 | Prompt, RAG e evals mal desenhados falham em silêncio: o sistema responde, só que errado |
 | Security-SRE | **Fable 5.1** | É um gate: um falso "aprovado" de segurança é vulnerabilidade em produção. Só entra em tasks sensíveis, o que limita o custo |
 
 Racional completo e alternativas descartadas: [docs/ADR-001-modelos-por-agente.md](docs/ADR-001-modelos-por-agente.md), [docs/ADR-002-agente-security-sre.md](docs/ADR-002-agente-security-sre.md) e [docs/ADR-003-agentes-sdd-dados-ia.md](docs/ADR-003-agentes-sdd-dados-ia.md).

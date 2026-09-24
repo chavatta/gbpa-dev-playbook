@@ -24,7 +24,7 @@ O `multi-agents/ARCHITECTURE.md` (atualização 2026-06-29) já previa o agente 
 ## Alternativas consideradas
 
 1. **Expandir o Reviewer** — sobrecarregaria o gate universal com auditoria sistêmica em toda task, e mistura dois vereditos com critérios distintos.
-2. **Deixar no DevOps** — conflito de interesse (implementaria e auditaria os próprios controles) e o DevOps roda em Sonnet, insuficiente para um gate.
+2. **Deixar no DevOps** — conflito de interesse (implementaria e auditaria os próprios controles) e o DevOps rodava em Sonnet, insuficiente para um gate (desde 2026-09-23 roda em Opus 5.5, mas o conflito de interesse continua).
 3. **Security-SRE em Sonnet** — gate menos capaz que o código que audita é gate decorativo (mesmo argumento do ADR-001 contra "tudo Sonnet").
 
 ## Consequências

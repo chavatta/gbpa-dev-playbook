@@ -77,7 +77,7 @@ Depois abra o Claude Code na raiz do repo — agentes, gates e travas carregam a
 
 ## Requisitos
 
-- [Claude Code](https://claude.com/claude-code) (plano com acesso aos modelos Opus 5.5 / Fable 5.1 / Sonnet 5 / Haiku 4.5)
+- [Claude Code](https://claude.com/claude-code) (plano com acesso aos modelos Opus 5.5 / Fable 5.1 / Haiku 4.5)
 - [Node.js](https://nodejs.org) ≥ 18 (runtime dos hooks — multiplataforma)
 - Git + GitHub CLI (`gh`)
 

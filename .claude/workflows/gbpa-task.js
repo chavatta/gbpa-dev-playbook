@@ -39,7 +39,7 @@ const POINTER = {
   required: ['agent', 'model', 'task_id', 'status', 'artifact_path', 'files_changed', 'next_agent', 'context_for_next', 'blockers', 'skill_candidates'],
   properties: {
     agent: { type: 'string', description: 'nome-base: coder, reviewer, planner…' },
-    model: { type: 'string', description: 'ID exato do modelo em que rodou, lido no system prompt (ex.: claude-opus-5-5, claude-sonnet-5)' },
+    model: { type: 'string', description: 'ID exato do modelo em que rodou, lido no system prompt (ex.: claude-opus-5-5, claude-fable-5-1)' },
     task_id: { type: 'string' },
     status: { type: 'string', enum: ['completed', 'blocked', 'needs_review'] },
     artifact_path: { type: 'string' },
@@ -139,7 +139,7 @@ Grave o levantamento em ${DIR}/artifacts/recon.md, no máximo 30 linhas.`,
     const out = await agent(`${RULES}
 Você é o Planner (multi-agents/agents/02-planner.md). O recon classificou a task como ÉPICA.
 Fatie em tasks independentes, cada uma cabendo num PR de 200–400 linhas (GOVERNANCE §2.5), com objetivo verificável e arquivos disjuntos entre fatias (GOVERNANCE §4.1). Grave em ${DIR}/artifacts/planner.md.`,
-      { agentType: 'planner-sonnet', schema: SLICES, phase: 'Plan', label: 'fatiar épica' })
+      { agentType: 'planner-opus', schema: SLICES, phase: 'Plan', label: 'fatiar épica' })
     note('planner', out ? 'completed' : 'sem retorno', 'artifacts/planner.md')
     if (!out || !out.slices.length) return result({ status: 'blocked', em: 'planner', blockers: ['fatiamento da épica sem retorno'] })
     return result({
@@ -154,7 +154,7 @@ Fatie em tasks independentes, cada uma cabendo num PR de 200–400 linhas (GOVER
     if (recon.needs_spec) {
       const s = await pointer('spec-writer', `${RULES}
 Você é o Spec-Writer (multi-agents/agents/09-spec-writer.md). Escreva a spec verificável da task (critérios Given/When/Then, contratos, fora de escopo) em ${DIR}/artifacts/spec-writer.md.`,
-        { agentType: 'spec-writer-sonnet', phase: 'Plan', label: 'spec' })
+        { agentType: 'spec-writer-opus', phase: 'Plan', label: 'spec' })
       if (!s || s.status === 'blocked') return result({ status: 'blocked', em: 'spec-writer', blockers: s ? s.blockers : ['sem retorno'] })
     }
     const a = await pointer('architect', `${RULES}
@@ -164,7 +164,7 @@ Você é o Architect (multi-agents/agents/01-architect.md). Projete a solução 
 
     const p = await pointer('planner', `${RULES}
 Você é o Planner (multi-agents/agents/02-planner.md). Decomponha ${DIR}/artifacts/architect.md em tarefas sequenciadas com critérios de aceitação. Grave em ${DIR}/artifacts/planner.md.`,
-      { agentType: 'planner-sonnet', phase: 'Plan', label: 'plan' })
+      { agentType: 'planner-opus', phase: 'Plan', label: 'plan' })
     if (!p || p.status === 'blocked') return result({ status: 'blocked', em: 'planner', blockers: p ? p.blockers : ['sem retorno'] })
   }
 
@@ -186,13 +186,13 @@ Você é o Planner (multi-agents/agents/02-planner.md). Decomponha ${DIR}/artifa
       () => pointer('coder', `${RULES}
 Você é o Coder (multi-agents/agents/03-coder.md). Implemente a task conforme ${recon.complexity === 'trivial' ? 'o brief' : `${DIR}/artifacts/planner.md`}.
 ${testOwner} Grave em ${DIR}/artifacts/coder.md com files_changed completo.${fix}`,
-        { agentType: 'coder-sonnet', phase: 'Code', label: `coder r${round}` }),
+        { agentType: 'coder-opus', phase: 'Code', label: `coder r${round}` }),
     ]
     if (testerRuns) {
       jobs.push(() => pointer('tester', `${RULES}
 Você é o Tester (multi-agents/agents/05-tester.md). Escreva os testes da task a partir da spec/plano — NÃO a partir da implementação, que está sendo escrita em paralelo agora.
 Edite SÓ arquivos de teste (um dono por arquivo, GOVERNANCE §4.1). Grave em ${DIR}/artifacts/tester.md.`,
-        { agentType: 'tester-sonnet', phase: 'Code', label: 'tester' }))
+        { agentType: 'tester-opus', phase: 'Code', label: 'tester' }))
     }
     const done = await parallel(jobs)            // barreira justificada: o review precisa do código pronto
     const coder = done[0]
@@ -207,7 +207,7 @@ Edite SÓ arquivos de teste (um dono por arquivo, GOVERNANCE §4.1). Grave em ${
         () => agent(reviewPrompt('Security-SRE — segurança, secrets, supply chain, superfície', '12-security-sre.md', 'security-sre.md'),
           { agentType: 'security-sre-fable', schema: VERDICT, phase: 'Review', label: 'lente: segurança' }),
         () => agent(reviewPrompt('Tester — reprodução: rode os testes e tente quebrar o comportamento', '05-tester.md', 'tester-review.md'),
-          { agentType: 'tester-sonnet', schema: VERDICT, phase: 'Review', label: 'lente: reprodução' }),
+          { agentType: 'tester-opus', schema: VERDICT, phase: 'Review', label: 'lente: reprodução' }),
       ])).filter(Boolean)
       lenses.forEach(v => note(v.agent, v.aprovado ? 'APROVADO' : 'REPROVADO', v.artifact_path))
       // Verificador sem retorno é falha de execução, não de implementação: não consome rodada
