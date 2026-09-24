@@ -27,7 +27,16 @@ Um padrão de desenvolvimento com IA baseado em **um time de agentes especializa
 4. Abra o Claude Code **na raiz do repo** — os agentes, travas e hooks carregam automaticamente no startup (os hooks usam caminho relativo; abrir fora da raiz os desativa).
 5. **(Tech Lead, uma vez por repo)** Ative **branch protection** em `main`/`master` no GitHub: PR obrigatório, ≥1 aprovação, status checks verdes onde houver CI, force push e deleção bloqueados (Settings → Branches, ou `gh api`). Os hooks locais do playbook são a segunda linha de defesa — a trava que não se contorna é a do servidor, e ela não vem no clone.
 
-   **Repo com um só mantenedor:** o GitHub não permite aprovar o próprio PR, então exigir 1 aprovação faria todo merge depender do bypass de admin — e trava que só se cumpre por bypass ensina a equipe a usar bypass. Nesse caso, configure **0 aprovações mantendo o PR obrigatório**: nada entra em `main` por push direto e o histórico de revisão continua registrado. Suba para **1 aprovação + `enforce_admins`** assim que houver um segundo revisor. É configuração de transição — formalizada em `GOVERNANCE.md` §2.6 (patch pendente em `docs/patches/`) — e a decisão de quando subir se registra em `docs/PENDENCIAS-TECH-LEAD.md`.
+   **Repo com um só mantenedor:** o GitHub não permite aprovar o próprio PR, então exigir 1 aprovação faria todo merge depender do bypass de admin — e trava que só se cumpre por bypass ensina a equipe a usar bypass. Nesse caso, configure **0 aprovações mantendo o PR obrigatório**: nada entra em `main` por push direto e o histórico de revisão continua registrado. Suba para **1 aprovação + `enforce_admins`** assim que houver um segundo revisor. É configuração de transição — formalizada em `GOVERNANCE.md` §2.6 (patch pendente em `docs/patches/`).
+
+   Comandos para subir a proteção quando chegar o segundo revisor (troque `<org>/<repo>`):
+
+   ```bash
+   gh api -X PATCH repos/<org>/<repo>/branches/main/protection/required_pull_request_reviews -F required_approving_review_count=1
+   gh api -X PUT repos/<org>/<repo>/branches/main/protection/enforce_admins
+   ```
+
+   O `-F` maiúsculo importa: `required_approving_review_count` é inteiro, e `-f` manda string, que a API rejeita com HTTP 422.
 
 6. **(uma vez por projeto)** Preencha [`praticas/00-stack-e-defaults-gbpa.md`](praticas/00-stack-e-defaults-gbpa.md) com os defaults **deste** projeto: cloud, região, linguagens e versões, banco, CI, secrets. O 00 é **por projeto, não global** — dois repos da GBPA podem ter stacks diferentes, e cada um carrega o seu. Preencher o que já estiver decidido; não trave o início do projeto tentando fechar todos os campos.
 
@@ -35,7 +44,7 @@ Um padrão de desenvolvimento com IA baseado em **um time de agentes especializa
 
 Os campos marcados 🔒 no 00 escalam ao **Tech Lead**, não ao Architect — custo recorrente, contrato com terceiro, risco jurídico ou de dados pessoais não são decisão de projeto.
 
-Para adotar o playbook em um repo que ainda não o tem: copie `.claude/`, `multi-agents/`, `praticas/`, `scripts/`, `tasks/_TEMPLATE/` (não as tasks deste próprio playbook), `docs/`, `GOVERNANCE.md`, `README.md`, `DESENVOLVIMENTO-COM-IA.md` e este arquivo para a raiz do repo — detalhe completo em [README.md](README.md#adotando-em-um-repositório). No repo novo, esvazie `docs/PENDENCIAS-TECH-LEAD.md` e `docs/patches/` (são o backlog deste playbook) e apague `docs/COMPETENCIA.md`, que fica só no repo do playbook. Preencha o `praticas/00` do projeto novo (passo 6), que não vem preenchido do repo de origem.
+Para adotar o playbook em um repo que ainda não o tem: copie `.claude/`, `multi-agents/`, `praticas/`, `scripts/`, `tasks/_TEMPLATE/` (não as tasks deste próprio playbook), `docs/`, `GOVERNANCE.md`, `README.md`, `DESENVOLVIMENTO-COM-IA.md` e este arquivo para a raiz do repo — detalhe completo em [README.md](README.md#adotando-em-um-repositório). No repo novo, apague `docs/patches/` (são propostas de mudança nas travas *deste* playbook) e `docs/COMPETENCIA.md`, que fica só no repo do playbook. Preencha o `praticas/00` do projeto novo (passo 6), que não vem preenchido do repo de origem.
 
 ---
 

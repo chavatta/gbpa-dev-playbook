@@ -24,7 +24,7 @@
 3. **Sem force push, sem `git reset --hard`, sem `rm -rf`.** As travas bloqueiam; se você acha que precisa, é conversa com o Tech Lead.
 4. **Commits limpos:** mensagem descreve o quê e por quê. Sem marcações de IA em commits ou código.
 5. **PRs pequenos:** ~200–400 linhas. Cresceu → volta ao Planner para fatiar.
-6. **Branch protection no servidor é obrigatória.** Todo repo tem `main`/`master` protegida no GitHub: PR obrigatório com ≥1 aprovação, status checks verdes (onde houver CI), force push e deleção bloqueados. As travas locais (`settings.json` + hooks) são a segunda linha de defesa — a que não se contorna é a do servidor. **Transição — repo com um só mantenedor:** o GitHub não deixa ninguém aprovar o próprio PR, então a exigência fica em 0 aprovações com o PR ainda obrigatório; com o segundo revisor, sobe para 1 aprovação e inclui os administradores na regra (comandos em `docs/PENDENCIAS-TECH-LEAD.md`).
+6. **Branch protection no servidor é obrigatória.** Todo repo tem `main`/`master` protegida no GitHub: PR obrigatório com ≥1 aprovação, status checks verdes (onde houver CI), force push e deleção bloqueados. As travas locais (`settings.json` + hooks) são a segunda linha de defesa — a que não se contorna é a do servidor. **Transição — repo com um só mantenedor:** o GitHub não deixa ninguém aprovar o próprio PR, então a exigência fica em 0 aprovações com o PR ainda obrigatório; com o segundo revisor, sobe para 1 aprovação e inclui os administradores na regra (comandos no `ONBOARDING.md` §2 passo 5).
 
 ---
 
@@ -55,7 +55,7 @@
 1. **Repo primeiro:** criar o repositório GitHub **privado** (conta/organização definida pelo Tech Lead) antes de qualquer commit. Público só por ordem explícita do Tech Lead. **Branch protection** em `main`/`master` ativada imediatamente após criar o repo (§2.6) — é configuração do Tech Lead.
 2. Nome do repo em kebab-case; remote `origin` configurado de imediato.
 3. Primeiro commit mínimo: `README.md` + `.gitignore` adequado à stack.
-4. Para adotar este playbook no repo novo: copie `.claude/`, `multi-agents/`, `praticas/`, `scripts/`, `tasks/_TEMPLATE/`, `docs/` e os docs da raiz (`README.md`, `DESENVOLVIMENTO-COM-IA.md`, `ONBOARDING.md`, este arquivo) — comandos no `README.md`. No repo novo, esvazie `docs/PENDENCIAS-TECH-LEAD.md` e `docs/patches/` (são o backlog do playbook, não do projeto) e apague `docs/COMPETENCIA.md`, que fica só no repo do playbook (registro da organização).
+4. Para adotar este playbook no repo novo: copie `.claude/`, `multi-agents/`, `praticas/`, `scripts/`, `tasks/_TEMPLATE/`, `docs/` e os docs da raiz (`README.md`, `DESENVOLVIMENTO-COM-IA.md`, `ONBOARDING.md`, este arquivo) — comandos no `README.md`. No repo novo, apague `docs/patches/` (são propostas de mudança nas travas do playbook, não do projeto) e `docs/COMPETENCIA.md`, que fica só no repo do playbook (registro da organização).
 
 ---
 

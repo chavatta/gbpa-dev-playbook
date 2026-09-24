@@ -61,7 +61,7 @@ Escolhida a opção (ou delegada ao Architect), a decisão vira **ADR** e o valo
 | SCA / updates | `{...}` | ★ **Renovate + osv-scanner** · Dependabot · Snyk Open Source 🔒 | ★ Renovate agrupa e agenda PRs (menos ruído que o Dependabot); osv-scanner cobre a checagem de vulnerabilidade |
 | Secrets | `{...}` | ★ **cofre da própria cloud** (Secrets Manager / Secret Manager / Key Vault) · Doppler / 1Password 🔒 · secrets do CI (só para o CI) | `gitleaks` no hook local **e** no CI, em qualquer opção — não é alternativa, é somatório |
 | Scan de imagem/IaC | `{...}` | ★ **Trivy** (cobre imagem e IaC) · Checkov (IaC) + Grype (imagem) | ★ por ser uma ferramenta só para os dois alvos |
-| **Branch protection** | Obrigatória em `main`/`master` de todo repo: PR obrigatório, ≥1 aprovação, sem force push, status checks verdes | *(não é opcional — sem menu)* | É a trava servidor-side que os hooks locais do playbook **não** substituem. Repo com um só mantenedor roda em transição — 0 aprovações mantendo o PR obrigatório, subindo para 1 + `enforce_admins` quando houver segundo revisor — com a decisão registrada em `docs/PENDENCIAS-TECH-LEAD.md` (`GOVERNANCE.md` §2.6; `ONBOARDING.md` §2 passo 5) |
+| **Branch protection** | Obrigatória em `main`/`master` de todo repo: PR obrigatório, ≥1 aprovação, sem force push, status checks verdes | *(não é opcional — sem menu)* | É a trava servidor-side que os hooks locais do playbook **não** substituem. Repo com um só mantenedor roda em transição — 0 aprovações mantendo o PR obrigatório, subindo para 1 + `enforce_admins` quando houver segundo revisor (`GOVERNANCE.md` §2.6; comandos no `ONBOARDING.md` §2 passo 5) |
 
 ## IA / LLM
 
@@ -73,7 +73,7 @@ Escolhida a opção (ou delegada ao Architect), a decisão vira **ADR** e o valo
 | Framework de agentes/RAG | `{...}` | ★ **SDK do provedor, direto** · framework de orquestração (LangGraph, LlamaIndex) | ★ é o "padrão mínimo que atende" do manual do AI-Engineer. Framework entra quando o SDK direto já não dá conta — via ADR do Architect, não por antecipação |
 | Orquestração do **fluxo de desenvolvimento** | **Nativa do Claude Code** — Workflow (`.claude/workflows/gbpa-task.js`) + subagentes + hooks, na assinatura | *(decidido — `docs/ADR-005`; sem menu)* | Automação **fora** do Claude Code (LangGraph, Agent SDK, `claude -p` em servidor) exige API key e ADR: a assinatura cobre uso ordinário do produto, não orquestração externa (legal e compliance do Claude Code). Framework de agentes acima é para o **produto**; esta linha é para o **processo** |
 
-> ### ⚠️ Ação aberta do Tech Lead — confirmar a classe do plano
+> ### ⚠️ Antes de usar em projeto de cliente — confirmar a classe do plano
 >
 > "Plano de subscrição" cobre duas realidades contratuais **opostas**, e a diferença decide o que a equipe pode colar em um prompt:
 >

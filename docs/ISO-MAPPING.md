@@ -113,7 +113,7 @@ A GBPA tem **duas relações distintas** com IA, e elas caem em partes diferente
 | **A.6.1.3** | Processos de design e desenvolvimento responsáveis | a+b | OK | `GOVERNANCE.md` §3 — fluxo multi-agent obrigatório com gates |
 | **A.6.2.2** | Requisitos e especificação do sistema de IA | b | OK | Spec-Writer (`docs/ADR-003`) — critérios Given/When/Then e NFRs mensuráveis antes do código |
 | **A.6.2.3** | Documentação de design e desenvolvimento | a+b | OK | ADRs em `docs/` + artifacts por agente |
-| **A.6.2.4** | Verificação e validação | a+b | OK | Gate do Reviewer verificado por `check-reviewer-gate.mjs` (segunda linha); no fluxo por script (ADR-005) a primeira linha é o próprio código — `gbpa-task.js` só devolve `done` após veredito validado por schema; piloto do script ainda pendente (`docs/PENDENCIAS-TECH-LEAD.md`). Evals obrigatórios do AI-Engineer |
+| **A.6.2.4** | Verificação e validação | a+b | OK | Gate do Reviewer verificado por `check-reviewer-gate.mjs` (segunda linha); no fluxo por script (ADR-005) a primeira linha é o próprio código — `gbpa-task.js` só devolve `done` após veredito validado por schema; piloto do script ainda pendente. Evals obrigatórios do AI-Engineer |
 | **A.6.2.5** | Implantação | b | PARCIAL | Checklist pré-deploy do DevOps; depende de `praticas/00` |
 | **A.6.2.6** | Operação e monitoramento | b | PARCIAL | `praticas/06` camada 4; monitoramento específico de LLM (drift, custo, taxa de recusa) é do AI-Engineer por projeto |
 | **A.6.2.7** | Documentação técnica | a+b | OK | Documenter, após aprovação do Reviewer |
@@ -137,13 +137,13 @@ A GBPA tem **duas relações distintas** com IA, e elas caem em partes diferente
 
 ## 4. Ações abertas
 
-Numeração estável — referenciada por `docs/PENDENCIAS-TECH-LEAD.md`.
+Numeração estável.
 
 | # | Ação | Controles | Dono | Tipo | Status |
 |---|---|---|---|---|---|
 | **4.1** | Ativar branch protection nos repos existentes | A.8.4, A.8.32 | Tech Lead | Configuração | **PARCIAL** (2026-08-31) — ativa em `gbpa-dev-playbook`; replicar nos demais repos |
-| **4.2** | Confirmar a classe do plano Anthropic e preencher `praticas/00` (política de dado em prompt já preenchida) | A.5.23, A.8.31, A.6.2.5 | Tech Lead | Decisão | Aberta — falta confirmar comercial vs. consumidor (ver 4.7 e `PENDENCIAS` item 1) |
-| **4.3** | Aprovar `GOVERNANCE.md` §7 (patch em `PENDENCIAS-TECH-LEAD.md`) | A.5.36, A.8.15, A.9.2 | Tech Lead | Patch em arquivo protegido | **FEITA** (2026-08-31) |
+| **4.2** | Confirmar a classe do plano Anthropic e preencher `praticas/00` (política de dado em prompt já preenchida) | A.5.23, A.8.31, A.6.2.5 | Tech Lead | Decisão | Aberta — falta confirmar comercial vs. consumidor (ver 4.7 e a nota em `praticas/00` → IA/LLM) |
+| **4.3** | Aprovar `GOVERNANCE.md` §7 (patch em arquivo protegido) | A.5.36, A.8.15, A.9.2 | Tech Lead | Patch em arquivo protegido | **FEITA** (2026-08-31) |
 | **4.4** | Definir SLA de correção por severidade | A.5.24, A.8.8 | Tech Lead | Decisão | **FEITA** (2026-08-31) — achado que impacta o processo é bloqueador até resolução humana (`praticas/06`) |
 | **4.5** | Runbook de incidente envolvendo IA (vazamento via prompt, código defeituoso em prod, dependência alucinada) | A.5.24–5.28, A.8.4 (42001) | Security-SRE + Tech Lead | Documento novo | **FEITA** (2026-08-31) — [`RUNBOOK-INCIDENTE-IA.md`](RUNBOOK-INCIDENTE-IA.md) |
 | **4.6** | Registro de competência: quem leu o onboarding, quando, e revalidação anual | A.6.3, A.4.6 | Tech Lead | Processo (`docs/`) | **PARCIAL** (2026-08-31) — [`COMPETENCIA.md`](COMPETENCIA.md) criado; **falta cada pessoa registrar a própria linha** |

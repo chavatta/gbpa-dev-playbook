@@ -40,10 +40,8 @@ gbpa-dev-playbook/
 │   ├── ADR-001-modelos-por-agente.md … ADR-005-orquestracao-nativa-do-fluxo.md
 │   ├── ISO-MAPPING.md             # Rastreabilidade ISO 27001 / ISO 42001 → evidência → status
 │   ├── EVIDENCIAS-E-METRICAS.md   # Retenção de evidência, métricas do playbook, cadência de revisão
-│   ├── PENDENCIAS-TECH-LEAD.md    # Patches em arquivos protegidos (hooks/settings/GOVERNANCE) — só o Tech Lead aplica
 │   ├── COMPETENCIA.md             # Registro de quem leu o onboarding e quando (ISO 42001 A.4.6)
 │   ├── RUNBOOK-INCIDENTE-IA.md    # Vazamento via prompt, código defeituoso em prod, dependência alucinada
-│   ├── PROPOSTA-PIPELINE-FLUXO.md # Proposta que originou o ADR-005 — arquivada quando o ADR estiver em vigor e o piloto rodado
 │   └── patches/                   # Versões propostas de arquivos protegidos — só o Tech Lead aplica
 └── tasks/
     └── _TEMPLATE/                 # brief.md, run-log.md, memory.md, artifacts/
@@ -69,7 +67,7 @@ Copy-Item -Recurse gbpa-dev-playbook\tasks\_TEMPLATE <repo>\tasks\
 Copy-Item gbpa-dev-playbook\README.md,gbpa-dev-playbook\DESENVOLVIMENTO-COM-IA.md,gbpa-dev-playbook\ONBOARDING.md,gbpa-dev-playbook\GOVERNANCE.md <repo>\
 ```
 
-Copia-se `tasks/_TEMPLATE/`, não as tasks deste próprio playbook. No repo adotante, esvazie `docs/PENDENCIAS-TECH-LEAD.md` e `docs/patches/` — são o backlog *deste* playbook, não do projeto novo — e apague `docs/COMPETENCIA.md`, que fica só no repo do playbook (registro organizacional, não por projeto).
+Copia-se `tasks/_TEMPLATE/`, não as tasks deste próprio playbook. No repo adotante, apague `docs/patches/` — são propostas de mudança nas travas *deste* playbook, não do projeto novo — e `docs/COMPETENCIA.md`, que fica só no repo do playbook (registro organizacional, não por projeto).
 
 Os hooks são scripts Node (`.mjs`) — funcionam automaticamente em macOS, Linux e Windows, sem `chmod` nem configuração por sistema.
 
