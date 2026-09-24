@@ -52,3 +52,14 @@ multi-agents/ARCHITECTURE.md:20          estudo citado da Anthropic
 ```
 
 Smoke test 15/15; links relativos: 0 quebrados.
+
+## Retrabalho — rodada 3 (achados do reviewer, rodada 2)
+
+| Achado | Correção |
+|---|---|
+| MEDIUM — ADR-001: "o tipo que o ADR sempre pôs no topo" era falso (Debugger e os três do ADR-003 ficaram em Sonnet) | Declarado como decisão do Tech Lead; pelo critério original, os quatro seriam o segundo passo do recuo |
+| MEDIUM — ADR-001: "com o ID fixado, nada muda sozinho" era falso para o Documenter (alias `haiku`) | Opus e Fable fixados; o Documenter acompanha o Haiku mais novo |
+| LOW — título e frase de abertura da revisão cobriam só a primeira etapa | Título "Opus 5.5 em quase todo o time"; frase marcada como primeira etapa, com ponte para a segunda |
+| LOW — racionais de Spec-Writer, Data-Engineer e AI-Engineer no DESENVOLVIMENTO §3 argumentavam por modelo menor | Reescritos para o custo de erro de cada papel |
+
+Grep `sonnet` fora de `tasks/`: mesmas 14 ocorrências históricas da rodada 2 — esta rodada não introduziu nenhuma.

@@ -80,9 +80,9 @@ Modelos de IA têm capacidades e custos diferentes. Desde 2026-09-23, quase todo
 | Debugger | Opus 5.5 | Diagnóstico de causa-raiz é raciocínio, não execução |
 | DevOps | Opus 5.5 | Pipeline e infra errados atingem todas as tasks seguintes |
 | Documenter | Haiku 4.5 | Alto volume, insumo já aprovado |
-| Spec-Writer | Opus 5.5 | A spec é validada na sequência pelo Architect (Opus 5.5) |
-| Data-Engineer | Opus 5.5 | Trabalha sob design fechado; passa pelo Reviewer (Opus 5.5) |
-| AI-Engineer | Opus 5.5 | Trabalha sob spec e evals; passa por Reviewer (Opus 5.5) e Security-SRE (Fable 5.1) |
+| Spec-Writer | Opus 5.5 | A spec é o contrato de tudo que vem depois; uma ambiguidade nela vira retrabalho em todos os agentes seguintes |
+| Data-Engineer | Opus 5.5 | Migration e RLS erradas são caras de reverter e podem expor dado entre tenants |
+| AI-Engineer | Opus 5.5 | Prompt, RAG e evals mal desenhados falham em silêncio: o sistema responde, só que errado |
 | Security-SRE | **Fable 5.1** | É um gate: um falso "aprovado" de segurança é vulnerabilidade em produção. Só entra em tasks sensíveis, o que limita o custo |
 
 Racional completo e alternativas descartadas: [docs/ADR-001-modelos-por-agente.md](docs/ADR-001-modelos-por-agente.md), [docs/ADR-002-agente-security-sre.md](docs/ADR-002-agente-security-sre.md) e [docs/ADR-003-agentes-sdd-dados-ia.md](docs/ADR-003-agentes-sdd-dados-ia.md).

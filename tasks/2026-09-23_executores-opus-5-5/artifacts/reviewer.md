@@ -1,67 +1,81 @@
-**Veredito:** REPROVADO (9 issues)
+**Veredito:** REPROVADO (4 issues)
 
-# Reviewer — 2026-09-23_executores-opus-5-5
+# Reviewer — 2026-09-23_executores-opus-5-5 (rodada 2)
 
-**Agente:** reviewer · **Modelo em que rodou:** `claude-opus-5-5` (system prompt: `claude-opus-5-5[1m]`, mesma versão) · **Status:** completed · **Próximo:** coder
-**Escopo:** `git diff origin/main...HEAD` (HEAD d22755c), cerca de 150+/82- linhas, 31 arquivos. Tamanho adequado, não precisa fatiar.
+**Agente:** reviewer · **Modelo em que rodou:** `claude-opus-5-5` (o system prompt mostra `claude-opus-5-5[1m]`; o sufixo é só a janela de contexto, a versão é a designada) · **Status:** completed · **Próximo:** coder
+**Escopo:** `git diff d22755c..9e141a3`: 6 arquivos fora de `tasks/`, cerca de 20+/20- linhas. Tamanho adequado.
 
-## Reconfirmado (sem issue)
+## Resumo da rodada 1 (HEAD d22755c)
 
-- Os 8 agentes (`planner`, `coder`, `tester`, `debugger`, `devops`, `spec-writer`, `data-engineer`, `ai-engineer`) têm `name: X-opus`, `model: claude-opus-5-5` e auto-verificação esperando Opus 5.5. `security-sre-fable` está em `claude-fable-5-1` e `documenter-haiku` em `haiku`.
-- Os 7 `agentType` distintos do `gbpa-task.js` existem como `name:`. `node scripts/test-gbpa-task.mjs` passou 15/15.
-- Links relativos: 100 verificados fora de `tasks/`, 0 quebrados.
-- As tabelas do DESENVOLVIMENTO-COM-IA §3, ONBOARDING, README, praticas/00, o exemplo do HANDOFF-PROTOCOL e a nota do ARCHITECTURE batem com o frontmatter.
-- A referência a "`GOVERNANCE.md` §2.2" (ADR-001:75) resolve para §2, item 2 (o dev responsável revisa antes do ready).
-- Não há segredos nem credenciais no diff.
+A rodada 1 reprovou com 9 issues: (1) HIGH, o ADR-005:41 ainda listava `agentType` `-sonnet`; (2) HIGH, as "Consequências" do ADR-001 ainda diziam que o gate era mais capaz que o código auditado; (3) MEDIUM, a "Decisão" do ADR-001 ainda falava em perfil "balanceado"; (4) MEDIUM, a mitigação punha o refutador cego fora da família Opus; (5) MEDIUM, a decisão 2 do PENDENCIAS dizia "todos pelo ID completo"; (6) LOW, os racionais das tabelas justificavam modelo menor; (7) LOW, a alternativa 1 do ADR-003 não tinha nota; (8) LOW, o HANDOFF falava em "agentes de topo"; (9) LOW, o recuo de cota não tinha critério e a nota de evidência não citava `sonnet`.
+
+## Verificação dos 9 achados da rodada 1
+
+| # | Situação | Evidência |
+|---|---|---|
+| 1 | Resolvido | ADR-005:41 agora lista `architect-opus`, `planner-opus`, `spec-writer-opus`, `coder-opus`, `tester-opus`, `reviewer-opus`, `security-sre-fable`, o mesmo conjunto dos `agentType` em `gbpa-task.js` (linhas 129-250) e do ADR-001:65. |
+| 2 | Resolvido | ADR-001:43 tacha as positivas originais e as marca como superadas. A linha 45 traz positivas novas, e as linhas 49-50 registram os custos de cota e de gate no mesmo modelo nas negativas. |
+| 3 | Resolvido em parte | ADR-001:19 agora é datado e bate com a tabela: os 9 agentes originais estão em Opus 5.5, exceto o Documenter. O título da seção de revisão (linha 67) não foi ajustado, ver issue 3 abaixo. |
+| 4 | Resolvido | ADR-001:79 diz que só o Security-SRE (Fable 5.1) está fora da família. Diz também que o refutador cego roda como `reviewer-opus` e protege por não ler os vereditos anteriores. Confere com `gbpa-task.js:250`. |
+| 5 | Resolvido | PENDENCIAS:58 diz "Haiku 4.5 (alias `haiku`). Opus e Fable ficam fixados pelo ID completo", o que confere com `.claude/agents/documenter.md:5` (`model: haiku`). O mesmo erro reaparece no ADR-001:48, ver issue 2 abaixo. |
+| 6 | Resolvido em parte | No ADR-001:26-30, as linhas estão marcadas "*(racional do sonnet)*" e a linha 19 explica que a coluna é o racional original. No DESENVOLVIMENTO §3, Planner a DevOps foram reescritos. Spec-Writer, Data-Engineer e AI-Engineer continuam com o racional de "por que não precisa do topo", ver issue 4. |
+| 7 | Resolvido | ADR-003:25 traz "(Rejeitada em 2026-07-31; adotada em 2026-09-23 junto com os demais executores, ver ADR-001.)". |
+| 8 | Resolvido | HANDOFF-PROTOCOL:70 diz "fixa a versão dos agentes em Opus e Fable". |
+| 9 | (a) Resolvido, mas com afirmação nova falsa; (b) resolvido | (a) ADR-001:78 dá o critério ("saída mais fácil de conferir") e explica por que o Coder fica. A justificativa dos outros quatro está errada, ver issue 1. (b) ADR-001:81 cita `fable` nos quatro de topo e `sonnet` nos oito executores. Confere com a evidência que existe: `tasks/2026-09-23_fechamento-adr005-e-travas/artifacts/coder-docs.md:4` registra "Modelo: sonnet". |
+
+## grep `sonnet` fora de `tasks/` (saída completa, sem corte)
+
+```
+./docs/ADR-002-agente-security-sre.md:27:2. **Deixar no DevOps** — conflito de interesse (implementaria e auditaria os próprios controles) e o DevOps rodava em Sonnet, insuficiente para um gate (desde 2026-09-23 roda em Opus 5.5, mas o conflito de interesse continua).
+./docs/ADR-002-agente-security-sre.md:28:3. **Security-SRE em Sonnet** — gate menos capaz que o código que audita é gate decorativo (mesmo argumento do ADR-001 contra "tudo Sonnet").
+./docs/ADR-001-modelos-por-agente.md:13:O fluxo multi-agent tem 9 agentes com custos de erro muito diferentes. A cota de uso dos modelos (plano de subscrição — ⚠️ classe a confirmar, ver `docs/PENDENCIAS-TECH-LEAD.md` item 1) é compartilhada pela equipe, e os modelos disponíveis têm capacidades e custos distintos: **Opus 5.5** e **Fable 5.1** (topo de linha; até 2026-09-23 o topo era só o **Fable 5**), **Sonnet 5** (equilíbrio) e **Haiku 4.5** (rápido e barato).
+./docs/ADR-001-modelos-por-agente.md:26:| `planner` | **opus** (`claude-opus-5-5`) — era sonnet | *(racional do sonnet)* Estrutura trabalho sobre design já decidido pelo Architect |
+./docs/ADR-001-modelos-por-agente.md:27:| `coder` | **opus** (`claude-opus-5-5`) — era sonnet | *(racional do sonnet)* Implementa spec fechada; erro é interceptado pelo Reviewer |
+./docs/ADR-001-modelos-por-agente.md:28:| `tester` | **opus** (`claude-opus-5-5`) — era sonnet | *(racional do sonnet)* Critérios de aceitação já definidos; método estruturado |
+./docs/ADR-001-modelos-por-agente.md:29:| `debugger` | **opus** (`claude-opus-5-5`) — era sonnet | *(racional do sonnet)* Segue metodologia científica (skill `engineering:debug`) |
+./docs/ADR-001-modelos-por-agente.md:30:| `devops` | **opus** (`claude-opus-5-5`) — era sonnet | *(racional do sonnet)* Procedural, com checklist pré-deploy |
+./docs/ADR-001-modelos-por-agente.md:38:2. **Tudo Sonnet** — mais barato, mas degrada exatamente o ponto em que o fluxo deposita confiança: o review. Um gate menos capaz que o coder que ele audita é um gate decorativo.
+./docs/ADR-001-modelos-por-agente.md:77:- **Segunda etapa, no mesmo dia — executores em Opus 5.5.** Por decisão do Tech Lead, os oito agentes em Sonnet 5 (`planner`, `coder`, `tester`, `debugger`, `devops`, `spec-writer`, `data-engineer`, `ai-engineer`) também passam a `claude-opus-5-5`, com sufixo `-opus`. Ficam fora o Security-SRE (Fable 5.1) e o Documenter (Haiku 4.5). Isso adota em grande parte a alternativa 1 ("tudo no modelo de topo"), que este ADR tinha rejeitado. Dois custos ficam registrados:
+./docs/ADR-001-modelos-por-agente.md:78:  - **Cota.** Os executores são os agentes que mais rodam, e passam a gastar no preço do topo. O piloto do `/task` (`PENDENCIAS-TECH-LEAD.md`, item 3) é onde medir isso. Se a cota não fechar, o recuo natural é devolver ao Sonnet quem trabalha sob spec fechada e sob gate e tem saída mais fácil de conferir: Planner, Tester e DevOps. O Coder fica em Opus porque o código é o que o Reviewer audita, e manter os dois no mesmo nível evita reabrir o ciclo de retrabalho que a alternativa 3 descreve. Debugger, Spec-Writer, Data-Engineer e AI-Engineer ficam porque o erro deles é de diagnóstico ou de design, o tipo que o ADR sempre pôs no topo.
+./docs/ADR-001-modelos-por-agente.md:81:- **Evidência antiga não muda:** artifacts em `tasks/` anteriores a esta revisão registram `fable` nos quatro agentes de topo e `sonnet` nos oito executores, porque foi nesses modelos que rodaram.
+./docs/ADR-003-agentes-sdd-dados-ia.md:21:3. **Modelo: `sonnet` para os três** — *superado em 2026-09-23: os três passaram a Opus 5.5 (`claude-opus-5-5`), ver ADR-001 → "Revisão de 2026-09-23". O racional original fica abaixo como registro.* Pelo racional do ADR-001, o modelo de topo (Fable até 2026-09-23; desde então Opus 5.5, e Fable 5.1 no Security-SRE) fica nos nós cujo erro escapa sem gate: decomposição (Orchestrator), design (Architect) e os gates (Reviewer, Security-SRE). Os três novos agentes produzem trabalho **consumido e auditado por um nó no modelo de topo imediatamente a jusante**: a spec é validada pelo Architect-opus, e schema/subsistema de IA passam pelo Reviewer-opus (e Security-SRE-fable quando sensível). O Orchestrator pode sobrescrever o modelo na delegação em tasks épicas, como já previsto no ADR-001.
+./multi-agents/ARCHITECTURE.md:20:> Dado da Anthropic: um sistema multi-agent com um modelo de topo como lead e Sonnet como subagentes superou um sistema single-agent em **90.2%** em tarefas de pesquisa complexas. (O estudo original usou Opus como lead e Sonnet nos subagentes. Desde 2026-09-23, o playbook roda lead e quase todos os subagentes em **Opus 5.5** — ver `ADR-001`.)
+```
+
+Todas as 14 ocorrências são históricas ou do estudo citado: contexto de modelos disponíveis (ADR-001:13), "era sonnet" e racional marcado (26-30), alternativas rejeitadas (ADR-001:38, ADR-002:28), passado datado (ADR-002:27, ADR-001:77, :81), recuo condicional (ADR-001:78), decisão marcada como superada (ADR-003:21) e estudo da Anthropic (ARCHITECTURE:20). Nenhuma descreve o estado atual como Sonnet. O critério do brief está cumprido.
+
+## Outras verificações
+
+- `node scripts/test-gbpa-task.mjs`: 15/15, 0 falhas.
+- Links relativos markdown fora de `tasks/`: 100 verificados, 0 quebrados. As referências em código citadas no texto novo resolvem: `PENDENCIAS-TECH-LEAD.md` item 3 é "### 3. Rodar o piloto do fluxo por script"; `GOVERNANCE.md` §2.2 foi conferido na rodada 1.
+- Frontmatter: os 8 executores e os 3 de topo em `claude-opus-5-5`, o Security-SRE em `claude-fable-5-1` e o Documenter em `haiku`. Sem mudança desde a rodada 1.
+- "Positivas (desde 2026-09-23)" (ADR-001:45) conferem. "Qualidade uniforme em quase todo o fluxo" vem com ressalva. O gate de segurança em Fable 5.1 é de fato outra família que a do Reviewer e a dos executores, e essa diversidade só passou a existir em 2026-09-23 (antes Reviewer e Security-SRE eram Fable). Nenhuma afirmação falsa.
+- Racionais reescritos no DESENVOLVIMENTO §3 (Planner a DevOps) conferem. O do Tester ("em paralelo ao Coder; também é uma das lentes em task sensível") bate com `gbpa-task.js:181-195` e `:210`. O paralelo só vale na rodada 1 de task não-trivial, mas o nível de detalhe é aceitável para a tabela. O do Coder ("mesmo nível do Reviewer — menos retrabalho") apresenta como vantagem o que o ADR-001:50 registra como custo (pontos cegos compartilhados). Não é falso, mas vale a leitura cruzada.
+- Sem segredos nem credenciais no diff. Nada a rotear ao `security-sre`.
 
 ## Issues
 
-### 1. HIGH — ADR-005 ainda afirma que o script fixa nomes `-sonnet`
-- **Arquivo:** `docs/ADR-005-orquestracao-nativa-do-fluxo.md:41`
-- **Problema:** texto vigente, no presente: "O script (`gbpa-task.js`) hard-codeia os `agentType` sufixados (`architect-opus`, `planner-sonnet`, `spec-writer-sonnet`, `coder-sonnet`, `tester-sonnet`, ...)". Isso é falso desde este diff. Ele descumpre o critério "toda menção a Sonnet fora de `tasks/` é histórica" e contradiz o `coder.md`, que diz que só sobraram menções nos ADR-001/002/003 e no ARCHITECTURE. O próprio parágrafo manda atualizar esses nomes "na mesma mudança". A primeira etapa atualizou o ADR-005 (ADR-001:72), mas esta não.
-- **Correção:** trocar a lista por `architect-opus`, `planner-opus`, `spec-writer-opus`, `coder-opus`, `tester-opus`, `reviewer-opus`, `security-sre-fable`, o que a alinha com o ADR-001:61.
+### 1. MEDIUM (bloqueante) — Afirmação nova falsa no recuo de cota: "o tipo que o ADR sempre pôs no topo"
+- **Arquivo:** `docs/ADR-001-modelos-por-agente.md:78`
+- **Problema:** "Debugger, Spec-Writer, Data-Engineer e AI-Engineer ficam porque o erro deles é de diagnóstico ou de design, o tipo que o ADR sempre pôs no topo." O próprio ADR desmente isso. A tabela (linha 29) mostra que o Debugger, cujo erro é de diagnóstico, ficou em Sonnet de 2026-07-31 a 2026-09-23. O Contexto (linha 15) põe no topo decomposição, design (Architect) e gate, e não diagnóstico. O ADR-003:21 deixou Spec-Writer, Data-Engineer e AI-Engineer em Sonnet justamente porque o trabalho deles é "consumido e auditado por um nó no modelo de topo imediatamente a jusante", o mesmo critério que agora justifica devolver Planner, Tester e DevOps. É texto vigente de registro de decisão e reescreve a história do ADR.
+- **Correção:** tirar o "sempre" e dar o critério real. Duas opções: (a) "Debugger, Spec-Writer, Data-Engineer e AI-Engineer ficam por decisão do Tech Lead: o erro deles é de diagnóstico ou de design. Pelo racional original (ADR-003, decisão 3) eles também seriam candidatos ao recuo, e o piloto decide a ordem."; ou (b) incluí-los no recuo como segundo passo, depois de Planner, Tester e DevOps.
 
-### 2. HIGH — "Consequências" do ADR-001 ainda dizem que o gate é mais capaz que o código auditado
-- **Arquivo:** `docs/ADR-001-modelos-por-agente.md:43`
-- **Problema:** "**Positivas:** cota concentrada onde há leverage; gate de review mais confiável que o código que audita". Com Coder e Reviewer em Opus 5.5, as duas afirmações ficam falsas. Também contradizem a linha 75 do mesmo ADR, que registra justamente a perda dessa assimetria. É texto vigente, sem nota de que foi superado.
-- **Correção:** marcar as duas consequências como superadas em 2026-09-23 (como já foi feito no ADR-003:21 e na alternativa 1) e remeter à "segunda etapa". Uma alternativa é reescrever as positivas para o quadro atual e trazer os dois custos (cota; gate no mesmo modelo) para as negativas, com a mitigação.
+### 2. MEDIUM (bloqueante) — "com o ID fixado, nada muda sozinho" repete no ADR-001 o erro já corrigido no PENDENCIAS
+- **Arquivo:** `docs/ADR-001-modelos-por-agente.md:48`
+- **Problema:** "Três modelos para manter atualizados (Opus 5.5, Fable 5.1, Haiku) → revisão trimestral deste ADR; com o ID fixado, nada muda sozinho." O Documenter usa o alias `haiku` (`.claude/agents/documenter.md:5`), que acompanha a família sozinho. É a mesma afirmação falsa do issue 5 da rodada 1, agora em outro arquivo.
+- **Correção:** "Opus e Fable têm o ID fixado e não mudam sozinhos. O Documenter segue no alias `haiku`, que acompanha a família: confira a versão na revisão trimestral."
 
-### 3. MEDIUM — A "Decisão" do ADR-001 ainda descreve um perfil "balanceado"
-- **Arquivo:** `docs/ADR-001-modelos-por-agente.md:19`
-- **Problema:** "Perfil **balanceado com o modelo de topo nos nós críticos** — hoje **Opus 5.5**". A tabela logo abaixo põe 11 dos 13 agentes no topo, e a linha 73 admite que a alternativa 1 foi adotada. O cabeçalho da decisão contradiz a própria tabela. O título da seção de revisão (linha 63, "Opus 5.5 nos nós críticos, Fable 5.1 no gate de segurança") também cobre só a primeira etapa.
-- **Correção:** reescrever a frase de abertura para o quadro atual (Opus 5.5 em todos, exceto Security-SRE e Documenter), ou anotar que o perfil balanceado vale até 2026-09-23. Ajustar o título da seção 63 para incluir os executores.
+### 3. LOW — O título da seção de revisão cobre só a primeira etapa (resto do issue 3 da rodada 1)
+- **Arquivo:** `docs/ADR-001-modelos-por-agente.md:67` e `:71`
+- **Problema:** o título "Opus 5.5 nos nós críticos, Fable 5.1 no gate de segurança" descreve só a primeira etapa. A linha 71 diz, no presente, "O racional de *onde* fica o modelo de topo não muda: decomposição, design e os dois gates", e a segunda etapa (linha 77) desmente isso algumas linhas abaixo.
+- **Correção:** trocar o título por "Revisão de 2026-09-23 — Opus 5.5 em todos os agentes, exceto Security-SRE (Fable 5.1) e Documenter". O prefixo "Revisão de 2026-09-23", que as outras referências usam, não muda. Na linha 71, escrever "Nesta primeira etapa, o racional de *onde* fica o modelo de topo não muda (...)".
 
-### 4. MEDIUM — A mitigação do "gate no mesmo modelo" põe o refutador cego fora da família Opus
-- **Arquivo:** `docs/ADR-001-modelos-por-agente.md:75`
-- **Problema:** "A mitigação é o que já existe fora dessa família: em task sensível, a lente do Security-SRE (Fable 5.1) e o refutador cego". O refutador cego roda como `agentType: 'reviewer-opus'` (`.claude/workflows/gbpa-task.js:250`), ou seja, em Opus 5.5, a mesma família do Coder. Ele mitiga ancoragem em vereditos anteriores, não pontos cegos compartilhados pelo modelo. A lente de reprodução também é `tester-opus` (linha 210). Assim a mitigação fica superestimada no registro da decisão: a única verificação fora da família é o Security-SRE, e em task não-sensível só resta o humano.
-- **Correção:** separar as duas coisas. O que está fora da família é só o Security-SRE (Fable 5.1). O refutador cego é independente em contexto, mas roda no mesmo modelo. Sem isso, o texto dá à mitigação uma força que ela não tem.
-
-### 5. MEDIUM — A decisão 2 do PENDENCIAS diz "todos pelo ID completo", mas o Documenter usa alias
-- **Arquivo:** `docs/PENDENCIAS-TECH-LEAD.md:58`
-- **Problema:** a frase nova "... e o Documenter, que segue em Haiku 4.5 — todos pelo ID completo" é falsa, porque `.claude/agents/documenter.md:5` tem `model: haiku` (alias).
-- **Correção:** "Opus e Fable pelo ID completo; o Documenter segue no alias `haiku`". Se a intenção for fixar o Documenter também, isso é outra decisão e fica fora desta task.
-
-### 6. LOW — As colunas de racional dos executores ainda justificam um modelo menor
-- **Arquivos:** `docs/ADR-001-modelos-por-agente.md:26-30`; `DESENVOLVIMENTO-COM-IA.md` (tabela da §3, linhas de Planner a AI-Engineer)
-- **Problema:** textos como "Implementa spec fechada; erro é interceptado pelo Reviewer" ou "Procedural, com checklist" foram escritos para explicar por que o agente *não* precisava do topo. Ao lado de "Opus 5.5", passam a não justificar nada.
-- **Correção:** trocar por "decisão do Tech Lead, ver ADR-001 → Revisão de 2026-09-23 (segunda etapa)" ou algo equivalente, ou mover o racional antigo para a nota histórica.
-
-### 7. LOW — A alternativa 1 do ADR-003 continua rejeitada sem nota
-- **Arquivo:** `docs/ADR-003-agentes-sdd-dados-ia.md:25`
-- **Problema:** "Spec-Writer no modelo de topo ... o ganho não justifica o consumo de cota" foi adotada na prática, e a decisão 3 já está marcada como superada. A alternativa não tem a mesma marcação que a alternativa 1 do ADR-001 recebeu.
-- **Correção:** acrescentar "(rejeitada em 2026-08-04; adotada na revisão de 2026-09-23 do ADR-001)".
-
-### 8. LOW — O HANDOFF-PROTOCOL restringe a versão fixada aos "agentes de topo"
-- **Arquivo:** `multi-agents/HANDOFF-PROTOCOL.md:70`
-- **Problema:** "desde 2026-09-23 o ADR-001 fixa a versão dos agentes de topo". Agora a versão fica fixada em todos os agentes, exceto o Documenter.
-- **Correção:** "fixa a versão de todos os agentes, exceto o Documenter".
-
-### 9. LOW — Lacunas no recuo de cota e na nota sobre evidência antiga
-- **Arquivo:** `docs/ADR-001-modelos-por-agente.md:74` e `:77`
-- **Problema:** (a) o recuo lista Planner, Tester e DevOps sob o critério "spec fechada e sob gate", mas o Coder, o Debugger, o Data-Engineer e o AI-Engineer atendem ao mesmo critério pela tabela, e falta dizer por que ficam em Opus. (b) A nota "Evidência antiga não muda" cita só `fable` nos quatro agentes da primeira etapa, e os artifacts anteriores dos oito executores registram `sonnet`.
-- **Correção:** (a) uma frase com o critério que separa os três do recuo (ex.: o Coder fica em Opus porque é o autor do código que o gate audita). (b) Estender a nota: "e `sonnet` nos oito executores".
+### 4. LOW — Três racionais do DESENVOLVIMENTO §3 ainda justificam um modelo menor (resto do issue 6 da rodada 1)
+- **Arquivo:** `DESENVOLVIMENTO-COM-IA.md`, tabela da §3, linhas Spec-Writer, Data-Engineer e AI-Engineer
+- **Problema:** "A spec é validada na sequência pelo Architect", "Trabalha sob design fechado; passa pelo Reviewer" e "Trabalha sob spec e evals; passa por Reviewer e Security-SRE" são o argumento do ADR-003 para *não* pôr esses agentes no topo. As cinco linhas acima foram reescritas para o modelo atual, e essas três não. Não são falsas, mas ao lado de "Opus 5.5" não justificam a escolha.
+- **Correção:** reescrever no mesmo estilo das outras cinco. Exemplos: Spec-Writer, "A spec define o que todo o fluxo vai construir; erro de requisito é o mais caro de descobrir tarde". Data-Engineer, "Migration e schema errados são difíceis de reverter em produção". AI-Engineer, "Design de prompts, evals e guardrails é design de sistema".
 
 ## Roteamento
-- Nada para o `security-sre`: não há achado sistêmico.
-- Os issues 1 e 2 bloqueiam: o 1 descumpre um critério do brief, e o 2 é exatamente a incoerência que este gate devia barrar. O 3, o 4 e o 5 também devem ser corrigidos nesta rodada, porque são afirmações falsas em texto vigente. Os LOW podem entrar na mesma rodada, já que são edições de uma linha.
-- O `coder.md` afirma que as menções a Sonnet "só" estão nos ADR-001/002/003 e no ARCHITECTURE, e o ADR-005 desmente isso. Na próxima rodada, rode o `grep -rni sonnet` de novo e cole a saída no artifact.
+- Os issues 1 e 2 bloqueiam. São afirmações falsas em texto vigente, o mesmo critério que fez os issues 3, 4 e 5 da rodada 1 bloquearem. O 1 é justamente o tipo de erro que a pergunta "as frases novas criaram afirmação falsa?" devia pegar.
+- Os issues 3 e 4 não bloqueiam sozinhos, mas são edições de uma linha e cabem na mesma rodada.
+- Na rodada 3, bastam o diff dos quatro pontos e um novo `grep -rni sonnet` para confirmar que a linha 78 não criou menção nova.
