@@ -5,11 +5,11 @@
 **Decisores:** Tech Lead
 **Revisão:** trimestral (junto com ADR-001), ou imediatamente se a Anthropic mudar as regras de uso da assinatura
 **Última revisão:** 2026-09-23
-**Relacionado:** implementa `docs/PROPOSTA-PIPELINE-FLUXO.md`; altera `multi-agents/HANDOFF-PROTOCOL.md` §3.2/§4/§6 e `ARCHITECTURE.md`; adiciona uma linha em `praticas/00` (IA/LLM). Não supersede nenhum ADR. O `GOVERNANCE.md` §3.1/§6 é ajustado por patch do Tech Lead (`docs/patches/GOVERNANCE.proposto.md`).
+**Relacionado:** altera `multi-agents/HANDOFF-PROTOCOL.md` §3.2/§4/§6 e `ARCHITECTURE.md`; adiciona uma linha em `praticas/00` (IA/LLM). Não supersede nenhum ADR. O `GOVERNANCE.md` §3.1/§6 é ajustado por patch do Tech Lead (`docs/patches/GOVERNANCE.proposto.md`).
 
 ## Contexto
 
-O fluxo multi-agent do playbook (`ARCHITECTURE.md`, fluxos 1–6) era **prosa**: roteamento, paralelismo e gates existiam como instruções que o Orchestrator devia seguir. Quatro falhas estruturais foram identificadas (`PROPOSTA-PIPELINE-FLUXO.md` §1): a complexidade era classificada antes de qualquer agente olhar o código; o loop de retrabalho não tinha teto; o veredito de qualidade era voto único e o Orchestrator estava proibido de conferi-lo; e o Reviewer fazia três trabalhos em fila.
+O fluxo multi-agent do playbook (`ARCHITECTURE.md`, fluxos 1–6) era **prosa**: roteamento, paralelismo e gates existiam como instruções que o Orchestrator devia seguir. Quatro falhas estruturais foram identificadas: a complexidade era classificada antes de qualquer agente olhar o código; o loop de retrabalho não tinha teto; o veredito de qualidade era voto único e o Orchestrator estava proibido de conferi-lo; e o Reviewer fazia três trabalhos em fila.
 
 Duas restrições delimitaram a solução:
 
@@ -29,7 +29,7 @@ Duas restrições delimitaram a solução:
 
 ## Alternativas consideradas
 
-1. **LangGraph orquestrando o Claude Code por fora** (via Agent SDK ou `claude -p`) — determinismo igual, ecossistema conhecido pelo time. Descartado: exige API key para ser conforme (sai da assinatura, muda a cobrança) e, na variante com credencial da assinatura, fere a regra de intermediação de token. Detalhe em `PROPOSTA-PIPELINE-FLUXO.md`.
+1. **LangGraph orquestrando o Claude Code por fora** (via Agent SDK ou `claude -p`) — determinismo igual, ecossistema conhecido pelo time. Descartado: exige API key para ser conforme (sai da assinatura, muda a cobrança) e, na variante com credencial da assinatura, fere a regra de intermediação de token.
 2. **Ruflo (ex-claude-flow)** — harness pronto, 70k stars. Descartado: seu proxy lê `~/.claude/.credentials.json` e reenvia o token OAuth (ADR-313 do projeto), exatamente o que a Anthropic proíbe; `hive-mind` spawna `claude --dangerously-skip-permissions`, anulando o `permissions.deny`; autor único com 99% dos commits; advisory crítica (RCE) em jul/2026; 314 tools MCP e 27 hooks que o `ISO-MAPPING` teria de justificar.
 3. **Manter a prosa e só corrigir o texto** (teto do loop, épica) — barato, mas não resolve o roteamento cego nem o voto único, que são estruturais.
 4. **Agent teams / subagentes manuais** — o Orchestrator continua decidindo turno a turno; é o modelo que produziu os quatro problemas.
@@ -42,7 +42,7 @@ Duas restrições delimitaram a solução:
 
 **Negativas / custos:** fan-out consome quota da assinatura mais rápido — começar com voto único em task normal e medir; o `00-orchestrator.md` (246 linhas) passa a ser explicação de ~150 linhas de JS, o que é menos legível para auditor e dev novo; `Workflow` exige plano pago e opt-in do usuário a cada run (ou "não perguntar de novo" por projeto); o script não escreve em disco — o run-log continua dependendo da sessão principal.
 
-**Risco aceito:** o fluxo ainda não rodou numa task real. O piloto num projeto com código é pendência explícita (`PENDENCIAS-TECH-LEAD.md`); as estimativas de quota são qualitativas até lá.
+**Risco aceito:** o fluxo ainda não rodou numa task real. O piloto num projeto com código ainda precisa acontecer; as estimativas de quota são qualitativas até lá.
 
 ## Revisão
 

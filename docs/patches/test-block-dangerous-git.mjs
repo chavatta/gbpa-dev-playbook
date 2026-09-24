@@ -77,7 +77,7 @@ const CASES = [
   ["psql SELECT",                 'psql -c "SELECT * FROM users"', "ALLOW"],
   ["worktree remove",             "git worktree remove .claude/worktrees/x", "ALLOW"],
 
-  // ---- 2026-09: falsos positivos reportados em 2026-09-15 (PENDENCIAS, item 2) — devem PASSAR ----
+  // ---- 2026-09: falsos positivos reportados em 2026-09-15 — devem PASSAR ----
   ["push branch + PR em 2 linhas",  "git push -u origin feat/x\ngh pr create --draft --base main", "ALLOW"],
   ["push branch && PR --base main", "git push -u origin feat/x && gh pr create --draft --base main", "ALLOW"],
   ["commit -F heredoc cita push",   "git commit -F - <<'EOF'\nBloqueia git push origin main\nEOF", "ALLOW"],
