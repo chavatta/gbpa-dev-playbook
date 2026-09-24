@@ -3,7 +3,7 @@
 > Complemento operacional de `ARCHITECTURE.md`. Define **como** os agentes trocam trabalho na prática.
 > Regra de ouro: **artifacts são arquivos no disco, não JSON no contexto.** O Orchestrator nunca carrega o conteúdo bruto de um subagente — só referências leves.
 >
-> **Dono:** Tech Lead · **Revisão:** semestral, ou a cada mudança no protocolo · **Última revisão:** 2026-09-23
+> **Dono:** Tech Lead · **Revisão:** semestral, ou a cada mudança no protocolo · **Última revisão:** 2026-09-24
 
 ---
 
@@ -61,9 +61,21 @@ next_agent: reviewer
 context_for_next: "JWT implementado. Revisar validação do token e rate limiting."
 blockers: []             # se status=blocked, listar aqui o que trava
 skill_candidates: []     # skills existentes usadas e/ou candidatas a criar (ver §6.1)
+# opcionais (ADR-007) — omita quando não se aplicam
+provider: claude-code    # provedor/runtime em que o agente REALMENTE rodou; ausente = claude-code
+needs_human: false       # ou {question: "...", options: ["...", "..."], blocking: true}
 ```
 
 Campos obrigatórios: `agent`, `model`, `task_id`, `status`, `artifact_path`, `next_agent`, `context_for_next`, `blockers`, `skill_candidates`.
+
+Campos opcionais:
+- **`provider`** (string): id do provedor/runtime em que o agente efetivamente rodou. É o mesmo id usado nas listas de roteamento (`docs/ADR-007`), a parte antes do `:` da entrada. Junto com `model`, registra a entrada efetivamente usada. Ausente significa o runtime nativo do fluxo (`claude-code`, ADR-005), que é o caso de um provedor do ADR-001. Quem executa com mais de um provedor exige o campo (ADR-007 §7).
+- **`needs_human`** (`boolean` ou `{question, options?, blocking?}`): marca que o blocker exige **decisão humana**. Nesse caso o Orchestrator não re-roteia para outro agente (§4.6): leva a pergunta a um humano. `true` indica que a pergunta está no próprio texto do blocker. No objeto:
+  - `question` (string, obrigatória) é a pergunta;
+  - `options` (lista de strings) são as respostas sugeridas;
+  - `blocking` (boolean, padrão `true`) diz se o fluxo depende da resposta para seguir.
+
+  Com `blocking` verdadeiro, o ponteiro também traz `status: blocked` e ao menos um item em `blockers`. Com `blocking: false`, a pergunta não impede o agente de concluir.
 
 **No fluxo por script** (`/task` → `.claude/workflows/gbpa-task.js`, `docs/ADR-005`), este bloco é o JSON Schema `POINTER` do script, validado na chamada: o subagente é obrigado a devolver o objeto completo e o modelo tenta de novo se errar o formato. Ponteiro malformado deixa de existir.
 
