@@ -16,18 +16,18 @@ O gargalo de um fluxo assim não é velocidade de geração de código — é a 
 
 ## Decisão
 
-Perfil **balanceado com o modelo de topo nos nós críticos** — hoje **Opus 5.5**:
+Perfil original (2026-07-31): **balanceado, com o modelo de topo nos nós críticos**. Desde 2026-09-23, **Opus 5.5 em todos os agentes da tabela, exceto o Documenter** — ver "Revisão de 2026-09-23". O racional da terceira coluna é o original: explica por que cada papel pedia o que pedia quando havia diferença de modelo.
 
 | Agente | Modelo | Racional |
 |---|---|---|
 | `orchestrator` | **opus** (`claude-opus-5-5`) | A decomposição e o roteamento definem a qualidade de tudo abaixo |
 | `architect` | **opus** (`claude-opus-5-5`) | Decisões de arquitetura são as mais caras de reverter |
 | `reviewer` | **opus** (`claude-opus-5-5`) | É o gate obrigatório; um falso "APROVADO" é o erro mais caro do fluxo |
-| `planner` | **opus** (`claude-opus-5-5`) — era sonnet | Estrutura trabalho sobre design já decidido pelo Architect-opus |
-| `coder` | **opus** (`claude-opus-5-5`) — era sonnet | Implementa spec fechada; erro é interceptado pelo Reviewer-opus |
-| `tester` | **opus** (`claude-opus-5-5`) — era sonnet | Critérios de aceitação já definidos; método estruturado |
-| `debugger` | **opus** (`claude-opus-5-5`) — era sonnet | Segue metodologia científica (skill `engineering:debug`) |
-| `devops` | **opus** (`claude-opus-5-5`) — era sonnet | Procedural, com checklist pré-deploy |
+| `planner` | **opus** (`claude-opus-5-5`) — era sonnet | *(racional do sonnet)* Estrutura trabalho sobre design já decidido pelo Architect |
+| `coder` | **opus** (`claude-opus-5-5`) — era sonnet | *(racional do sonnet)* Implementa spec fechada; erro é interceptado pelo Reviewer |
+| `tester` | **opus** (`claude-opus-5-5`) — era sonnet | *(racional do sonnet)* Critérios de aceitação já definidos; método estruturado |
+| `debugger` | **opus** (`claude-opus-5-5`) — era sonnet | *(racional do sonnet)* Segue metodologia científica (skill `engineering:debug`) |
+| `devops` | **opus** (`claude-opus-5-5`) — era sonnet | *(racional do sonnet)* Procedural, com checklist pré-deploy |
 | `documenter` | **haiku** | Alto volume, insumo já aprovado; menor custo por token |
 
 O `model:` no frontmatter de cada agente (`.claude/agents/*.md`) **prevalece** sobre o `model` do settings global do usuário — a atribuição vale independente da configuração pessoal de cada máquina.
@@ -40,10 +40,14 @@ O `model:` no frontmatter de cada agente (`.claude/agents/*.md`) **prevalece** s
 
 ## Consequências
 
-**Positivas:** cota concentrada onde há leverage; gate de review mais confiável que o código que audita; racional documentado e auditável para a equipe.
+**Positivas (perfil original):** ~~cota concentrada onde há leverage; gate de review mais confiável que o código que audita~~ — *superado em 2026-09-23, ver as negativas abaixo*; racional documentado e auditável para a equipe.
+
+**Positivas (desde 2026-09-23):** qualidade uniforme em quase todo o fluxo, sem executor mais fraco que o design que implementa; o gate de segurança roda em outra família (Fable 5.1) que a do resto do time.
 
 **Negativas / mitigação:**
-- Três modelos para manter atualizados quando os aliases mudarem → revisão trimestral deste ADR.
+- Três modelos para manter atualizados (Opus 5.5, Fable 5.1, Haiku) → revisão trimestral deste ADR; com o ID fixado, nada muda sozinho.
+- **Cota (desde 2026-09-23):** os executores gastam no preço do topo → medir no piloto do `/task`; recuo descrito na "Revisão de 2026-09-23".
+- **Reviewer no mesmo modelo do Coder (desde 2026-09-23):** o gate deixa de ser mais capaz que o código que audita e tende a compartilhar os pontos cegos dele → mitigação na "Revisão de 2026-09-23".
 - Documenter em Haiku pode ficar aquém em docs complexas → o Orchestrator pode sobrescrever o modelo na delegação quando justificar.
 
 ## Nomenclatura dos agentes e visibilidade do modelo
@@ -71,10 +75,10 @@ Os arquivos em `.claude/agents/` mantêm o **sufixo de modelo** no nome (`review
 - **Auto-verificação:** cada agente confere se roda na versão designada (Opus 5.5; Fable 5.1 no Security-SRE); outra versão ou família devolve `status: blocked` com modelo divergente. Sufixo de janela de contexto (`[1m]`) não é outra versão.
 - **Mudou junto:** `name:`/`model:` dos três agentes em Opus e o `model:` do Security-SRE; os `agentType` e a descrição do campo `model` no `gbpa-task.js`; ADR-002, 003 e 005; `HANDOFF-PROTOCOL` (o campo `model` do ponteiro passa a registrar o ID exato); `ARCHITECTURE`; as tabelas de modelo do `DESENVOLVIMENTO-COM-IA`, do `ONBOARDING`, do `README` e da `praticas/00`; as decisões 2 e 4 do `PENDENCIAS-TECH-LEAD`; e um payload da suíte em `docs/patches/`.
 - **Segunda etapa, no mesmo dia — executores em Opus 5.5.** Por decisão do Tech Lead, os oito agentes em Sonnet 5 (`planner`, `coder`, `tester`, `debugger`, `devops`, `spec-writer`, `data-engineer`, `ai-engineer`) também passam a `claude-opus-5-5`, com sufixo `-opus`. Ficam fora o Security-SRE (Fable 5.1) e o Documenter (Haiku 4.5). Isso adota em grande parte a alternativa 1 ("tudo no modelo de topo"), que este ADR tinha rejeitado. Dois custos ficam registrados:
-  - **Cota.** Os executores são os agentes que mais rodam, e passam a gastar no preço do topo. O piloto do `/task` (`PENDENCIAS-TECH-LEAD.md`, item 3) é onde medir isso. Se a cota não fechar, o recuo natural é devolver ao Sonnet quem trabalha sob spec fechada e sob gate: Planner, Tester e DevOps.
-  - **Gate no mesmo modelo que o código que audita.** O racional original era um Reviewer *mais* capaz que o Coder. Agora os dois rodam em Opus 5.5 e tendem a compartilhar pontos cegos. A mitigação é o que já existe fora dessa família: em task sensível, a lente do Security-SRE (Fable 5.1) e o refutador cego, que não lê os vereditos anteriores (ADR-005). Em task não-sensível, o dev responsável lê o diff antes do ready (`GOVERNANCE.md` §2.2).
+  - **Cota.** Os executores são os agentes que mais rodam, e passam a gastar no preço do topo. O piloto do `/task` (`PENDENCIAS-TECH-LEAD.md`, item 3) é onde medir isso. Se a cota não fechar, o recuo natural é devolver ao Sonnet quem trabalha sob spec fechada e sob gate e tem saída mais fácil de conferir: Planner, Tester e DevOps. O Coder fica em Opus porque o código é o que o Reviewer audita, e manter os dois no mesmo nível evita reabrir o ciclo de retrabalho que a alternativa 3 descreve. Debugger, Spec-Writer, Data-Engineer e AI-Engineer ficam porque o erro deles é de diagnóstico ou de design, o tipo que o ADR sempre pôs no topo.
+  - **Gate no mesmo modelo que o código que audita.** O racional original era um Reviewer *mais* capaz que o Coder. Agora os dois rodam em Opus 5.5 e tendem a compartilhar pontos cegos. A única verificação fora da família Opus é a lente do Security-SRE (Fable 5.1), em task sensível. O refutador cego (ADR-005) também ajuda, mas por outro mecanismo: ele roda como `reviewer-opus`, no mesmo modelo, e o que o protege da ancoragem é não ler os vereditos anteriores, não a diversidade de modelo. Em task não-sensível, o dev responsável lê o diff antes do ready (`GOVERNANCE.md` §2.2).
 - **Sessões abertas:** a definição dos agentes carrega no startup do Claude Code — reinicie as sessões para que os nomes `-opus` e os modelos fixados valham.
-- **Evidência antiga não muda:** artifacts em `tasks/` anteriores a esta data registram `fable` nos quatro agentes porque foi nele que rodaram.
+- **Evidência antiga não muda:** artifacts em `tasks/` anteriores a esta revisão registram `fable` nos quatro agentes de topo e `sonnet` nos oito executores, porque foi nesses modelos que rodaram.
 
 ## Notas operacionais
 

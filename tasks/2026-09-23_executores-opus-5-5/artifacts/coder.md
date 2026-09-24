@@ -23,3 +23,32 @@
 - 7/7 `agentType` do script existem como `name:`; `node scripts/test-gbpa-task.mjs` → 15/15; suíte do hook → 145/145.
 - Menções a Sonnet fora de `tasks/`: só registros históricos (ADR-001/002/003) e o estudo citado no `ARCHITECTURE`.
 - Links relativos: 0 quebrados.
+
+## Retrabalho — rodada 2 (achados do reviewer)
+
+| Achado | Correção |
+|---|---|
+| HIGH — ADR-005:41 ainda citava `planner-sonnet`, `spec-writer-sonnet`, `coder-sonnet` e `tester-sonnet` (o grep da rodada 1 cortava a linha antes deles) | Nomes `-opus` |
+| HIGH — "Consequências" positivas do ADR-001 ainda diziam "gate de review mais confiável que o código que audita" | Positivas originais tachadas como superadas; positivas desde 2026-09-23; os dois custos novos nas negativas |
+| MEDIUM — "perfil balanceado" contradizia a tabela | Frase datada: perfil original e perfil desde 2026-09-23 |
+| MEDIUM — mitigação punha o refutador cego "fora da família" | Só o Security-SRE é outra família; o refutador cego roda como `reviewer-opus` e protege por não ler os vereditos anteriores |
+| MEDIUM — PENDENCIAS dizia "todos pelo ID completo" | O Documenter usa o alias `haiku`; só Opus e Fable estão fixados |
+| LOW — racionais de sonnet nas tabelas | ADR-001: marcados como "(racional do sonnet)"; DESENVOLVIMENTO §3: reescritos para o modelo atual |
+| LOW — alternativa 1 do ADR-003 sem nota | Marcada como adotada em 2026-09-23 |
+| LOW — HANDOFF falava em "agentes de topo" | "Agentes em Opus e Fable" |
+| LOW — recuo de cota e nota de evidência | Recuo explica por que Coder e os demais ficam; nota cita `sonnet` nos oito executores |
+
+**Saída do grep `sonnet` (fora de `tasks/`), todas históricas ou do estudo citado:**
+
+```
+docs/ADR-002-agente-security-sre.md:27   DevOps "rodava" em Sonnet (datado)
+docs/ADR-002-agente-security-sre.md:28   alternativa "Security-SRE em Sonnet" (rejeitada, registro)
+docs/ADR-001-modelos-por-agente.md:13    contexto de 2026-07-31 (modelos disponíveis à época)
+docs/ADR-001-modelos-por-agente.md:26-30 "era sonnet" / "(racional do sonnet)"
+docs/ADR-001-modelos-por-agente.md:38    alternativa 2 "Tudo Sonnet" (rejeitada, registro)
+docs/ADR-001-modelos-por-agente.md:77-81 revisão de 2026-09-23 (a própria troca, recuo, evidência antiga)
+docs/ADR-003-agentes-sdd-dados-ia.md:21  decisão 3 marcada como superada
+multi-agents/ARCHITECTURE.md:20          estudo citado da Anthropic
+```
+
+Smoke test 15/15; links relativos: 0 quebrados.

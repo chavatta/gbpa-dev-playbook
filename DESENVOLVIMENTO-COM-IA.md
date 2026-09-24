@@ -74,11 +74,11 @@ Modelos de IA têm capacidades e custos diferentes. Desde 2026-09-23, quase todo
 | Orchestrator | **Opus 5.5** | A decomposição define a qualidade de tudo que vem depois |
 | Architect | **Opus 5.5** | Decisões de arquitetura são caras de reverter |
 | Reviewer | **Opus 5.5** | É o gate: um falso "aprovado" é o erro mais caro do fluxo |
-| Planner | Opus 5.5 | Estrutura trabalho sobre design já decidido |
-| Coder | Opus 5.5 | Implementa spec fechada; erro é pego pelo Reviewer |
-| Tester | Opus 5.5 | Método estruturado, critérios já definidos |
-| Debugger | Opus 5.5 | Segue metodologia científica de debugging |
-| DevOps | Opus 5.5 | Procedural, com checklist |
+| Planner | Opus 5.5 | Estrutura trabalho sobre o design; erro de plano custa uma volta inteira do fluxo |
+| Coder | Opus 5.5 | Implementa a spec no mesmo nível do Reviewer que o audita — menos retrabalho |
+| Tester | Opus 5.5 | Testa a partir da spec, em paralelo ao Coder; também é uma das lentes em task sensível |
+| Debugger | Opus 5.5 | Diagnóstico de causa-raiz é raciocínio, não execução |
+| DevOps | Opus 5.5 | Pipeline e infra errados atingem todas as tasks seguintes |
 | Documenter | Haiku 4.5 | Alto volume, insumo já aprovado |
 | Spec-Writer | Opus 5.5 | A spec é validada na sequência pelo Architect (Opus 5.5) |
 | Data-Engineer | Opus 5.5 | Trabalha sob design fechado; passa pelo Reviewer (Opus 5.5) |

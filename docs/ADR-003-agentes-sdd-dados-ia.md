@@ -22,7 +22,7 @@ O `ARCHITECTURE.md` previa 13 agentes (0–12) desde junho, mas três nunca fora
 
 ## Alternativas consideradas
 
-1. **Spec-Writer no modelo de topo** — a spec é nó de alavancagem, mas tem gate imediato (Architect-opus lê a spec inteira antes de projetar); o ganho não justifica o consumo de cota em todo início de feature.
+1. **Spec-Writer no modelo de topo** — a spec é nó de alavancagem, mas tem gate imediato (Architect-opus lê a spec inteira antes de projetar); o ganho não justifica o consumo de cota em todo início de feature. *(Rejeitada em 2026-07-31; adotada em 2026-09-23 junto com os demais executores, ver ADR-001.)*
 2. **Não criar e enxugar o ARCHITECTURE para 10 agentes** — removeria os fluxos 5 e 6; rejeitada porque SDD, camada de dados e sistemas com IA fazem parte do roadmap da equipe.
 3. **Fundir Data-Engineer no Coder e AI-Engineer no Architect** — mantém a contagem menor, mas mistura responsabilidades com custos de erro muito distintos (migration destrutiva ≠ código de app; evals ≠ design de sistema).
 
