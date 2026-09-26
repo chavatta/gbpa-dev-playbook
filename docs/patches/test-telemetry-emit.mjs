@@ -260,7 +260,7 @@ function spoolNote(lines) {
   return `linhas [${types.join(', ')}]; ${tracked} perda(s) rastreada(s); load average ${loadAverage()} (${cpus().length} CPUs)`
 }
 
-/** Linhas em qualquer spool fora o da task: `.claude/`, cache de último recurso e spool por run. */
+/** Linhas em qualquer spool fora o da task: `.claude/` e cache de último recurso. */
 function strayLines(ws) {
   const stray = {}
   const count = (path) => {
@@ -275,18 +275,14 @@ function strayLines(ws) {
     if (lines > 0) stray[path] = lines
   }
   count(join(ws.root, '.claude', 'telemetry-spool.jsonl'))
-  for (const dir of [
-    join(ws.dirs.cache, 'playbook-telemetry'),
-    join(ws.dirs.home, '.local', 'share', 'chavatta-hub', 'spool'),
-  ]) {
-    let names = []
-    try {
-      names = readdirSync(dir)
-    } catch {
-      continue
-    }
-    for (const name of names) if (name.includes('.jsonl')) count(join(dir, name))
+  const cacheDir = join(ws.dirs.cache, 'playbook-telemetry')
+  let names = []
+  try {
+    names = readdirSync(cacheDir)
+  } catch {
+    return stray
   }
+  for (const name of names) if (name.includes('.jsonl')) count(join(cacheDir, name))
   return stray
 }
 
@@ -511,6 +507,36 @@ test('modo só-spool (PLAYBOOK_TELEMETRY_URL=spool): grava sem rede e sem tocar 
   assert(readFileSync(join(ws.root, '.git', 'info', 'exclude'), 'utf8') === exclude, '.git/info/exclude mudou')
   const entries = readdirSync(join(ws.root, 'tasks', TASK)).sort()
   assert(JSON.stringify(entries) === JSON.stringify(['brief.md', 'telemetry.jsonl']), `arquivos na task: ${entries}`)
+})
+
+test('spool externo (PLAYBOOK_TELEMETRY_SPOOL_DIR + PLAYBOOK_RUN_ID): nada no worktree, válido ou não', async () => {
+  const runId = 'run_01J8Z3NDEKTSV4RRFFQ69G5FAV'
+  // [rótulo, diretório a partir do workspace, grava no spool externo?]; os demais caem no cache do usuário.
+  const cases = [
+    ['absoluto', (ws) => join(ws.dirs.home, 'spool-externo'), true],
+    ['relativo', () => 'spool-externo', false],
+    ['raiz do projeto', (ws) => ws.root, false],
+    ['<raiz>/.claude', (ws) => join(ws.root, '.claude'), false],
+    ['<fora>/../projeto', (ws) => `${ws.dirs.home}/../projeto`, false],
+  ]
+  for (const [label, dirOf, external] of cases) {
+    const ws = workspace()
+    const spoolDir = dirOf(ws)
+    const tree = () => readdirSync(ws.root, { recursive: true }).map(String).sort().join('\n')
+    const before = tree()
+    const env = ws.env({
+      PLAYBOOK_TELEMETRY_URL: 'spool',
+      PLAYBOOK_TELEMETRY_SPOOL_DIR: spoolDir,
+      PLAYBOOK_RUN_ID: runId,
+      PLAYBOOK_TELEMETRY_SCOPE: 'all',
+    })
+    assertSilentSuccess(await runEmitter(env, toolPayload(ws.root), { cwd: ws.root }), label)
+    assert(tree() === before, `${label}: o worktree mudou`)
+    const lines = external ? readJsonl(join(spoolDir, `${runId}.jsonl`)) : []
+    const cached = Object.keys(strayLines(ws)).length
+    assert(external ? lines.length === 1 && cached === 0 : cached === 1, `${label}: destino errado`)
+    for (const line of lines) assertEnvelope(line)
+  }
 })
 
 if (process.platform !== 'win32') {

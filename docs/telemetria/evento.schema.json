@@ -2,7 +2,7 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "urn:playbook-telemetry:evento:v1",
   "title": "TelemetryEvent v1",
-  "description": "Evento de telemetria do playbook (playbook.telemetry/v1), gerado do Zod de @chavatta-hub/event-schema. Envelope estrito; data por tipo é loose (chave desconhecida é preservada). Invariantes fora do JSON Schema: o tempo do ULID de event_id corresponde a ts (tolerância de 1 ms) e o evento serializado tem no máximo 64 KiB (data, 48 KiB).",
+  "description": "Evento de telemetria do playbook (playbook.telemetry/v1), gerado a partir do schema Zod do contrato. Envelope estrito; data por tipo é loose (chave desconhecida é preservada). Invariantes fora do JSON Schema: o tempo do ULID de event_id corresponde a ts (tolerância de 1 ms) e o evento serializado tem no máximo 64 KiB (data, 48 KiB).",
   "x-playbook-schema": "playbook.telemetry/v1",
   "oneOf": [
     {

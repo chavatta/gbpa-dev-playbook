@@ -253,23 +253,25 @@ import {
   chmodSync,
   closeSync,
   constants,
+  existsSync,
   fstatSync,
   linkSync,
   lstatSync,
   mkdirSync,
   openSync,
   readSync,
+  realpathSync,
   renameSync,
   statSync,
   unlinkSync,
   writeSync
 } from "node:fs";
-import { dirname, isAbsolute, join } from "node:path";
+import { basename, dirname, isAbsolute, join } from "node:path";
 var NOFOLLOW = typeof constants.O_NOFOLLOW === "number" ? constants.O_NOFOLLOW : 0;
 var NONBLOCK = typeof constants.O_NONBLOCK === "number" ? constants.O_NONBLOCK : 0;
 function ensurePrivateDir(path, options) {
   try {
-    mkdirSync(path, { recursive: true, mode: 448 });
+    if (!makeDirs(path)) return false;
     let stat = lstatSync(path);
     if (!stat.isDirectory()) return false;
     if (options.uid === null) return true;
@@ -302,10 +304,54 @@ function resolveStateDir(options) {
 }
 function ensureDir(path) {
   try {
-    mkdirSync(path, { recursive: true, mode: 448 });
-    return lstatSync(path).isDirectory();
+    return makeDirs(path) && lstatSync(path).isDirectory();
   } catch {
     return false;
+  }
+}
+var MAX_DIR_DEPTH = 64;
+function errorCode(error) {
+  return typeof error === "object" && error !== null ? error.code : void 0;
+}
+function makeDirs(path) {
+  const missing = [];
+  let current = path;
+  while (!existsSync(current)) {
+    const parent = dirname(current);
+    if (parent === current || missing.length >= MAX_DIR_DEPTH) return false;
+    missing.push(current);
+    current = parent;
+  }
+  for (const dir of missing.reverse()) {
+    try {
+      mkdirSync(dir, { mode: 448 });
+    } catch (error) {
+      if (errorCode(error) !== "EEXIST") return false;
+    }
+  }
+  return true;
+}
+function resolveRealDir(path) {
+  const missing = [];
+  let current = path;
+  for (let depth = 0; depth <= MAX_DIR_DEPTH; depth++) {
+    try {
+      return join(realpathSync(current), ...missing.reverse());
+    } catch (error) {
+      if (errorCode(error) !== "ENOENT" || lstatQuietly(current) !== null) return null;
+    }
+    const parent = dirname(current);
+    if (parent === current) return null;
+    missing.push(basename(current));
+    current = parent;
+  }
+  return null;
+}
+function lstatQuietly(path) {
+  try {
+    return lstatSync(path);
+  } catch {
+    return null;
   }
 }
 function isDirectory(path) {
@@ -578,6 +624,9 @@ function writeBreaker(path, state, uniqueSuffix) {
   return writeAtomic(path, JSON.stringify(state), uniqueSuffix);
 }
 
+// src/config.ts
+import { isAbsolute as isAbsolute2, normalize } from "node:path";
+
 // ../event-schema/dist/src/enums.js
 var POINTER_STATUS = ["completed", "blocked", "needs_review"];
 var TASK_SOURCES = ["env", "branch", "path_write", "sticky", "path_read", "portal", "file"];
@@ -638,11 +687,23 @@ function parseSlug(value) {
   const slug = nonEmpty(value);
   return slug !== void 0 && SLUG_PATTERN.test(slug) ? slug : void 0;
 }
-function parseRunSpool(value) {
-  const raw = nonEmpty(value);
-  if (raw === void 0) return { kind: "none" };
-  const runId = parseRunId(raw);
-  return runId === void 0 ? { kind: "invalid" } : { kind: "run", runId };
+function hasControlChar(text2) {
+  for (let index = 0; index < text2.length; index++) {
+    const code = text2.charCodeAt(index);
+    if (code < 32 || code === 127) return true;
+  }
+  return false;
+}
+function parseRunSpool(dirValue, runId) {
+  if (dirValue === void 0) return { kind: "none" };
+  const validDir = dirValue !== "" && dirValue === dirValue.trim() && isAbsolute2(dirValue) && normalize(dirValue) === dirValue && !hasControlChar(dirValue);
+  return validDir && runId !== void 0 ? { kind: "run", dir: dirValue, runId } : { kind: "invalid" };
+}
+var BUS_SERVER_PATTERN = /^[A-Za-z0-9][A-Za-z0-9-]*(?:_[A-Za-z0-9-]+)*$/;
+var BUS_SERVER_MAX = 64;
+function parseBusServer(value) {
+  const name = nonEmpty(value);
+  return name !== void 0 && name.length <= BUS_SERVER_MAX && BUS_SERVER_PATTERN.test(name) ? name : void 0;
 }
 function parseScope(value, runId) {
   if (value === "all" || value === "complement") return value;
@@ -664,10 +725,11 @@ function readConfig(argv, env) {
     taskIdEnv: nonEmpty(env.PLAYBOOK_TASK_ID),
     runId,
     agentRole: nonEmpty(env.PLAYBOOK_AGENT_ROLE)?.slice(0, 64),
-    // O escopo segue a presença da variável, mesmo com valor malformado: é uma run do portal.
+    // O escopo segue a presença da variável, mesmo com valor malformado: é uma execução orquestrada.
     scope: parseScope(nonEmpty(env.PLAYBOOK_TELEMETRY_SCOPE), runIdRaw),
     debug: env.PLAYBOOK_TELEMETRY_DEBUG === "1",
-    runSpool: parseRunSpool(env.CHAVATTA_RUN_ID),
+    runSpool: parseRunSpool(env.PLAYBOOK_TELEMETRY_SPOOL_DIR, runId),
+    busServer: parseBusServer(env.PLAYBOOK_TELEMETRY_BUS_SERVER),
     cursorVersion: nonEmpty(env.CURSOR_VERSION),
     claudeProjectDir: nonEmpty(env.CLAUDE_PROJECT_DIR),
     cursorProjectDir: nonEmpty(env.CURSOR_PROJECT_DIR)
@@ -675,8 +737,8 @@ function readConfig(argv, env) {
 }
 
 // src/context.ts
-import { lstatSync as lstatSync2, realpathSync, statSync as statSync2 } from "node:fs";
-import { isAbsolute as isAbsolute2, join as join3, resolve } from "node:path";
+import { lstatSync as lstatSync2, realpathSync as realpathSync2, statSync as statSync2 } from "node:fs";
+import { isAbsolute as isAbsolute3, join as join3, resolve } from "node:path";
 
 // ../core/dist/src/identity/path.js
 function toPosixPath(path) {
@@ -995,13 +1057,13 @@ var nodeGitFs = {
 };
 function realRoot(root) {
   try {
-    return realpathSync.native(root);
+    return realpathSync2.native(root);
   } catch {
     return root;
   }
 }
 function resolveProject(cwd, sha256, fs = nodeGitFs) {
-  const start = isAbsolute2(cwd) ? cwd : resolve(cwd);
+  const start = isAbsolute3(cwd) ? cwd : resolve(cwd);
   const { root } = findRoot(start, fs);
   const git = readGit(root, fs);
   const remote = git?.remoteUrl === void 0 ? void 0 : normalizeRemote(git.remoteUrl, sha256) ?? void 0;
@@ -1562,7 +1624,7 @@ function createDebugLog(stateDir, now, pid) {
 
 // src/drain.ts
 import { readdirSync } from "node:fs";
-import { basename, dirname as dirname2, join as join5 } from "node:path";
+import { basename as basename2, dirname as dirname2, join as join5 } from "node:path";
 
 // contract-snapshot:telemetry
 var SCHEMA_V1 = "playbook.telemetry/v1";
@@ -1571,7 +1633,7 @@ var SCHEMA_V1 = "playbook.telemetry/v1";
 var DRAINING_INFIX = ".draining-";
 var SIDE_SUFFIXES = [".sent", ".batch-max"];
 function drainingFiles(spoolPath) {
-  const prefix = `${basename(spoolPath)}${DRAINING_INFIX}`;
+  const prefix = `${basename2(spoolPath)}${DRAINING_INFIX}`;
   try {
     return readdirSync(dirname2(spoolPath)).filter((name) => name.startsWith(prefix) && /^[0-9A-HJKMNP-TV-Z]{26}$/.test(name.slice(prefix.length))).sort().map((name) => join5(dirname2(spoolPath), name));
   } catch {
@@ -2144,7 +2206,6 @@ function sanitizeEvent(event, options) {
 }
 
 // contract-snapshot:bus
-var MCP_SERVER_NAME = "chavatta";
 var BUS_TOOL_INTENTS = Object.freeze({ "send_message": "message", "read_inbox": "message", "handoff": "delegate", "claim_task": "claim", "report_progress": "report", "request_human_decision": "ask_human", "permission_prompt": "ask_human" });
 
 // ../core/dist/src/tools/shell-parse.js
@@ -2906,7 +2967,7 @@ function classifyShell(command) {
   return { category: best.category, rule: best.rule, segments };
 }
 
-// ../core/dist/src/tools/classify.js
+// ../core/dist/src/tools/classify-generic.js
 var entry = (category, intent) => intent === void 0 ? { category } : { category, intent };
 var CLAUDE_CODE = {
   Edit: entry("edit"),
@@ -3048,8 +3109,9 @@ function parseMcpToolName(name) {
     return { server: "", tool: name.slice(4) };
   return null;
 }
-function mcpClassification(mcp) {
-  const intent = mcp.server === MCP_SERVER_NAME ? own(BUS_TOOL_INTENTS, mcp.tool) : void 0;
+function mcpClassification(mcp, bus) {
+  const isBus = bus.busServer !== void 0 && mcp.server === bus.busServer;
+  const intent = isBus ? own(BUS_TOOL_INTENTS, mcp.tool) : void 0;
   if (intent !== void 0)
     return { category: "mcp", intent, rule: `mcp.bus.${mcp.tool}`, mcp };
   return { category: "mcp", rule: "mcp.prefix", mcp };
@@ -3097,7 +3159,7 @@ function fromEntry(found, rule, input) {
     base.intent = found.intent;
   return found.category === "shell" ? withShell(base, input) : base;
 }
-function classifyCodexItem(o) {
+function classifyCodexItem(o, bus) {
   const input = isRecord3(o.input) ? o.input : {};
   if (o.toolName === "file_change") {
     const changes = Array.isArray(input.changes) ? input.changes : [];
@@ -3115,7 +3177,7 @@ function classifyCodexItem(o) {
   if (o.toolName === "mcp_tool_call") {
     const server = typeof input.server === "string" ? input.server : o.mcp?.server ?? "";
     const tool = typeof input.tool === "string" ? input.tool : o.mcp?.tool ?? "";
-    const result = mcpClassification({ server, tool });
+    const result = mcpClassification({ server, tool }, bus);
     return { ...result, rule: result.rule === "mcp.prefix" ? "codex.item.mcp_tool_call" : result.rule };
   }
   return null;
@@ -3142,10 +3204,10 @@ function safeJson(text2) {
     return void 0;
   }
 }
-function classifyTool(o) {
+function classifyToolWith(o, bus) {
   const runtimeTable = own(TABLES, o.runtime);
   if (o.runtime === "codex") {
-    const item = classifyCodexItem(o);
+    const item = classifyCodexItem(o, bus);
     if (item !== null)
       return item;
   }
@@ -3155,7 +3217,7 @@ function classifyTool(o) {
   }
   const mcp = o.mcp ?? parseMcpToolName(o.toolName);
   if (mcp !== null && mcp !== void 0)
-    return mcpClassification(mcp);
+    return mcpClassification(mcp, bus);
   if (o.runtime === "cursor") {
     const key = classifyCursorKey(o);
     if (key !== null)
@@ -3233,7 +3295,10 @@ function describeTool(call, detail) {
   const original = isRecord(call.input) ? call.input : {};
   const projected = projectInput(call.input);
   const input = isRecord(projected) ? projected : {};
-  const classification = classifyTool({ runtime: call.runtime, toolName: name, input: projected });
+  const classification = classifyToolWith(
+    { runtime: call.runtime, toolName: name, input: projected },
+    { busServer: call.busServer }
+  );
   const path = firstText(input, PATH_KEYS);
   const paths = stringList(input.paths);
   const pathsCount = stringList(original.paths).length;
@@ -3436,7 +3501,13 @@ var mapAgy = (context) => {
   const toolCall = isRecord(p.toolCall) ? p.toolCall : {};
   const step = count(p.stepIdx);
   const useId = conversationId !== void 0 && step !== void 0 ? `${conversationId}${step}` : void 0;
-  const call = { runtime: context.runtime, name: toolCall.name, input: toolCall.args, useId };
+  const call = {
+    runtime: context.runtime,
+    name: toolCall.name,
+    input: toolCall.args,
+    useId,
+    busServer: context.busServer
+  };
   const withTool = (result) => result === null ? mapped : { ...mapped, events: [result.draft], tool: result.tool };
   switch (context.event) {
     case "PreToolUse":
@@ -3747,7 +3818,13 @@ var mapClaudeCode = (context) => {
     cwd: text(p.cwd) ?? context.env.claudeProjectDir,
     subagent: agentId !== void 0 || agentType !== void 0 ? { id: agentId, type: agentType } : void 0
   };
-  const call = { runtime: context.runtime, name: p.tool_name, input: p.tool_input, useId: p.tool_use_id };
+  const call = {
+    runtime: context.runtime,
+    name: p.tool_name,
+    input: p.tool_input,
+    useId: p.tool_use_id,
+    busServer: context.busServer
+  };
   const withTool = (result, extra = []) => result === null ? mapped : { ...mapped, events: [result.draft, ...extra], tool: result.tool };
   switch (context.event) {
     case "SessionStart":
@@ -3850,7 +3927,13 @@ var mapCodex = (context) => {
   const p = context.payload;
   const sessionId = printable(p.session_id, 128);
   const mapped = { events: [], sessionId, model: printable(p.model, 128), cwd: text(p.cwd) };
-  const call = { runtime: context.runtime, name: p.tool_name, input: p.tool_input, useId: p.tool_use_id };
+  const call = {
+    runtime: context.runtime,
+    name: p.tool_name,
+    input: p.tool_input,
+    useId: p.tool_use_id,
+    busServer: context.busServer
+  };
   const withTool = (result) => result === null ? mapped : { ...mapped, events: [result.draft], tool: result.tool };
   switch (context.event) {
     case "SessionStart":
@@ -3946,7 +4029,13 @@ var mapCursor = (context) => {
     cwd: text(roots[0]) ?? text(p.cwd) ?? context.env.cursorProjectDir
   };
   const toolName = p.tool_name ?? (Object.hasOwn(EVENT_TOOL, context.event) ? EVENT_TOOL[context.event] : void 0);
-  const call = { runtime: context.runtime, name: toolName, input: toolInputOf(p), useId: p.tool_use_id };
+  const call = {
+    runtime: context.runtime,
+    name: toolName,
+    input: toolInputOf(p),
+    useId: p.tool_use_id,
+    busServer: context.busServer
+  };
   const withTool = (result) => result === null ? mapped : { ...mapped, events: [result.draft], tool: result.tool };
   const push = (draft) => {
     mapped.events.push(draft);
@@ -4054,7 +4143,7 @@ function mapHook(context, scope) {
 }
 
 // src/probe.ts
-import { isAbsolute as isAbsolute3 } from "node:path";
+import { isAbsolute as isAbsolute4 } from "node:path";
 var MAX_KEYS = 200;
 var SAFE_KEY = /^[A-Za-z0-9_.-]{1,64}$/;
 function payloadKeys(payload) {
@@ -4072,7 +4161,7 @@ function payloadKeys(payload) {
   return [...keys].sort();
 }
 function writeProbe(path, record) {
-  if (!isAbsolute3(path)) return false;
+  if (!isAbsolute4(path)) return false;
   const result = appendExclusive(path, () => `${JSON.stringify(record)}
 `);
   return result !== null && result !== "refused";
@@ -4162,18 +4251,13 @@ function exceedsStructure(textValue, maxNodes) {
 }
 
 // src/spool.ts
-import { existsSync } from "node:fs";
-import { isAbsolute as isAbsolute4, join as join6 } from "node:path";
+import { existsSync as existsSync2 } from "node:fs";
+import { isAbsolute as isAbsolute5, join as join6, sep } from "node:path";
 function absoluteEnv(value) {
-  return value !== void 0 && value !== "" && isAbsolute4(value) ? value : void 0;
+  return value !== void 0 && value !== "" && isAbsolute5(value) ? value : void 0;
 }
 function localAppData(location) {
   return absoluteEnv(location.env.LOCALAPPDATA) ?? join6(location.home, "AppData", "Local");
-}
-function portalDataDir(location) {
-  const configured = absoluteEnv(location.env.CH_DATA_DIR);
-  if (configured !== void 0) return configured;
-  return location.platform === "win32" ? join6(localAppData(location), "chavatta-hub") : join6(location.home, ".local", "share", "chavatta-hub");
 }
 function cacheDir(location) {
   if (location.platform === "win32") return join6(localAppData(location), "playbook-telemetry");
@@ -4183,10 +4267,18 @@ function cacheTarget(location) {
   const dir = cacheDir(location);
   return { kind: "cache", path: join6(dir, `spool-${location.rootHash.slice(0, 16)}.jsonl`), createDir: dir };
 }
+function externalSpoolDir(dir, root) {
+  const realDir = resolveRealDir(dir);
+  const realRoot2 = resolveRealDir(root);
+  if (realDir === null || realRoot2 === null) return null;
+  const rootPrefix = realRoot2.endsWith(sep) ? realRoot2 : `${realRoot2}${sep}`;
+  return realDir === realRoot2 || realDir.startsWith(rootPrefix) ? null : realDir;
+}
 function spoolTargets(location) {
   const runSpool = location.runSpool;
   if (runSpool.kind === "run") {
-    const dir = join6(portalDataDir(location), "spool");
+    const dir = externalSpoolDir(runSpool.dir, location.root);
+    if (dir === null) return [cacheTarget(location)];
     return [{ kind: "run", path: join6(dir, `${runSpool.runId}.jsonl`), createDir: dir }, cacheTarget(location)];
   }
   if (runSpool.kind === "invalid") return [cacheTarget(location)];
@@ -4217,7 +4309,7 @@ function limitedContent(events, size, marker2, writer) {
     const full = writer.spoolFullEvent();
     return full === null ? { text: "", written: 0 } : { text: serializeEvents([full]), written: 0 };
   }
-  if (marker2 !== null && existsSync(marker2)) removeQuietly(marker2);
+  if (marker2 !== null && existsSync2(marker2)) removeQuietly(marker2);
   const kept = size >= SPOOL.softLimitBytes ? events.filter((event) => !SPOOL.softDropTypes.includes(event.type)) : events;
   return { text: serializeEvents(kept), written: kept.length };
 }
@@ -4439,7 +4531,8 @@ var EmitterRun = class {
         sha256Hex,
         readTail: (path, maxBytes) => readTail(path, maxBytes),
         env: { claudeProjectDir: config.claudeProjectDir, cursorProjectDir: config.cursorProjectDir },
-        platform: deps.platform
+        platform: deps.platform,
+        busServer: config.busServer
       },
       config.scope
     );
