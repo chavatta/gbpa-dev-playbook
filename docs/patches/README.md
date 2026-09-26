@@ -1,6 +1,6 @@
 # Patches em arquivos protegidos
 
-> **Dono:** Tech Lead · **Revisão:** esvaziar conforme aplicado — patch pendente é dívida, não acervo · **Última revisão:** 2026-09-23
+> **Dono:** Tech Lead · **Revisão:** esvaziar conforme aplicado — patch pendente é dívida, não acervo · **Última revisão:** 2026-09-26
 
 Arquivos que agentes não podem escrever (`GOVERNANCE.md` §6.2) chegam aqui prontos e testados, para o **Tech Lead aplicar à mão, no próprio terminal, fora da sessão do agente** — de dentro do Claude Code a própria trava bloqueia a cópia, e é para bloquear. O racional de cada patch está na tabela abaixo.
 
@@ -11,10 +11,32 @@ Arquivos que agentes não podem escrever (`GOVERNANCE.md` §6.2) chegam aqui pro
 | `block-dangerous-git.mjs` | `.claude/hooks/` | Fecha os falsos positivos reportados em 2026-09-15 (token de argumento atravessava `;`/`&&`; corpo de heredoc e texto multi-linha entre aspas lidos como comando; verbo e caminho protegido casados em comandos diferentes; `ln=5` lido como `ln`). Fecha onze bypasses que a suíte nova achou no hook em produção: `git -C repo push --force`; entrar na zona com `cd` e copiar; herestring para interpretador (`bash <<< '…'`); `rsync`; caminho com `/./` ou `//`; e o próprio git reescrevendo a zona (`git checkout <ref> -- .claude/settings.json`, `git restore`, `git rm`). Estende a zona protegida a `.claude/workflows/` e `.claude/agents/` | `test-block-dangerous-git.mjs` — proposta 145/145; produção 112/145. Dos 85 casos novos, a produção falha em 33 (17 falsos positivos, 11 bypasses, 5 da zona nova); os outros 52 ela já acertava e ficam como guarda de regressão — entre eles os que as duas primeiras versões desta proposta deixavam passar e os gates pegaram (`bash<<'EOF'` colado; `python3 -c "open('.claude/hooks/x','w')"`, `cp $(ls x) .claude/hooks/y` e afins, em que parêntese e `$(` separavam verbo de caminho; script gravado por heredoc e executado depois; heredoc para `psql`/`mysql` com `DROP TABLE`, em que o corpo — SQL executado — era descartado) |
 | `check-reviewer-gate.mjs` | `.claude/hooks/` | O veredito passa a ser lido **na primeira linha** de fato: a flag `m` da regex deixava passar um artifact `REPROVADO` que citasse um `**Veredito:** APROVADO` mais abaixo | `test-check-reviewer-gate.mjs` — proposta 14/14; produção 11/14 |
 | `protect-guardrails.mjs` | `.claude/hooks/` | Bloqueia Write/Edit em `.claude/workflows/` (o script que devolve `done`, ADR-005) e `.claude/agents/` (tools e modelo de cada agente). `.claude/skills/` segue livre: o Documenter autora skill de projeto ali | `test-protect-guardrails.mjs` — proposta 22/22; produção 16/22 |
-| `settings.proposto.json` | `.claude/settings.json` | `deny` de Write/Edit nas duas pastas novas e de `Read` em `.env` / `.env.*` — a evidência que o `ISO-MAPPING` (A.8.12) cita | Diff de 8 linhas acrescentadas, nenhuma removida |
+| `settings.proposto.json` | `.claude/settings.json` | `deny` de Write/Edit nas duas pastas novas e de `Read` em `.env` / `.env.*` — a evidência que o `ISO-MAPPING` (A.8.12) cita. O mesmo arquivo já traz as entradas da telemetria (seção seguinte) | Diff de 8 linhas acrescentadas para este lote, nenhuma removida |
 | `GOVERNANCE.proposto.md` | `GOVERNANCE.md` | Cabeçalho de dono/revisão; §2.6 com a transição de mantenedor único; §3.1/§3.4 com o fluxo por script (ADR-005); §5.4 com a lista única de cópia; §6.2 com a zona protegida nova e a regra de mudança do script; §6.4 com Dynamic workflows | `git diff --no-index` — 7 trechos, todos listados aqui |
 
 O smoke test do fluxo, [`scripts/test-gbpa-task.mjs`](../../scripts/test-gbpa-task.mjs), não é patch — o script ainda não está na zona protegida —, mas passa a ser a prova exigida para qualquer mudança futura em `.claude/workflows/`.
+
+## Pendente — contrato de telemetria (ADR-008), sobre o lote de 2026-09-23
+
+| Arquivo proposto | Destino | O que muda | Prova |
+|---|---|---|---|
+| `telemetry-emit.mjs` | `.claude/hooks/` | Hook emissor do contrato `playbook.telemetry/v1` ([`docs/telemetria/`](../telemetria/README.md)). **Desligado sem `PLAYBOOK_TELEMETRY_URL`**: sai sem ler nada. Com a URL, normaliza, redige e envia ao coletor; sem coletor, grava no spool local. Sempre sai com 0, não escreve em stderr e nunca devolve campo de decisão — não participa de gate. Arquivo gerado por build, sem minificar e sem dependência | `test-telemetry-emit.mjs` — 18/18. Não há versão em produção para comparar: a suíte roda contra a proposta e, depois de copiar, contra `.claude/hooks/` |
+| `settings.proposto.json` | `.claude/settings.json` | Rebaseado **sobre o lote acima**: uma entrada separada do emissor em cada um dos 13 eventos (`SessionStart`, `SessionEnd`, `UserPromptSubmit`, `PreToolUse`, `PostToolUse`, `PostToolUseFailure`, `PermissionRequest`, `Notification`, `Stop`, `StopFailure`, `SubagentStart`, `SubagentStop`, `PreCompact`), `"timeout": 3`, `"matcher": "*"` nos de ferramenta. As entradas dos gates não mudam de posição nem de conteúdo | Diff contra o lote: 143 linhas acrescentadas, nenhuma removida; JSON válido. Carregado por um runtime real com os gates e os 13 eventos (ADR-008, "Verificações") |
+
+O `gbpa-task.js` desta mesma mudança (campos opcionais `provider` e `needs_human` no `POINTER`, ADR-008 §6) não é patch pelo mesmo motivo do smoke test acima: `node scripts/test-gbpa-task.mjs` dá 20/20 na versão do PR e 16/20 na anterior.
+
+**Aplicar junto com o lote** (mesma branch, mesmo reinício de sessão), acrescentando aos passos abaixo:
+
+```bash
+# 1. suíte
+node docs/patches/test-telemetry-emit.mjs docs/patches/telemetry-emit.mjs
+# 3. copiar (o settings.proposto.json é um só para os dois)
+cp docs/patches/telemetry-emit.mjs .claude/hooks/
+# 4. fechar o ciclo
+node docs/patches/test-telemetry-emit.mjs .claude/hooks/telemetry-emit.mjs
+```
+
+Depois de reiniciar, confira em cada máquina que **os gates continuam disparando** (peça na sessão `git push --dry-run --force origin HEAD`: tem de ser bloqueado — e, se passar, o `--dry-run` garante que nada foi enviado) e, com `PLAYBOOK_TELEMETRY_URL=spool` só naquela sessão, que `.claude/telemetry-spool.jsonl` recebe `session.start`, `tool.pre` e `tool.post` ao rodar um comando. Se alguma versão antiga do runtime ignorar o `settings.json` por causa de um evento que ela não conhece, remova daquela lista os eventos ausentes da versão (ADR-008, "Verificações") antes de seguir. Sem a variável, o hook não faz nada — nenhum projeto é obrigado a ter coletor.
 
 ### Aplicar
 

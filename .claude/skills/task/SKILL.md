@@ -41,11 +41,11 @@ O roteamento, o loop e o gate são do script. Não os refaça à mão.
 5. **Dispare o workflow** com a ferramenta Workflow, por nome, passando `args` como objeto (não como string):
    `{ "name": "gbpa-task", "args": { "task_id": "<task_id>", "sensitive": <true|false> } }`
 6. **Ao receber o retorno**, anexe ao `run-log.md` uma linha por item de `events` (`| ts | agent | status | - | ref |`). Se o retorno trouxer `sensitive: true` e o brief disser `Sensível (security gate): não`, **troque para `sim`** e acrescente "— elevado pelo recon (artifacts/recon.md)": é o brief que o hook `check-reviewer-gate.mjs` e a métrica M2 leem. Nunca troque de `sim` para `não`. Depois trate o `status`:
-   - `done` → anexe `| ts | orchestr. | done | done | artifacts/reviewer.md |` e sintetize (formato do `00-orchestrator.md` → "Formato de Saída").
+   - `done` → anexe `| ts | orchestr. | done | done | artifacts/reviewer.md |` e sintetize (formato do `00-orchestrator.md` → "Formato de Saída"). Item de `events` com `needs_human` (pergunta que não bloqueou o agente) vai ao dev junto com a síntese, e a resposta para `decisions.md` (`HANDOFF-PROTOCOL.md` §2.1).
    - `fatiada` → liste as fatias e diga: "abra uma `/task` por fatia". Não anexe `done`.
    - `escalado` → registre `rerouted → architect` e apresente os issues ao dev. Não anexe `done`.
    - `divergencia` → registre e apresente os dois vereditos ao dev: a decisão é humana. Não anexe `done`.
-   - `blocked` → registre o blocker (`em` diz onde parou) e pare. `em: lentes`, `em: reviewer` ou `em: refutador cego` significam que um verificador não devolveu veredito — falha de execução, não de código: não é `done` e não conta como reprovação; rode de novo ou leve ao dev.
+   - `blocked` → registre o blocker (`em` diz onde parou) e pare. Se o retorno trouxer `needs_human`, o blocker é uma pergunta para humano: não re-roteie — apresente ao dev a `question` e as `options` (ou o texto do blocker, quando `needs_human: true`), registre a resposta em `decisions.md` e anexe `| ts | orchestr. | human_decision | - | decisions.md |`. `em: lentes`, `em: reviewer` ou `em: refutador cego` significam que um verificador não devolveu veredito — falha de execução, não de código: não é `done` e não conta como reprovação; rode de novo ou leve ao dev.
 7. **Nunca escreva `done` sem `artifacts/reviewer.md` com `**Veredito:** APROVADO`** na primeira linha — o hook `check-reviewer-gate.mjs` impede o encerramento da sessão se você o fizer.
 
 ## Exemplo
