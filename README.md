@@ -56,6 +56,7 @@ cp -R gbpa-dev-playbook/.claude gbpa-dev-playbook/multi-agents gbpa-dev-playbook
 mkdir -p <repo>/tasks && cp -R gbpa-dev-playbook/tasks/_TEMPLATE <repo>/tasks/
 cp -R gbpa-dev-playbook/docs <repo>/
 cp gbpa-dev-playbook/{README.md,DESENVOLVIMENTO-COM-IA.md,ONBOARDING.md,GOVERNANCE.md} <repo>/
+printf '%s\n' '' '# Spool da telemetria do playbook (docs/ADR-008)' 'tasks/*/telemetry.jsonl*' '.claude/telemetry-spool.jsonl*' >> <repo>/.gitignore
 ```
 
 No Windows (PowerShell), o equivalente (`tasks\_TEMPLATE` exige criar `<repo>\tasks` antes):
@@ -65,9 +66,10 @@ Copy-Item -Recurse gbpa-dev-playbook\.claude,gbpa-dev-playbook\multi-agents,gbpa
 New-Item -ItemType Directory -Force <repo>\tasks | Out-Null
 Copy-Item -Recurse gbpa-dev-playbook\tasks\_TEMPLATE <repo>\tasks\
 Copy-Item gbpa-dev-playbook\README.md,gbpa-dev-playbook\DESENVOLVIMENTO-COM-IA.md,gbpa-dev-playbook\ONBOARDING.md,gbpa-dev-playbook\GOVERNANCE.md <repo>\
+Add-Content <repo>\.gitignore '', '# Spool da telemetria do playbook (docs/ADR-008)', 'tasks/*/telemetry.jsonl*', '.claude/telemetry-spool.jsonl*'
 ```
 
-Copia-se `tasks/_TEMPLATE/`, não as tasks deste próprio playbook. No repo adotante, apague `docs/patches/` — são propostas de mudança nas travas *deste* playbook, não do projeto novo — e `docs/COMPETENCIA.md`, que fica só no repo do playbook (registro organizacional, não por projeto).
+Copia-se `tasks/_TEMPLATE/`, não as tasks deste próprio playbook. A última linha de cada bloco acrescenta ao `.gitignore` do repo os padrões do spool da telemetria ([`docs/telemetria/`](docs/telemetria/README.md)): é fila de envio, não evidência, e são os únicos arquivos de `tasks/` fora do git. No repo adotante, apague `docs/patches/` — são propostas de mudança nas travas *deste* playbook, não do projeto novo — e `docs/COMPETENCIA.md`, que fica só no repo do playbook (registro organizacional, não por projeto).
 
 Os hooks são scripts Node (`.mjs`) — funcionam automaticamente em macOS, Linux e Windows, sem `chmod` nem configuração por sistema.
 

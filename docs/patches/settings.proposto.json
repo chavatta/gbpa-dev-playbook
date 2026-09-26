@@ -30,6 +30,39 @@
     ]
   },
   "hooks": {
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node --no-warnings .claude/hooks/telemetry-emit.mjs --runtime=claude-code",
+            "timeout": 3
+          }
+        ]
+      }
+    ],
+    "SessionEnd": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node --no-warnings .claude/hooks/telemetry-emit.mjs --runtime=claude-code",
+            "timeout": 3
+          }
+        ]
+      }
+    ],
+    "UserPromptSubmit": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node --no-warnings .claude/hooks/telemetry-emit.mjs --runtime=claude-code",
+            "timeout": 3
+          }
+        ]
+      }
+    ],
     "PreToolUse": [
       {
         "matcher": "Bash",
@@ -48,6 +81,63 @@
             "command": "node .claude/hooks/protect-guardrails.mjs"
           }
         ]
+      },
+      {
+        "matcher": "*",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node --no-warnings .claude/hooks/telemetry-emit.mjs --runtime=claude-code",
+            "timeout": 3
+          }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "*",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node --no-warnings .claude/hooks/telemetry-emit.mjs --runtime=claude-code",
+            "timeout": 3
+          }
+        ]
+      }
+    ],
+    "PostToolUseFailure": [
+      {
+        "matcher": "*",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node --no-warnings .claude/hooks/telemetry-emit.mjs --runtime=claude-code",
+            "timeout": 3
+          }
+        ]
+      }
+    ],
+    "PermissionRequest": [
+      {
+        "matcher": "*",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node --no-warnings .claude/hooks/telemetry-emit.mjs --runtime=claude-code",
+            "timeout": 3
+          }
+        ]
+      }
+    ],
+    "Notification": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node --no-warnings .claude/hooks/telemetry-emit.mjs --runtime=claude-code",
+            "timeout": 3
+          }
+        ]
       }
     ],
     "Stop": [
@@ -56,6 +146,59 @@
           {
             "type": "command",
             "command": "node .claude/hooks/check-reviewer-gate.mjs"
+          }
+        ]
+      },
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node --no-warnings .claude/hooks/telemetry-emit.mjs --runtime=claude-code",
+            "timeout": 3
+          }
+        ]
+      }
+    ],
+    "StopFailure": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node --no-warnings .claude/hooks/telemetry-emit.mjs --runtime=claude-code",
+            "timeout": 3
+          }
+        ]
+      }
+    ],
+    "SubagentStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node --no-warnings .claude/hooks/telemetry-emit.mjs --runtime=claude-code",
+            "timeout": 3
+          }
+        ]
+      }
+    ],
+    "SubagentStop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node --no-warnings .claude/hooks/telemetry-emit.mjs --runtime=claude-code",
+            "timeout": 3
+          }
+        ]
+      }
+    ],
+    "PreCompact": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node --no-warnings .claude/hooks/telemetry-emit.mjs --runtime=claude-code",
+            "timeout": 3
           }
         ]
       }

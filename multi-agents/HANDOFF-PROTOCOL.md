@@ -28,6 +28,7 @@ tasks/
     ├── brief.md                # objetivo, escopo, critérios de sucesso (criado pelo Orchestrator)
     ├── run-log.md              # linha do tempo append-only (observabilidade)
     ├── memory.md               # episodic memory: decisões da sessão
+    ├── decisions.md            # decisões HUMANAS: append-only, evidência (§2.1)
     └── artifacts/              # output completo de cada agente
         ├── architect.md
         ├── planner.md
@@ -37,6 +38,27 @@ tasks/
 ```
 
 **`task_id`** = `AAAA-MM-DD_slug-curto` (kebab-case). Único e estável; todos os agentes referenciam o mesmo.
+
+### 2.1. `decisions.md` (decisões humanas)
+
+Registro das respostas humanas da task: pergunta de um ponteiro com `needs_human` (§3.2), escolha entre vereditos numa `divergencia`, aceite de risco (`GOVERNANCE.md` §3.5) e qualquer outra decisão que o fluxo levou a um humano (`docs/ADR-008` §5).
+
+- **Append-only.** Nada é reescrito nem apagado; correção é entrada nova que cita a anterior.
+- **Escritor:** o Tech Lead (ou o dev responsável que ele designar), direto ou por ferramenta, ou o Orchestrator transcrevendo a resposta que o humano deu na sessão. Agente nunca registra decisão própria aqui.
+- **Evidência:** versionado com a task e retido como os demais arquivos dela (`docs/EVIDENCIAS-E-METRICAS.md` §2). Leva o nome do decisor; nunca dado de cliente.
+- Aceite de risco continua precisando chegar ao artifact do Security-SRE: `decisions.md` registra a decisão, não substitui o gate.
+- Cada entrada gera uma linha `human_decision` no `run-log.md`, com `ref` = `decisions.md`.
+
+Formato de cada entrada (modelo em `tasks/_TEMPLATE/decisions.md`):
+
+```markdown
+## AAAA-MM-DD HH:MM — {pergunta em uma linha}
+- **Decisor:** {nome} ({papel}) · **Registrado por:** {tech-lead | orchestrator | ferramenta}
+- **Origem:** {agente e artifact, ou ponteiro com needs_human}
+- **Opções:** {opções apresentadas}
+- **Decisão:** {o que foi decidido}
+- **Motivo:** {por quê}
+```
 
 ---
 
@@ -77,7 +99,7 @@ Campos opcionais:
 
   Com `blocking` verdadeiro, o ponteiro também traz `status: blocked` e ao menos um item em `blockers`. Com `blocking: false`, a pergunta não impede o agente de concluir.
 
-**No fluxo por script** (`/task` → `.claude/workflows/gbpa-task.js`, `docs/ADR-005`), este bloco é o JSON Schema `POINTER` do script, validado na chamada: o subagente é obrigado a devolver o objeto completo e o modelo tenta de novo se errar o formato. Ponteiro malformado deixa de existir.
+**No fluxo por script** (`/task` → `.claude/workflows/gbpa-task.js`, `docs/ADR-005`), este bloco é o JSON Schema `POINTER` do script, validado na chamada: o subagente é obrigado a devolver o objeto completo e o modelo tenta de novo se errar o formato. Ponteiro malformado deixa de existir. `provider` e `needs_human` são propriedades **opcionais** do `POINTER` (`docs/ADR-008` §6): o script as repassa nos `events` do agente e, quando o agente bloqueia, devolve `needs_human` no retorno `blocked` — a sessão principal leva a pergunta ao humano e registra a resposta em `decisions.md` (§2.1).
 
 **Sobre `agent` e `model`:** `agent` é sempre o **nome-base** (`coder`, `reviewer`, …) — sem sufixo de modelo — porque os hooks e o `artifact_path` dependem dele. `model` é o modelo em que o subagente efetivamente rodou — o **ID exato** lido no próprio system prompt (`claude-opus-5-5`, `claude-fable-5-1`, `claude-haiku-4-5-…`), não só a família: desde 2026-09-23 o ADR-001 fixa a versão dos agentes em Opus e Fable, e a evidência precisa ter a mesma granularidade da regra. Sufixo de janela de contexto (`claude-opus-5-5[1m]`) é o mesmo modelo — registre como aparece, mas não é divergência. Se divergir do modelo designado no ADR-001, o subagente devolve `status: blocked` com o blocker `"modelo divergente: esperado {X}, rodando em {Y}"` em vez de seguir — assim o downgrade silencioso vira um bloqueio visível no `run-log.md`, não um resultado de qualidade menor passando por aprovado.
 
