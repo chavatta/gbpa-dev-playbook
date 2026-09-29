@@ -28,7 +28,7 @@ async function run({ args, answers }) {
   const agent = async (prompt, opts = {}) => {
     const label = opts.label || "?";
     if (label.startsWith("coder")) round = Number(label.slice(-1));
-    calls.push({ label, prompt, agentType: opts.agentType });
+    calls.push({ label, prompt, agentType: opts.agentType, schema: opts.schema });
     const key = Object.keys(answers).find((k) => label === k || label.startsWith(k + " "));
     const a = key === undefined ? undefined : answers[key];
     return typeof a === "function" ? a(round) : a;
@@ -115,6 +115,40 @@ const CASES = [
 
   ["todo retorno carrega task_id e events", { args: { task_id: T }, answers: { recon: RECON(), design: null } },
     (r) => r.res.status === "blocked" && r.res.task_id === T && Array.isArray(r.res.events)],
+
+  ["POINTER declara provider e needs_human como opcionais (HANDOFF §3.2)",
+    { args: { task_id: T }, answers: { recon: RECON({ complexity: "trivial" }), coder: PTR("coder"), review: OK("reviewer") } },
+    (r) => {
+      const schema = r.calls.find((c) => c.label === "coder r1").schema;
+      const human = schema.properties.needs_human;
+      return r.res.status === "done" && schema.properties.provider.type === "string"
+        && !schema.required.includes("provider") && !schema.required.includes("needs_human")
+        && human.anyOf.some((s) => s.type === "boolean")
+        && human.anyOf.some((s) => s.type === "object" && s.required.includes("question"));
+    }],
+
+  ["ponteiro sem os opcionais → events sem provider nem needs_human (compatível)",
+    { args: { task_id: T }, answers: { recon: RECON({ complexity: "trivial" }), coder: PTR("coder"), review: OK("reviewer") } },
+    (r) => r.res.status === "done" && r.res.events.every((e) => !("provider" in e) && !("needs_human" in e))],
+
+  ["provider e needs_human não bloqueante → done, os dois nos events do agente",
+    { args: { task_id: T }, answers: { recon: RECON({ complexity: "trivial" }), review: OK("reviewer"),
+        coder: { ...PTR("coder"), provider: "provedor-b", needs_human: { question: "manter o limite atual?", blocking: false } } } },
+    (r) => {
+      const ev = r.res.events.find((e) => e.agent === "coder");
+      return r.res.status === "done" && ev.provider === "provedor-b" && ev.needs_human.question === "manter o limite atual?"
+        && !("needs_human" in r.res);
+    }],
+
+  ["coder bloqueado com needs_human → blocked em coder, pergunta no retorno, sem review",
+    { args: { task_id: T }, answers: { recon: RECON(), design: PTR("architect"), plan: PTR("planner"), tester: PTR("tester"),
+        coder: { ...PTR("coder", "blocked"), needs_human: { question: "qual contrato vale?", options: ["v1", "v2"], blocking: true } } } },
+    (r) => r.res.status === "blocked" && r.res.em === "coder" && r.res.needs_human.options.length === 2
+      && r.res.blockers.length === 1 && !r.labels.some((l) => l === "review" || l.startsWith("lente"))],
+
+  ["architect bloqueado com needs_human: true → blocked em architect, needs_human no retorno",
+    { args: { task_id: T }, answers: { recon: RECON(), design: { ...PTR("architect", "blocked"), needs_human: true } } },
+    (r) => r.res.status === "blocked" && r.res.em === "architect" && r.res.needs_human === true && !r.labels.includes("plan")],
 ];
 
 let pass = 0;

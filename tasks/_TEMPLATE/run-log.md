@@ -6,4 +6,4 @@ Append-only. Uma linha por evento.
 |------------------|-----------|--------------------|---------------|-------------------------|
 | AAAA-MM-DD HH:MM | orchestr. | task_created       | -             | brief.md                |
 
-<!-- Eventos: started, completed, blocked, needs_review, rerouted, done -->
+<!-- Eventos: started, completed, blocked, needs_review, rerouted, human_decision, done -->

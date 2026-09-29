@@ -26,7 +26,7 @@ const T = args.task_id
 const DIR = `tasks/${T}`
 const MAX_ROUNDS = 2            // HANDOFF-PROTOCOL §4.7: 2 reprovações ⇒ o problema não é implementação
 const events = []               // a sessão principal anexa isto ao run-log.md
-const note = (agent, status, ref) => events.push({ agent, status, ref: ref || '-' })
+const note = (agent, status, ref, extra) => events.push({ agent, status, ref: ref || '-', ...extra })
 // Sensibilidade efetiva: brief OU recon (decisão 2). Vai em TODO retorno, não só no `done`:
 // quando o recon eleva, a sessão principal grava `Sensível: sim` no brief — é o brief que o
 // hook check-reviewer-gate.mjs e a métrica M2 leem.
@@ -48,6 +48,23 @@ const POINTER = {
     context_for_next: { type: 'string' },
     blockers: { type: 'array', items: { type: 'string' } },
     skill_candidates: { type: 'array', items: { type: 'string' } },
+    // opcionais (HANDOFF-PROTOCOL §3.2, ADR-007): omitidos quando não se aplicam
+    provider: { type: 'string', description: 'id do provedor/runtime em que REALMENTE rodou; ausente = claude-code' },
+    needs_human: {
+      description: 'o blocker exige decisão humana: true (a pergunta está no blocker) ou {question, options?, blocking?}',
+      anyOf: [
+        { type: 'boolean' },
+        {
+          type: 'object',
+          required: ['question'],
+          properties: {
+            question: { type: 'string' },
+            options: { type: 'array', items: { type: 'string' } },
+            blocking: { type: 'boolean', description: 'padrão true: o fluxo depende da resposta para seguir' },
+          },
+        },
+      ],
+    },
   },
 }
 const RECON = {
@@ -112,12 +129,23 @@ Você é o ${lens} (multi-agents/agents/${manual}). Revise o diff da task — os
 Grave em ${DIR}/artifacts/${artifact}. A PRIMEIRA LINHA do artifact é exatamente "**Veredito:** APROVADO" ou "**Veredito:** REPROVADO (n issues)" — o hook check-reviewer-gate.mjs depende disso; não use a palavra APROVADO em nenhum outro trecho.
 Qualquer issue CRITICAL ou HIGH ⇒ REPROVADO. Não existe "aprovado com ressalvas".`
 
+// Campos opcionais do ponteiro que a sessão principal precisa ver: onde o agente rodou e se pede decisão humana.
+// Vão nos events e no retorno de blocked; nenhum deles muda o roteamento — quem decide o que fazer é a sessão principal.
+const pointerExtras = (p) => ({
+  ...(typeof p.provider === 'string' && p.provider !== '' ? { provider: p.provider } : {}),
+  ...(p.needs_human ? { needs_human: p.needs_human } : {}),
+})
 const pointer = async (name, prompt, opts) => {
   const p = await agent(prompt, { schema: POINTER, ...opts })
   if (!p) { note(name, 'sem retorno', '-'); return null }
-  note(name, p.status, p.artifact_path)
+  note(name, p.status, p.artifact_path, pointerExtras(p))
   return p
 }
+// Agente sem retorno ou bloqueado: devolve os blockers dele e, se houver, o pedido de decisão humana.
+const blockedAt = (em, p) => result({
+  status: 'blocked', em, blockers: p ? p.blockers : ['sem retorno'],
+  ...(p && p.needs_human ? { needs_human: p.needs_human } : {}),
+})
 
 try {
   // ---------- P1: recon barato ANTES de rotear ----------
@@ -155,17 +183,17 @@ Fatie em tasks independentes, cada uma cabendo num PR de 200–400 linhas (GOVER
       const s = await pointer('spec-writer', `${RULES}
 Você é o Spec-Writer (multi-agents/agents/09-spec-writer.md). Escreva a spec verificável da task (critérios Given/When/Then, contratos, fora de escopo) em ${DIR}/artifacts/spec-writer.md.`,
         { agentType: 'spec-writer-opus', phase: 'Plan', label: 'spec' })
-      if (!s || s.status === 'blocked') return result({ status: 'blocked', em: 'spec-writer', blockers: s ? s.blockers : ['sem retorno'] })
+      if (!s || s.status === 'blocked') return blockedAt('spec-writer', s)
     }
     const a = await pointer('architect', `${RULES}
 Você é o Architect (multi-agents/agents/01-architect.md). Projete a solução a partir do brief, do recon${recon.needs_spec ? ' e da spec (artifacts/spec-writer.md)' : ''}. Grave em ${DIR}/artifacts/architect.md no formato do seu manual.`,
       { agentType: 'architect-opus', phase: 'Plan', label: 'design' })
-    if (!a || a.status === 'blocked') return result({ status: 'blocked', em: 'architect', blockers: a ? a.blockers : ['sem retorno'] })
+    if (!a || a.status === 'blocked') return blockedAt('architect', a)
 
     const p = await pointer('planner', `${RULES}
 Você é o Planner (multi-agents/agents/02-planner.md). Decomponha ${DIR}/artifacts/architect.md em tarefas sequenciadas com critérios de aceitação. Grave em ${DIR}/artifacts/planner.md.`,
       { agentType: 'planner-opus', phase: 'Plan', label: 'plan' })
-    if (!p || p.status === 'blocked') return result({ status: 'blocked', em: 'planner', blockers: p ? p.blockers : ['sem retorno'] })
+    if (!p || p.status === 'blocked') return blockedAt('planner', p)
   }
 
   // ---------- P2: loop com teto ----------
@@ -196,7 +224,7 @@ Edite SÓ arquivos de teste (um dono por arquivo, GOVERNANCE §4.1). Grave em ${
     }
     const done = await parallel(jobs)            // barreira justificada: o review precisa do código pronto
     const coder = done[0]
-    if (!coder || coder.status === 'blocked') return result({ status: 'blocked', em: 'coder', blockers: coder ? coder.blockers : ['sem retorno'] })
+    if (!coder || coder.status === 'blocked') return blockedAt('coder', coder)
 
     // ---------- P3 + P4: verificação proporcional ao risco ----------
     phase('Review')

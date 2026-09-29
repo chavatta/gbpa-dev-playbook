@@ -17,5 +17,9 @@ desktop.ini
 .claude/settings.local.json
 .claude/worktrees/
 
+# Spool da telemetria: fila de envio, não evidência (docs/ADR-008 §4). Os únicos arquivos de tasks/ fora do git
+tasks/*/telemetry.jsonl*
+.claude/telemetry-spool.jsonl*
+
 # Handoff entre sessões — arquivo de trabalho, não versionado de propósito
 HANDOFF-SESSAO.md
