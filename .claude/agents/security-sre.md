@@ -33,5 +33,9 @@ Seu modelo designado é **Fable 5.1** (`claude-fable-5-1`) — por isso a famíl
 - Priorize por exploitabilidade, não por contagem de CVEs — não trave o fluxo por LOW teórico.
 - Use WebSearch/WebFetch para verificar CVEs e advisories de dependências quando necessário.
 
+## Contexto (ADR-009)
+- Siga `praticas/12-disciplina-de-saida-de-ferramenta.md`: busque antes de ler, leia o diff por arquivo e por faixa, testes e lint só no modo quiet (`scripts/quiet/`), saída longa em `tasks/{task_id}/artifacts/`. Limiares: `praticas/00` → bloco `orcamento-contexto`.
+- **Você não usa checkpoint.** Se o escopo não couber no orçamento (limiar de tool calls ou de contexto), não aprove por amostragem: devolva o sinal de escopo excedido — `escopo_excedido: true` com veredito não aprovado no fluxo por script, `status: blocked` com o blocker "escopo de revisão excedido" no fluxo manual — e o orquestrador divide a revisão. Não é reprovação do código e não conta rodada.
+
 ## Saída
 Grave o review em `tasks/{task_id}/artifacts/security-sre.md` e devolva só o ponteiro leve. A **primeira linha** do artifact é o veredito, no formato exato `**Veredito:** APROVADO` ou `**Veredito:** REPROVADO (n achados)`. Não existe "aprovado com ressalvas" num gate de segurança: achado bloqueante (CRITICAL/HIGH sem correção aplicada) → `REPROVADO`; não-bloqueante → `APROVADO` com o achado em backlog com dono e prazo. Não use a palavra APROVADO em outro contexto do artifact.

@@ -2,6 +2,8 @@
 
 > Este documento é **lei** para todo trabalho feito com este playbook — por pessoas e por agentes de IA.
 > Só o Tech Lead altera este arquivo (e as travas em `.claude/`). Divergência de interpretação → o Tech Lead decide.
+>
+> **Dono:** Tech Lead · **Revisão:** semestral, ou a cada mudança de trava · **Última revisão:** 2026-09-23
 
 ---
 
@@ -22,16 +24,16 @@
 3. **Sem force push, sem `git reset --hard`, sem `rm -rf`.** As travas bloqueiam; se você acha que precisa, é conversa com o Tech Lead.
 4. **Commits limpos:** mensagem descreve o quê e por quê. Sem marcações de IA em commits ou código.
 5. **PRs pequenos:** ~200–400 linhas. Cresceu → volta ao Planner para fatiar.
-6. **Branch protection no servidor é obrigatória.** Todo repo tem `main`/`master` protegida no GitHub: PR obrigatório com ≥1 aprovação, status checks verdes, force push e deleção bloqueados. As travas locais (`settings.json` + hooks) são a segunda linha de defesa — a que não se contorna é a do servidor.
+6. **Branch protection no servidor é obrigatória.** Todo repo tem `main`/`master` protegida no GitHub: PR obrigatório com ≥1 aprovação, status checks verdes (onde houver CI), force push e deleção bloqueados. As travas locais (`settings.json` + hooks) são a segunda linha de defesa — a que não se contorna é a do servidor. **Transição — repo com um só mantenedor:** o GitHub não deixa ninguém aprovar o próprio PR, então a exigência fica em 0 aprovações com o PR ainda obrigatório; com o segundo revisor, sobe para 1 aprovação e inclui os administradores na regra (comandos no `ONBOARDING.md` §2 passo 5).
 
 ---
 
 ## §3. Fluxo multi-agent obrigatório
 
-1. **Nenhuma implementação direta** sem passar pelo fluxo: toda task de dev não-trivial entra pelo `orchestrator`, que escala o fluxo enxuto (`Plan → Coder → Reviewer`) conforme a complexidade (`multi-agents/HANDOFF-PROTOCOL.md §6`).
+1. **Nenhuma implementação direta** sem passar pelo fluxo: toda task de dev entra pela skill `/task`, que executa o script `.claude/workflows/gbpa-task.js` (`docs/ADR-005`). O script faz o reconhecimento antes de rotear, escala o fluxo enxuto (`Plan → Coder → Reviewer`) conforme a complexidade real, limita o retrabalho a duas rodadas e aplica verificação em três lentes mais refutador cego em task sensível (`multi-agents/HANDOFF-PROTOCOL.md §4, §6`). Fluxo manual pelo `orchestrator` só quando o Workflow estiver indisponível — e, nesse caso, registrado no `run-log.md`.
 2. Cada agente **opera só no seu escopo** (manuais em `multi-agents/agents/`).
 3. Handoffs **sempre via artifact em disco** + ponteiro leve (`multi-agents/HANDOFF-PROTOCOL.md`).
-4. **Code review é obrigatório:** nenhuma task é `done` sem `tasks/{task_id}/artifacts/reviewer.md` com `**Veredito:** APROVADO` na primeira linha. O hook `check-reviewer-gate.mjs` verifica mecanicamente.
+4. **Code review é obrigatório:** nenhuma task é `done` sem `tasks/{task_id}/artifacts/reviewer.md` com `**Veredito:** APROVADO` na primeira linha. O gate primário é o veredito estruturado que o script valida por schema antes de devolver `done`; o hook `check-reviewer-gate.mjs` é a segunda linha, sobre o `run-log.md`.
 5. **Gate de segurança em task sensível:** task que toca auth, dados pessoais, dinheiro, superfície externa ou infra/pipeline não é `done` sem `tasks/{task_id}/artifacts/security-sre.md` com `**Veredito:** APROVADO` (agente e escopo em `docs/ADR-002-agente-security-sre.md`). O hook `check-reviewer-gate.mjs` verifica mecanicamente quando o `brief.md` marca a task como sensível. Risco residual só o Tech Lead aceita, registrado no artifact com nome e data.
 6. **Biblioteca de práticas:** `praticas/` é a referência de decisão da equipe (código, arquitetura, repos, containers, segurança, testes). Não é lei — este documento é — mas desvio relevante de uma prática se justifica no ADR da decisão. Os defaults do projeto vivem em `praticas/00-stack-e-defaults-gbpa.md`.
 7. **Exceções:** correções triviais de 1 linha podem comprimir o fluxo para `Coder → Reviewer` (o gate continua). Protótipos exploratórios podem pular etapas **desde que marcados como protótipo não-revisado** — e nunca vão para `main` nesse estado.
@@ -53,16 +55,16 @@
 1. **Repo primeiro:** criar o repositório GitHub **privado** (conta/organização definida pelo Tech Lead) antes de qualquer commit. Público só por ordem explícita do Tech Lead. **Branch protection** em `main`/`master` ativada imediatamente após criar o repo (§2.6) — é configuração do Tech Lead.
 2. Nome do repo em kebab-case; remote `origin` configurado de imediato.
 3. Primeiro commit mínimo: `README.md` + `.gitignore` adequado à stack.
-4. Para adotar este playbook no repo novo: copie `.claude/`, `multi-agents/`, `praticas/`, `tasks/_TEMPLATE/` e os docs da raiz (ver `README.md`).
+4. Para adotar este playbook no repo novo: copie `.claude/`, `multi-agents/`, `praticas/`, `scripts/`, `tasks/_TEMPLATE/`, `docs/` e os docs da raiz (`README.md`, `DESENVOLVIMENTO-COM-IA.md`, `ONBOARDING.md`, este arquivo) — comandos no `README.md`. No repo novo, apague `docs/patches/` (são propostas de mudança nas travas do playbook, não do projeto) e `docs/COMPETENCIA.md`, que fica só no repo do playbook (registro da organização).
 
 ---
 
 ## §6. Travas mecânicas
 
 1. As travas vivem em `.claude/settings.json` (permissions deny) e `.claude/hooks/` (scripts). Elas **não são sugestões**: bloqueiam a ação no momento em que ela seria executada. A trava primária de git é a **branch protection no servidor** (§2.6); as locais são a segunda linha.
-2. O que está travado localmente: push em `main`/`master` (qualquer sintaxe, incluindo flags e refspec `branch:main`), force push, `rm -rf`, `git reset --hard`, `git clean -f`, DDL destrutivo via CLI de banco (`DROP`/`TRUNCATE` em `psql`/`mysql`), escrita em `GOVERNANCE.md` / `.claude/settings.json` / `.claude/hooks/`, e encerramento de sessão com task `done` sem aprovação do Reviewer (e do Security-SRE, em task sensível).
+2. O que está travado localmente: push em `main`/`master` (qualquer sintaxe, incluindo flags e refspec `branch:main`), force push, `rm -rf`, `git reset --hard`, `git clean -f`, DDL destrutivo via CLI de banco (`DROP`/`TRUNCATE` em `psql`/`mysql`), escrita — por ferramenta de edição ou por shell — em `GOVERNANCE.md` / `.claude/settings.json` / `.claude/hooks/` / `.claude/workflows/` / `.claude/agents/`, leitura de `.env` e `.env.*` pela ferramenta de leitura, e encerramento de sessão com task `done` sem aprovação do Reviewer (e do Security-SRE, em task sensível). O script `gbpa-task.js` não é trava: é o fluxo. Mas ele só devolve `done` por código, após veredito validado — alterá-lo é alterar o gate, e por isso `.claude/workflows/` segue a mesma regra de mudança de `.claude/hooks/`: em branch, com o teste rodado, aplicado pelo Tech Lead. `.claude/agents/` também: o frontmatter fixa as tools e o modelo de cada agente, e agente não reescreve a própria permissão.
 3. **Trava disparou → não se contorna.** Nem manualmente, nem pedindo para a IA reformular o comando. Falso positivo → reporte ao Tech Lead, que ajusta a trava pelo processo.
-4. Requisito das máquinas: **Node.js ≥ 18** instalado e no PATH (os hooks são scripts Node `.mjs` — a mesma implementação roda em macOS, Linux e Windows, sem configuração por sistema) e sessões do Claude Code abertas **na raiz do repo** (os hooks usam caminho relativo e são carregados no startup — mudou hook, reinicie a sessão). Os hooks `.sh` legados permanecem no repo apenas como referência; o `settings.json` aponta para os `.mjs`.
+4. Requisito das máquinas: **Node.js ≥ 18** instalado e no PATH (os hooks são scripts Node `.mjs` — a mesma implementação roda em macOS, Linux e Windows, sem configuração por sistema) e sessões do Claude Code abertas **na raiz do repo** (os hooks usam caminho relativo e são carregados no startup — mudou hook, reinicie a sessão). Os hooks `.sh` legados permanecem no repo apenas como referência; o `settings.json` aponta para os `.mjs`. Dynamic workflows precisam estar habilitados (`/config` → Dynamic workflows; plano pago). Na primeira execução de `/task` em cada máquina o Claude Code pede aprovação do workflow — escolha "não perguntar de novo para `gbpa-task` neste projeto".
 
 ---
 

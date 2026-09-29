@@ -61,12 +61,12 @@ Escopo desta tabela: os controles com relação direta com o ciclo de vida de de
 | Controle | Título (resumo) | Status | Evidência / observação |
 |---|---|---|---|
 | **A.8.2** | Direitos de acesso privilegiado | OK | Least privilege por agente (`tools:` no frontmatter); agente não altera as próprias travas |
-| **A.8.4** | Acesso ao código-fonte | OK | `GOVERNANCE.md` §2.6 (branch protection) + `permissions.deny` sobre `.claude/settings.json`, `.claude/hooks/` e `GOVERNANCE.md`; `.claude/workflows/` e `.claude/agents/` entram na mesma zona protegida pelo patch pendente em `docs/patches/settings.proposto.json` |
+| **A.8.4** | Acesso ao código-fonte | OK | `GOVERNANCE.md` §2.6 (branch protection) + `permissions.deny` sobre `.claude/settings.json`, `.claude/hooks/` e `GOVERNANCE.md`; `.claude/workflows/` e `.claude/agents/` na mesma zona protegida desde 2026-09-29 (`docs/patches/README.md`, Histórico) |
 | **A.8.7** | Proteção contra malware | ORG | Endpoint corporativo |
 | **A.8.8** | Gestão de vulnerabilidades técnicas | OK | `praticas/06` camadas 1–3 (SAST, SCA, IaC, imagem) + gate do Security-SRE; regra anti-slopsquatting para dependência sugerida por IA |
 | **A.8.9** | Gestão de configuração | OK | `.claude/settings.json` e `.claude/hooks/` versionados e protegidos contra escrita pelos agentes |
 | **A.8.10** | Exclusão de informação | PARCIAL | Retenção/expurgo de dado pessoal em `praticas/06` (LGPD item 4); retenção de **evidência do playbook** definida em `docs/EVIDENCIAS-E-METRICAS.md` |
-| **A.8.12** | Prevenção de vazamento de dados | OK | `praticas/10` §2–§3 — regra de classe por contexto de IA; `gitleaks` (hook local + CI) e `scripts/check-pii.sh` sobre fixtures/seeds (`praticas/06`); negar leitura de `.env`/`.env.*` a agentes é patch pendente em `docs/patches/settings.proposto.json` |
+| **A.8.12** | Prevenção de vazamento de dados | OK | `praticas/10` §2–§3 — regra de classe por contexto de IA; `gitleaks` (hook local + CI) e `scripts/check-pii.sh` sobre fixtures/seeds (`praticas/06`); leitura de `.env`/`.env.*` negada a agentes no `permissions.deny` desde 2026-09-29 |
 | **A.8.15** | Registro (logging) | OK | `tasks/{id}/run-log.md` append-only + `artifacts/*.md` por agente; retenção em `docs/EVIDENCIAS-E-METRICAS.md` |
 | **A.8.16** | Atividades de monitoramento | PARCIAL | Métricas do playbook definidas em `docs/EVIDENCIAS-E-METRICAS.md`; monitoramento de runtime é `praticas/06` camada 4 |
 | **A.8.19** | Software em sistemas operacionais | ORG | — |

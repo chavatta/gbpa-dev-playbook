@@ -53,6 +53,7 @@ Poucas e acionáveis. Métrica que ninguém usa para decidir é teatro de confor
 | **M6** | Exceções autorizadas pelo Tech Lead | contagem + motivo | Tendência decrescente; exceção recorrente = a regra está errada, corrija a regra | Semestral |
 | **M7** | Incidentes de dado em contexto de IA | contagem (`praticas/10` §7) | **0**. Qualquer ocorrência dispara análise de causa | Imediato + trimestral |
 | **M8** | Cobertura de avaliação de impacto | tasks com gatilho que têm `impacto-ia.md` ÷ tasks com gatilho | **100%** | Semestral |
+| **M9** | Eficiência de contexto | custo equivalente por fatia, razão de cache por execução e custo em excesso da seção "Cache quebrado" (`scripts/telemetria/relatorio-custos.mjs`) | Razão de cache ≤ `telemetria.razao_cache_alerta` (`praticas/00`) na maioria das execuções. É termômetro de custo: **nunca** se melhora afrouxando M1–M3 (`docs/ADR-009`) | Trimestral |
 
 ### Como extrair (procedimento reprodutível para o auditor)
 
@@ -76,6 +77,12 @@ grep -rhoi '^\*\*Veredito:\*\* [A-Z ]*' tasks/*/artifacts/reviewer.md | sort | u
 gh pr list --state merged --limit 100 --json number,additions,deletions,mergedAt --jq '.[] | "\(.number)\t\(.additions + .deletions)"'
 ```
 
+```bash
+# M9 — custo e cache de uma task (grava tasks/<id>/artifacts/telemetria.md) ou do período
+node scripts/telemetria/relatorio-custos.mjs --task <task_id> --gravar
+node scripts/telemetria/relatorio-custos.mjs --desde AAAA-MM-DD
+```
+
 M5, M6 e M7 não são extraíveis por comando — dependem de registro humano. O Tech Lead mantém a contagem no fechamento trimestral, a partir do que foi reportado (`GOVERNANCE.md` §6.3).
 
 ---
@@ -97,14 +104,15 @@ Documento sem dono e sem data de revisão é documento morto — e auditor pergu
 | `docs/EVIDENCIAS-E-METRICAS.md` | Tech Lead | Semestral |
 | `docs/COMPETENCIA.md` | Tech Lead | Semestral, e a cada entrada ou saída de pessoa |
 | `docs/RUNBOOK-INCIDENTE-IA.md` | Tech Lead | Semestral, **e depois de todo incidente real** |
-| `praticas/00`, `04`, `05`, `06`, `10`, `11` | Tech Lead | Trimestral (cloud, ferramentas, segurança e IA giram rápido) |
+| `praticas/00`, `04`, `05`, `06`, `10`, `11`, `12` | Tech Lead | Trimestral (cloud, ferramentas, segurança e IA giram rápido) |
 | `praticas/01`, `02`, `03`, `07`, `08`, `09`, `praticas/README.md` | Tech Lead | Anual |
 | `docs/ADR-*` | Autor do ADR | Por evento (ADR-001 e 005 trimestral; 002 a 004 semestral) |
 | `multi-agents/templates/` | Tech Lead | Anual |
 | `tasks/_TEMPLATE/` | Tech Lead | Anual, ou a cada mudança no protocolo de handoff |
 | `scripts/check-pii.sh` | Tech Lead | Trimestral (junto com `praticas/06`) |
-| `.claude/agents/`, `.claude/hooks/` | Tech Lead | A cada mudança de modelo ou de trava. `.claude/hooks/` já é zona protegida contra escrita por agentes; `.claude/agents/` passa a ser pelo patch pendente em `docs/patches/settings.proposto.json` |
-| `.claude/workflows/gbpa-task.js`, `.claude/skills/task/`, `scripts/test-gbpa-task.mjs` | Tech Lead | A cada mudança no fluxo (ADR-005) — em branch, com o smoke test (`scripts/test-gbpa-task.mjs`) rodado e o caso novo acrescentado a ele, como os hooks. `.claude/workflows/` passa a ser zona protegida contra escrita por agentes pelo mesmo patch pendente; `.claude/skills/` segue writável (Documenter autora skills de projeto ali) |
+| `scripts/telemetria/` (`precos.json` incluso), `scripts/quiet/`, `scripts/smoke-harness.mjs` | Tech Lead | Trimestral, e a cada mudança de preço de modelo ou de versão do Claude Code (rode o `smoke-harness` de novo) — `docs/ADR-009` |
+| `.claude/agents/`, `.claude/hooks/` | Tech Lead | A cada mudança de modelo ou de trava. os dois são zona protegida contra escrita por agentes (`.claude/agents/` desde 2026-09-29): mudança chega por `docs/patches/` |
+| `.claude/workflows/gbpa-task.js`, `.claude/skills/task/`, `scripts/test-gbpa-task.mjs` | Tech Lead | A cada mudança no fluxo (ADR-005) — em branch, com o smoke test (`scripts/test-gbpa-task.mjs`) rodado e o caso novo acrescentado a ele, como os hooks. `.claude/workflows/` é zona protegida contra escrita por agentes desde 2026-09-29 (mudança chega por `docs/patches/`); `.claude/skills/` segue writável (Documenter autora skills de projeto ali) |
 | `docs/patches/` | Tech Lead | Esvaziar conforme aplicado — patch pendente é dívida, não acervo |
 
 **O cabeçalho é a evidência.** Todo documento `.md` da tabela carrega, na abertura, a linha `**Dono:** … · **Revisão:** … · **Última revisão:** AAAA-MM-DD` (os ADRs usam `**Decisores:**` e `**Revisão:**`, que cumprem o mesmo papel). Revisão feita = data atualizada nesse cabeçalho, mesmo que o conteúdo não mude. "Revisado em, sem alterações" é resultado válido e é evidência.

@@ -38,7 +38,7 @@ Um padrão de desenvolvimento com IA baseado em **um time de agentes especializa
 
    O `-F` maiúsculo importa: `required_approving_review_count` é inteiro, e `-f` manda string, que a API rejeita com HTTP 422.
 
-6. **(uma vez por projeto)** Preencha [`praticas/00-stack-e-defaults-gbpa.md`](praticas/00-stack-e-defaults-gbpa.md) com os defaults **deste** projeto: cloud, região, linguagens e versões, banco, CI, secrets. O 00 é **por projeto, não global** — dois repos da GBPA podem ter stacks diferentes, e cada um carrega o seu. Preencher o que já estiver decidido; não trave o início do projeto tentando fechar todos os campos.
+6. **(uma vez por projeto)** Preencha [`praticas/00-stack-e-defaults-gbpa.md`](praticas/00-stack-e-defaults-gbpa.md) com os defaults **deste** projeto: cloud, região, linguagens e versões, banco, CI, secrets. O 00 é **por projeto, não global** — dois repos da GBPA podem ter stacks diferentes, e cada um carrega o seu. Preencher o que já estiver decidido; não trave o início do projeto tentando fechar todos os campos. No bloco **Orçamento de contexto e execução**, preencha ao menos `comandos_quiet` (teste, lint, análise estática); os limiares já vêm com default (`docs/ADR-009`).
 
 **Campo em branco não bloqueia o trabalho — vira um menu.** Na primeira task que esbarrar num campo vazio, o Architect apresenta as **opções candidatas** daquele campo (o próprio 00 já traz uma coluna com elas, com um ponto de partida marcado ★), **uma recomendação com o porquê em uma linha**, e a opção explícita **"decida você, Architect"** — que é a resposta certa quando você não tem preferência e quer seguir sem parar a task. Escolhida a opção ou delegada ao Architect, a decisão vira ADR e o valor volta para o 00; a partir daí é default do projeto e ninguém re-decide. Campo já preenchido, ao contrário, **vence preferência de agente e de dev**: desviar dele exige ADR.
 
@@ -96,7 +96,8 @@ tasks/2026-07-31_export-csv/
 ├── brief.md        # objetivo, escopo, critérios (Orchestrator)
 ├── run-log.md      # linha do tempo append-only — auditoria da execução
 ├── memory.md       # decisões da sessão
-└── artifacts/      # trabalho completo de cada agente
+├── handoff/        # sessao-NN.md — troca de sessão em épica ou várias ondas (ADR-009)
+└── artifacts/      # trabalho completo de cada agente (+ {agente}-checkpoint-NN.md, se houve checkpoint)
     ├── architect.md
     ├── planner.md
     ├── coder.md
@@ -137,6 +138,8 @@ Falso positivo é bug da trava, e trata-se como bug: reproduza o comando exato, 
 - **Editar o mesmo arquivo que um agente está editando** → um dono por arquivo ([GOVERNANCE.md](GOVERNANCE.md) §4).
 - **Reaproveitar sessão com hooks alterados** → hooks carregam no startup; reinicie a sessão.
 - **Deixar worktree para trás depois do merge** → `.claude/worktrees/` é ignorada pelo git, então a cópia órfã não aparece no `git status` e sobrevive indefinidamente. Depois que a branch mergear, `git worktree remove <caminho>` e apague a branch.
+- **Uma sessão só para a épica inteira** → ao fechar cada onda (ou quando o aviso `[orçamento de contexto]` pedir), a sessão grava o handoff; faça `/clear` e `/task retomar <task_id>`. A sessão longa relê tudo a cada turno ([ADR-009](docs/ADR-009-eficiencia-de-contexto-e-cache.md)).
+- **Colar log inteiro de teste ou de CI na conversa** → cada token colado é relido em toda chamada seguinte. Use os wrappers `scripts/quiet/` e aponte o arquivo ([praticas/12](praticas/12-disciplina-de-saida-de-ferramenta.md)).
 - **Comparar contra um `main` local desatualizado** → antes de concluir que uma branch "está na frente", rode `git fetch` e compare com `origin/main`. Branch que parece adiantada costuma ser `main` que ficou para trás.
 
 ---

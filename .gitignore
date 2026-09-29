@@ -23,3 +23,6 @@ tasks/*/telemetry.jsonl*
 
 # Handoff entre sessões — arquivo de trabalho, não versionado de propósito
 HANDOFF-SESSAO.md
+
+# Registro de avisos do hook context-budget (docs/ADR-009): medida de adesão, não evidência
+.claude/context-budget.jsonl

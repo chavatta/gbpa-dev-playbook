@@ -71,7 +71,7 @@ Escolhida a opção (ou delegada ao Architect), a decisão vira **ADR** e o valo
 | Contrato/DPA 🔒 | **Plano de subscrição — ⚠️ classe a confirmar (ver nota abaixo)** | Comercial (Team / Enterprise / API) · Consumidor (Pro / Max) | O DPA da Anthropic é **incorporado automaticamente aos Termos Comerciais**, com SCCs — não exige assinatura separada. Planos de consumidor **não** são cobertos por ele |
 | Dados em prompt | Dado pessoal real **nunca**; fixture sintética por seed é a única fonte em desenvolvimento | *(decidido — sem menu)* | Ver seção LGPD do [06](06-devsecops.md). Verificação no CI: `gitleaks` (segredo) **+** check de padrão de PII sobre fixtures e seeds — somatório, não alternativa |
 | Framework de agentes/RAG | `{...}` | ★ **SDK do provedor, direto** · framework de orquestração (LangGraph, LlamaIndex) | ★ é o "padrão mínimo que atende" do manual do AI-Engineer. Framework entra quando o SDK direto já não dá conta — via ADR do Architect, não por antecipação |
-| Orquestração do **fluxo de desenvolvimento** | **Nativa do Claude Code** — Workflow (`.claude/workflows/gbpa-task.js`) + subagentes + hooks, na assinatura | *(decidido — `docs/ADR-005`; sem menu)* | Automação **fora** do Claude Code (LangGraph, Agent SDK, `claude -p` em servidor) exige API key com orçamento (`docs/ADR-005`). **Exceção — `docs/ADR-006`:** CLI oficial com a assinatura individual de quem o opera, em servidor sob controle exclusivo dessa pessoa e só para ela, enquanto valerem as cinco condições verificáveis de lá (uso só do titular; sem intermediação; binário intacto e credencial intocada; disparo com origem e teto; volume de uso individual, com pausa no limite), com as variáveis de chave de API fora do ambiente. Quebrou uma, volta a API key. Vale para qualquer provedor de assinatura e **não** muda a linha Contrato/DPA: dado Confidencial em plano de consumidor continua barrado (`praticas/10` §3). Framework de agentes acima é para o **produto**; esta linha é para o **processo** |
+| Orquestração do **fluxo de desenvolvimento** | **Nativa do Claude Code** — Workflow (`.claude/workflows/gbpa-task.js`) + subagentes + hooks, na assinatura | *(decidido — `docs/ADR-005`; sem menu)* | Automação **fora** do Claude Code (LangGraph, Agent SDK, `claude -p` em servidor) exige API key e ADR: a assinatura cobre uso ordinário do produto, não orquestração externa (legal e compliance do Claude Code). Framework de agentes acima é para o **produto**; esta linha é para o **processo** |
 
 > ### ⚠️ Antes de usar em projeto de cliente — confirmar a classe do plano
 >
@@ -91,6 +91,75 @@ Escolhida a opção (ou delegada ao Architect), a decisão vira **ADR** e o valo
 > **Encaminhamento recomendado:** confirmar o plano no Console (Billing). Se for consumidor, migrar para Claude for Work (Team) — é o que faz o DPA valer e devolve controle de administrador. Feito isso, substituir o valor deste campo por algo verificável, no formato: `Claude for Work Team · DPA incorporado aos Termos Comerciais aceitos em AAAA-MM-DD · cópia em docs/contratos/`.
 >
 > A base legal de transferência internacional sob a LGPD (cap. V) é pergunta para o jurídico, não para o Tech Lead — o DPA traz SCCs em formato europeu.
+
+---
+
+## Orçamento de contexto e execução
+
+Limiares de consumo de contexto do fluxo multi-agent (`docs/ADR-009`). O bloco JSON abaixo é **a única fonte** desses números: o hook `context-budget.mjs`, o `gbpa-task.js`, os wrappers `*-quiet` e o relatório de custos o leem daqui. Os valores são o default do playbook; ajuste por projeto e cite o ADR na tabela de notas. Não mude o formato nem os marcadores.
+
+<!-- orcamento-contexto:inicio -->
+```json
+{
+  "paralelismo_max_agentes": 4,
+  "checkpoint": {
+    "tool_calls_por_faixa": { "trivial": 15, "simples": 15, "media": 30, "complexa": 50 },
+    "faixa_padrao": "media",
+    "contexto_agente_tokens": 150000,
+    "lembrete_a_cada_tool_calls": 10,
+    "max_por_fatia": 3
+  },
+  "sessao_orquestrador": {
+    "contexto_max_tokens": 250000,
+    "handoff_max_linhas": 120
+  },
+  "saida_ferramenta": {
+    "aviso_resultado_tokens": 8000,
+    "leitura_max_linhas_sem_justificativa": 400,
+    "saida_para_arquivo_linhas": 150,
+    "quiet_max_linhas": 60
+  },
+  "comandos_longos": {
+    "background_acima_segundos": 180,
+    "polling_segundos": 120,
+    "sem_chamada_max_segundos": 270
+  },
+  "comandos_quiet": {
+    "teste": "",
+    "lint": "",
+    "analise": ""
+  },
+  "telemetria": {
+    "razao_cache_alerta": 1.5,
+    "fator_excesso_cache": 1.1,
+    "saida_implausivel_tokens_por_chamada": 20,
+    "saida_implausivel_min_chamadas": 10
+  }
+}
+```
+<!-- orcamento-contexto:fim -->
+
+| Chave | Default | Por que este default | Nota do projeto |
+|---|---|---|---|
+| `paralelismo_max_agentes` | 4 | Cabe o maior fan-out do script (3 lentes em task sensível) ou duas fatias com Coder ∥ Tester. Muitos agentes em paralelo disputam o limite de taxa, e espera longa entre chamadas expira o cache; fila é mais barata que reescrita de cache. Sinal de limite de taxa → reduza, não enfileire mais | |
+| `checkpoint.tool_calls_por_faixa` | 15 / 15 / 30 / 50 | É o teto de tool calls por agente de cada faixa (`multi-agents/ARCHITECTURE.md` → Scaling de Esforço). Passou do teto, a execução já está fora do esperado e a releitura cresce com o quadrado das chamadas | |
+| `checkpoint.faixa_padrao` | `media` | Usada quando o hook não acha a complexidade da task (recon ou brief) | |
+| `checkpoint.contexto_agente_tokens` | 150 000 | Com poucas dezenas de chamadas, o agente já releu o próprio histórico o bastante para que um agente novo, partindo do checkpoint, saia mais barato | |
+| `checkpoint.lembrete_a_cada_tool_calls` | 10 | O aviso repete, mas não a cada chamada — aviso em toda chamada vira ruído | |
+| `checkpoint.max_por_fatia` | 3 | Três checkpoints ≈ 4× o teto da faixa. Mais que isso, a fatia está grande demais e volta para o Planner | |
+| `sessao_orquestrador.contexto_max_tokens` | 250 000 | A sessão do orquestrador relê tudo a cada turno; acima disso, uma sessão nova que parte do handoff (poucos k de contexto) custa menos que o próximo turno | |
+| `sessao_orquestrador.handoff_max_linhas` | 120 | ≈ 2 páginas. Handoff maior está colando conteúdo em vez de apontar | |
+| `saida_ferramenta.aviso_resultado_tokens` | 8 000 | ≈ 32 KB: uma leitura de 400 linhas ou uma saída de teste com poucas falhas cabe; log completo não | |
+| `saida_ferramenta.leitura_max_linhas_sem_justificativa` | 400 | Mesmo tamanho de um PR (~200–400 linhas): acima disso quase nunca se precisa do arquivo inteiro | |
+| `saida_ferramenta.saida_para_arquivo_linhas` | 150 | Saída maior vai para `tasks/{id}/artifacts/` e o agente lê só o trecho | |
+| `saida_ferramenta.quiet_max_linhas` | 60 | O que os wrappers `*-quiet` mostram no máximo: falhas + resumo | |
+| `comandos_longos.background_acima_segundos` | 180 | Comando com duração esperada acima de ~3 min roda em background (ou com timeout explícito) | |
+| `comandos_longos.polling_segundos` | 120 | Intervalo entre consultas ao comando em background; cada consulta é uma releitura barata que mantém o cache vivo | |
+| `comandos_longos.sem_chamada_max_segundos` | 270 | O cache dos subagentes tem vida de 5 min contada do início da chamada; 270 s deixa margem. Passou disso, a próxima chamada reescreve o contexto inteiro | |
+| `comandos_quiet.*` | vazio | O projeto preenche o comando de teste, lint e análise estática que o wrapper `*-quiet` roda (`scripts/quiet/`) | |
+| `telemetria.razao_cache_alerta` | 1,5 | Razão saudável ≈ 1 (cada token escrito uma vez). 1,5 tolera recomeços legítimos (compactação, 1ª chamada) | |
+| `telemetria.fator_excesso_cache` | 1,1 | Folga de 10 % sobre o contexto final antes de contar a escrita como excesso | |
+| `telemetria.saida_implausivel_*` | 20 / 10 | Média abaixo de 20 tokens de saída por chamada, em execução com mais de 10 chamadas, indica transcrição com saída parcial | |
 
 ---
 
