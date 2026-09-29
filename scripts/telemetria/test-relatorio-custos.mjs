@@ -87,6 +87,20 @@ caso("papel vem do meta.json sem o sufixo de modelo", () => {
   assert(JSON.stringify(papeis) === JSON.stringify(["coder", "sessao-principal", "tester"]), papeis.join(","));
 });
 
+caso("agentes de Workflow (subagents/workflows/**) entram, com o papel da descrição", () => {
+  const dir = fixture();
+  const wf = join(dir, "s1", "subagents", "workflows", "wf_1");
+  mkdirSync(wf, { recursive: true });
+  writeFileSync(join(wf, "agent-w.jsonl"), [user("Leia tasks/2026-01-01_fatia/brief.md"), ...chamada("w1", { w5: 1000 })].join("\n"));
+  writeFileSync(join(wf, "agent-w.meta.json"), JSON.stringify({ agentType: "workflow-subagent", description: "FATIA-X:reviewer r1" }));
+  writeFileSync(join(wf, "agent-v.jsonl"), [user("Task 2026-01-01_fatia"), ...chamada("v1", { w5: 1000 })].join("\n"));
+  writeFileSync(join(wf, "agent-v.meta.json"), JSON.stringify({ agentType: "workflow-subagent", description: "pesquisa livre" }));
+  writeFileSync(join(wf, "agent-u.jsonl"), [user("Task 2026-01-01_fatia"), ...chamada("u1", { w5: 1000 })].join("\n"));
+  writeFileSync(join(wf, "agent-u.meta.json"), JSON.stringify({ agentType: "workflow-subagent", description: "FATIA-X:lente-segurança r2" }));
+  const papeis = coletar(dir)[0].execs.map((e) => e.papel).sort();
+  assert(JSON.stringify(papeis) === JSON.stringify(["coder", "reviewer", "security-sre", "sessao-principal", "tester", "workflow-subagent"]), papeis.join(","));
+});
+
 caso("preço casa pelo prefixo mais longo", () => {
   assert(precoDe("claude-opus-5-5[1m]", precos).id === "claude-opus-5-5", "opus 5.5 com sufixo");
   assert(precoDe("claude-opus-5", precos).id === "claude-opus-5", "opus 5 não vira 5.5");
