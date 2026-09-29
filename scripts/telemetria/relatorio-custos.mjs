@@ -112,14 +112,36 @@ export function analisar(exec, precos, lim) {
   };
 }
 
+const PAPEIS_WORKFLOW = /\b(coder|reviewer|tester|architect|planner|spec-writer|debugger|documenter|devops|data-engineer|ai-engineer)\b/i;
+
 // Papel pelo meta.json do subagente (agentType sem o sufixo de modelo), ou sessão principal.
 function papelDe(arquivo) {
   const meta = arquivo.replace(/\.jsonl$/, ".meta.json");
   if (!existsSync(meta)) return basename(dirname(arquivo)) === "subagents" ? "subagente" : "sessao-principal";
   try {
-    const t = JSON.parse(readFileSync(meta, "utf8")).agentType || "subagente";
+    const m = JSON.parse(readFileSync(meta, "utf8"));
+    const t = m.agentType || "subagente";
+    // Agente de Workflow: o tipo é genérico; o papel vem da descrição que o script deu (ex.: "FATIA:coder r1").
+    if (t === "workflow-subagent") {
+      const d = m.description || "";
+      if (/segurança|seguranca|\bsecurity\b/i.test(d)) return "security-sre";
+      if (/\breview|revis|lente-corre|refutador/i.test(d)) return "reviewer";
+      const p = PAPEIS_WORKFLOW.exec(d);
+      return p ? p[1].toLowerCase() : t;
+    }
     return t.replace(/-(opus|sonnet|haiku|fable|mythos)$/, "");
   } catch { return "subagente"; }
+}
+
+function transcricoesDe(dir) {
+  if (!existsSync(dir)) return [];
+  const out = [];
+  for (const g of readdirSync(dir)) {
+    const p = join(dir, g);
+    if (statSync(p).isDirectory()) out.push(...transcricoesDe(p));
+    else if (g.endsWith(".jsonl")) out.push(p);
+  }
+  return out;
 }
 
 export function coletar(dir, { sessao, task, desde } = {}) {
@@ -133,9 +155,8 @@ export function coletar(dir, { sessao, task, desde } = {}) {
     if (desde && statSync(principal).mtime < new Date(desde)) continue;
     const execs = [{ papel: "sessao-principal", ...lerExecucao(principal) }];
     const sub = join(dir, id, "subagents");
-    if (existsSync(sub)) {
-      for (const g of readdirSync(sub)) if (g.endsWith(".jsonl")) execs.push({ papel: papelDe(join(sub, g)), ...lerExecucao(join(sub, g)) });
-    }
+    // Recursivo: os agentes de Workflow ficam em subagents/workflows/<run>/.
+    for (const g of transcricoesDe(sub)) execs.push({ papel: papelDe(g), ...lerExecucao(g) });
     const re = task ? new RegExp(`tasks/${task.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}/|Task ${task.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}\\b`) : null;
     const filtradas = re ? execs.filter((e) => re.test(e.primeiroPrompt)) : execs;
     const comChamadas = filtradas.filter((e) => e.chamadas.length);
