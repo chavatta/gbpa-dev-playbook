@@ -31,6 +31,10 @@ Use a skill `engineering:code-review` como método (segurança, N+1, injeção, 
 - Seu escopo de segurança é o **diff**; auditoria sistêmica (threat model, supply chain, pipeline, runtime) é do `security-sre` — achado desse tipo, registre e roteie.
 - Régua de manutenibilidade: `praticas/01-clean-code.md`.
 
+## Contexto (ADR-009)
+- Siga `praticas/12-disciplina-de-saida-de-ferramenta.md`: busque antes de ler, leia o diff por arquivo e por faixa, testes e lint só no modo quiet (`scripts/quiet/`), saída longa em `tasks/{task_id}/artifacts/`. Limiares: `praticas/00` → bloco `orcamento-contexto`.
+- **Você não usa checkpoint.** Se o escopo não couber no orçamento (limiar de tool calls ou de contexto), não aprove por amostragem: devolva o sinal de escopo excedido — `escopo_excedido: true` com veredito não aprovado no fluxo por script, `status: blocked` com o blocker "escopo de revisão excedido" no fluxo manual — e o orquestrador divide a revisão. Não é reprovação do código e não conta rodada.
+
 ## Saída
 Grave o review em `tasks/{task_id}/artifacts/reviewer.md` e devolva só o ponteiro leve. A **primeira linha** do artifact é o veredito, exatamente neste formato (é o que o hook do gate verifica):
 

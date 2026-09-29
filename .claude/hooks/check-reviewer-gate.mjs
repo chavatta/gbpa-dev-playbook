@@ -23,9 +23,11 @@ const root = process.env.CLAUDE_PROJECT_DIR || ".";
 const tasksDir = join(root, "tasks");
 if (!existsSync(tasksDir)) process.exit(0);
 
-// veredito ancorado: primeira linha do artifact, formato exato definido nos manuais
-// (REPROVADO, "não aprovado" e variações em outro contexto NÃO passam)
-const VEREDITO_APROVADO = /^\s*\*\*Veredito:\*\*\s*APROVADO\b/m;
+// Veredito ancorado na PRIMEIRA LINHA do artifact (GOVERNANCE.md §3.4), formato exato
+// definido nos manuais. Sem a flag `m`: com ela, `^` casava início de QUALQUER linha, e um
+// artifact que abre com "REPROVADO" mas cita um "**Veredito:** APROVADO" anterior passava.
+// Admite BOM e linhas em branco antes do veredito; nada além disso.
+const VEREDITO_APROVADO = /^\uFEFF?\s*\*\*Veredito:\*\*\s*APROVADO\b/;
 
 let entries = [];
 try {
@@ -68,7 +70,7 @@ for (const entry of entries) {
       const secOk = existsSync(sec) && VEREDITO_APROVADO.test(readFileSync(sec, "utf8"));
       if (!secOk) {
         process.stderr.write(
-          `GATE VIOLADO: a task sensível '${entry.name}' está done sem '**Veredito:** APROVADO' em artifacts/security-sre.md — GOVERNANCE.md §3.5.\n`
+          `GATE VIOLADO: a task sensível '${entry.name}' está done sem '**Veredito:** APROVADO' na primeira linha de artifacts/security-sre.md — GOVERNANCE.md §3.5.\n`
         );
         process.exit(2);
       }

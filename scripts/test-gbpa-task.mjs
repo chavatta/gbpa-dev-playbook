@@ -27,21 +27,27 @@ async function run({ args, answers }) {
   let round = 0;
   const agent = async (prompt, opts = {}) => {
     const label = opts.label || "?";
-    if (label.startsWith("coder")) round = Number(label.slice(-1));
+    const m = /^coder r(\d+)/.exec(label);
+    if (m) round = Number(m[1]);
     calls.push({ label, prompt, agentType: opts.agentType, schema: opts.schema });
     const key = Object.keys(answers).find((k) => label === k || label.startsWith(k + " "));
     const a = key === undefined ? undefined : answers[key];
+    if (Array.isArray(a)) return a.length > 1 ? a.shift() : a[0];   // sequência por chamada; o último se repete
     return typeof a === "function" ? a(round) : a;
   };
-  const parallel = async (thunks) => Promise.all(thunks.map((t) => t().catch(() => null)));
+  const lotes = [];
+  const parallel = async (thunks) => { lotes.push(thunks.length); return Promise.all(thunks.map((t) => t().catch(() => null))); };
   let res, err;
   try {
     res = await body(args, agent, parallel, async () => [], () => {}, () => {}, { total: null }, async () => null);
   } catch (e) { err = e; }
-  return { res, err, calls, labels: calls.map((c) => c.label) };
+  return { res, err, calls, lotes, labels: calls.map((c) => c.label) };
 }
 
 const T = "2026-09-23_smoke";
+const CP = (agent, n = 1) => ({ ...PTR(agent, "checkpoint"), artifact_path: `artifacts/${agent}-checkpoint-0${n}.md` });
+const ORC = { paralelismo_max_agentes: 2, checkpoint: { tool_calls_por_faixa: { trivial: 15, simples: 15, media: 30, complexa: 50 }, contexto_agente_tokens: 150000, max_por_fatia: 3 },
+  comandos_longos: { background_acima_segundos: 180, polling_segundos: 120, sem_chamada_max_segundos: 270 }, saida_ferramenta: { leitura_max_linhas_sem_justificativa: 400, saida_para_arquivo_linhas: 150 } };
 const CASES = [
   ["task_id inválido lança erro", { args: { task_id: "x" }, answers: {} },
     (r) => r.err && /task_id/.test(r.err.message)],
@@ -149,6 +155,68 @@ const CASES = [
   ["architect bloqueado com needs_human: true → blocked em architect, needs_human no retorno",
     { args: { task_id: T }, answers: { recon: RECON(), design: { ...PTR("architect", "blocked"), needs_human: true } } },
     (r) => r.res.status === "blocked" && r.res.em === "architect" && r.res.needs_human === true && !r.labels.includes("plan")],
+
+  // ---------- ADR-009: eficiência de contexto ----------
+  ["POINTER aceita status checkpoint e VERDICT declara escopo_excedido opcional",
+    { args: { task_id: T }, answers: { recon: RECON({ complexity: "trivial" }), coder: PTR("coder"), review: OK("reviewer") } },
+    (r) => {
+      const ptr = r.calls.find((c) => c.label === "coder r1").schema;
+      const ver = r.calls.find((c) => c.label.startsWith("review")).schema;
+      return ptr.properties.status.enum.includes("checkpoint") && ver.properties.escopo_excedido.type === "boolean" && !ver.required.includes("escopo_excedido");
+    }],
+
+  ["coder em checkpoint → agente novo continua do checkpoint → done",
+    { args: { task_id: T }, answers: { recon: RECON({ complexity: "trivial" }), coder: [CP("coder"), PTR("coder")], review: OK("reviewer") } },
+    (r) => {
+      const cont = r.calls.find((c) => /continuação 1/.test(c.label));
+      return r.res.status === "done" && r.res.checkpoints === 1
+        && r.res.events.some((e) => e.agent === "coder" && e.status === "checkpoint" && e.ref === "artifacts/coder-checkpoint-01.md")
+        && cont && cont.agentType === "coder-opus" && /CONTINUAÇÃO 1[\s\S]*artifacts\/coder-checkpoint-01\.md/.test(cont.prompt)
+        && cont.prompt.startsWith(r.calls.find((c) => c.label === "coder r1").prompt);
+    }],
+
+  ["checkpoints acima do teto da fatia → escalado ao Planner, sem review",
+    { args: { task_id: T, orcamento: ORC }, answers: { recon: RECON({ complexity: "trivial" }), coder: [CP("coder", 1), CP("coder", 2), CP("coder", 3), CP("coder", 4)], review: OK("reviewer") } },
+    (r) => r.res.status === "escalado" && r.res.para === "planner" && r.res.checkpoints === 4 && r.res.checkpoint === "artifacts/coder-checkpoint-04.md"
+      && !r.labels.some((l) => l.startsWith("review"))],
+
+  ["tester em checkpoint na rodada paralela também continua",
+    { args: { task_id: T }, answers: { recon: RECON(), design: PTR("architect"), plan: PTR("planner"), coder: PTR("coder"), tester: [CP("tester"), PTR("tester")], review: OK("reviewer") } },
+    (r) => r.res.status === "done" && r.res.checkpoints === 1 && r.labels.some((l) => /^tester · continuação 1$/.test(l))],
+
+  ["reviewer com escopo_excedido → blocked em review, nunca done, sem gastar rodada",
+    { args: { task_id: T }, answers: { recon: RECON(), design: PTR("architect"), plan: PTR("planner"), coder: PTR("coder"), tester: PTR("tester"),
+        review: { ...OK("reviewer"), aprovado: false, escopo_excedido: true } } },
+    (r) => r.res.status === "blocked" && r.res.em === "review" && r.res.escopo_excedido === true && !r.labels.includes("coder r2")],
+
+  ["lente com escopo_excedido, mesmo 'aprovando' → blocked, sem refutador",
+    { args: { task_id: T, sensitive: true }, answers: { recon: RECON(), design: PTR("architect"), plan: PTR("planner"), coder: PTR("coder"), tester: PTR("tester"),
+        "lente: correção": { ...OK("reviewer"), escopo_excedido: true }, "lente: segurança": OK("security-sre"), "lente: reprodução": OK("tester"), "refutador cego": OK("reviewer") } },
+    (r) => r.res.status === "blocked" && r.res.em === "review" && !r.labels.includes("refutador cego")],
+
+  ["prefixo estável: prompt começa igual para todo agente e o task_id só aparece depois de '## Esta task'",
+    { args: { task_id: T, sensitive: true }, answers: {
+        recon: RECON({ needs_spec: true }), spec: PTR("spec-writer"), design: PTR("architect"), plan: PTR("planner"), coder: PTR("coder"), tester: PTR("tester"),
+        "lente: correção": OK("reviewer"), "lente: segurança": OK("security-sre"), "lente: reprodução": OK("tester"), "refutador cego": OK("reviewer") } },
+    (r) => {
+      const pre = r.calls[0].prompt.split("\n").slice(0, 3).join("\n");
+      return r.res.status === "done" && r.calls.every((c) => c.prompt.startsWith(pre))
+        && r.calls.every((c) => { const i = c.prompt.indexOf("## Esta task"); return i > 0 && !c.prompt.slice(0, i).includes(T) && !c.prompt.slice(0, i).includes(`tasks/${T}`); });
+    }],
+
+  ["orçamento do perfil chega ao prompt (limiares por faixa, comando longo, leitura)",
+    { args: { task_id: T, orcamento: ORC }, answers: { recon: RECON({ complexity: "trivial" }), coder: PTR("coder"), review: OK("reviewer") } },
+    (r) => { const p = r.calls[0].prompt; return /simples 15, media 30, complexa 50/.test(p) && /180 s/.test(p) && /270 s/.test(p) && /400 linhas/.test(p); }],
+
+  ["sem orçamento: prompt aponta para o perfil, sem número inventado",
+    { args: { task_id: T }, answers: { recon: RECON({ complexity: "trivial" }), coder: PTR("coder"), review: OK("reviewer") } },
+    (r) => /praticas\/00 → bloco orcamento-contexto/.test(r.calls[0].prompt)],
+
+  ["teto de paralelismo 2: as 3 lentes rodam em lotes de 2 + 1",
+    { args: { task_id: T, sensitive: true, orcamento: ORC }, answers: {
+        recon: RECON(), design: PTR("architect"), plan: PTR("planner"), coder: PTR("coder"), tester: PTR("tester"),
+        "lente: correção": OK("reviewer"), "lente: segurança": OK("security-sre"), "lente: reprodução": OK("tester"), "refutador cego": OK("reviewer") } },
+    (r) => r.res.status === "done" && Math.max(...r.lotes) <= 2 && r.labels.filter((l) => l.startsWith("lente")).length === 3],
 ];
 
 let pass = 0;

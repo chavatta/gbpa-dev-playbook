@@ -247,10 +247,12 @@ skill_candidates: []
 
 ### Gestão de Contexto Longo
 
-Quando o contexto de um agente se aproximar do limite:
-1. O agente resume o trabalho completado e salva em memória externa
-2. Spawn de subagente fresco com contexto comprimido + referências aos artifacts
-3. Continuar de onde parou, sem perder trabalho anterior
+A releitura do contexto cresce com o quadrado do número de chamadas; por isso execução longa vira várias curtas (`docs/ADR-009`, limiares em `praticas/00` → bloco `orcamento-contexto`):
+1. **Agente:** ao atingir o limiar de tool calls da faixa (ou de contexto), grava um checkpoint em `artifacts/{agente}-checkpoint-NN.md` e devolve `status: checkpoint`
+2. **Orchestrator:** delega um subagente novo do mesmo papel com o brief, o contexto da fatia e o checkpoint — que continua de onde o anterior parou
+3. **Sessão do Orchestrator:** em épica ou várias ondas, troca de sessão com `tasks/{task_id}/handoff/sessao-NN.md` e retoma com `/task retomar {task_id}`
+
+Detalhes: `HANDOFF-PROTOCOL.md` §7.1. Disciplina de saída de ferramenta: `praticas/12`.
 
 ---
 
@@ -262,6 +264,8 @@ Quando o contexto de um agente se aproximar do limite:
 | Média (nova feature pequena) | 3–5 | 10–30 por agente |
 | Complexa (sistema novo, refactor grande) | 5–8 | 20–50 por agente |
 | Épica (arquitetura de produto) | Planner (fatiar) | Nenhum na task-mãe — cada fatia é uma `/task` própria |
+
+O teto de tool calls de cada faixa é também o limiar de checkpoint do agente (`checkpoint.tool_calls_por_faixa` em `praticas/00`); o número vale do perfil do projeto, não desta tabela.
 
 ---
 
@@ -285,6 +289,7 @@ Para cada run, registrar:
 - Qual agente foi ativado e quando
 - Inputs e outputs de cada handoff
 - Número de tool calls por agente
+- Custo por tipo de token e razão de cache por execução (`scripts/telemetria/relatorio-custos.mjs`, `docs/ADR-009`)
 - Blockers encontrados e como foram resolvidos
 - Tempo de execução por agente
 

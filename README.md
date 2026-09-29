@@ -32,19 +32,23 @@ gbpa-dev-playbook/
 │   └── templates/                 # SKILL.template.md, AVALIACAO-IMPACTO-IA.template.md
 ├── praticas/                      # Biblioteca de boas práticas (stack GBPA, clean code, clean architecture,
 │                                  #   design funcional, modularização, monorepo, containers, EKS, DevSecOps+LGPD, testes,
-│                                  #   dados e contexto de IA, MCP)
+│                                  #   dados e contexto de IA, MCP, disciplina de saída de ferramenta)
 ├── scripts/
 │   ├── check-pii.sh               # Padrão de PII (CPF, CNPJ, celular) em fixtures/seeds — no CI, ao lado do gitleaks
-│   └── test-gbpa-task.mjs         # Smoke test do fluxo por script, com agentes simulados — sem gastar quota
+│   ├── test-gbpa-task.mjs         # Smoke test do fluxo por script, com agentes simulados — sem gastar quota
+│   ├── smoke-harness.mjs          # Prova no CLI real os mecanismos de hook/background do ADR-009 (gasta centavos)
+│   ├── quiet/                     # test-quiet, lint-quiet, analise-quiet: só falhas e resumo (praticas/12)
+│   └── telemetria/                # Relatório de custos: custo por tipo em dólar, razão de cache, cache quebrado
 ├── docs/
-│   ├── ADR-001-modelos-por-agente.md … ADR-006-uso-proprio-de-assinatura-individual.md
+│   ├── ADR-001-modelos-por-agente.md … ADR-009-eficiencia-de-contexto-e-cache.md
 │   ├── ISO-MAPPING.md             # Rastreabilidade ISO 27001 / ISO 42001 → evidência → status
 │   ├── EVIDENCIAS-E-METRICAS.md   # Retenção de evidência, métricas do playbook, cadência de revisão
 │   ├── COMPETENCIA.md             # Registro de quem leu o onboarding e quando (ISO 42001 A.4.6)
 │   ├── RUNBOOK-INCIDENTE-IA.md    # Vazamento via prompt, código defeituoso em prod, dependência alucinada
 │   └── patches/                   # Versões propostas de arquivos protegidos — só o Tech Lead aplica
 └── tasks/
-    └── _TEMPLATE/                 # brief.md, run-log.md, memory.md, artifacts/
+    └── _TEMPLATE/                 # brief.md, run-log.md, memory.md, decisions.md, artifacts/, handoff/
+                                   #   + modelos de checkpoint de agente e de handoff de sessão (ADR-009)
 ```
 
 ## Adotando em um repositório
@@ -56,7 +60,7 @@ cp -R gbpa-dev-playbook/.claude gbpa-dev-playbook/multi-agents gbpa-dev-playbook
 mkdir -p <repo>/tasks && cp -R gbpa-dev-playbook/tasks/_TEMPLATE <repo>/tasks/
 cp -R gbpa-dev-playbook/docs <repo>/
 cp gbpa-dev-playbook/{README.md,DESENVOLVIMENTO-COM-IA.md,ONBOARDING.md,GOVERNANCE.md} <repo>/
-printf '%s\n' '' '# Spool da telemetria do playbook (docs/ADR-008)' 'tasks/*/telemetry.jsonl*' '.claude/telemetry-spool.jsonl*' >> <repo>/.gitignore
+printf '%s\n' '' '# Spool da telemetria do playbook (docs/ADR-008)' 'tasks/*/telemetry.jsonl*' '.claude/telemetry-spool.jsonl*' '.claude/context-budget.jsonl' >> <repo>/.gitignore
 ```
 
 No Windows (PowerShell), o equivalente (`tasks\_TEMPLATE` exige criar `<repo>\tasks` antes):
@@ -66,10 +70,12 @@ Copy-Item -Recurse gbpa-dev-playbook\.claude,gbpa-dev-playbook\multi-agents,gbpa
 New-Item -ItemType Directory -Force <repo>\tasks | Out-Null
 Copy-Item -Recurse gbpa-dev-playbook\tasks\_TEMPLATE <repo>\tasks\
 Copy-Item gbpa-dev-playbook\README.md,gbpa-dev-playbook\DESENVOLVIMENTO-COM-IA.md,gbpa-dev-playbook\ONBOARDING.md,gbpa-dev-playbook\GOVERNANCE.md <repo>\
-Add-Content <repo>\.gitignore '', '# Spool da telemetria do playbook (docs/ADR-008)', 'tasks/*/telemetry.jsonl*', '.claude/telemetry-spool.jsonl*'
+Add-Content <repo>\.gitignore '', '# Spool da telemetria do playbook (docs/ADR-008)', 'tasks/*/telemetry.jsonl*', '.claude/telemetry-spool.jsonl*', '.claude/context-budget.jsonl'
 ```
 
 Copia-se `tasks/_TEMPLATE/`, não as tasks deste próprio playbook. A última linha de cada bloco acrescenta ao `.gitignore` do repo os padrões do spool da telemetria ([`docs/telemetria/`](docs/telemetria/README.md)): é fila de envio, não evidência, e são os únicos arquivos de `tasks/` fora do git. No repo adotante, apague `docs/patches/` — são propostas de mudança nas travas *deste* playbook, não do projeto novo — e `docs/COMPETENCIA.md`, que fica só no repo do playbook (registro organizacional, não por projeto).
+
+Depois de copiar, preencha no `praticas/00` o bloco **Orçamento de contexto e execução**: pelo menos `comandos_quiet` (os comandos de teste, lint e análise estática do projeto, que os wrappers `scripts/quiet/*-quiet.mjs` rodam mostrando só falhas e resumo). Os limiares já vêm com default; ajuste por projeto e cite o ADR (`docs/ADR-009`).
 
 Os hooks são scripts Node (`.mjs`) — funcionam automaticamente em macOS, Linux e Windows, sem `chmod` nem configuração por sistema.
 

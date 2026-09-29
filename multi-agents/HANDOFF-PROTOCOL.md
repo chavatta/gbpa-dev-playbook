@@ -3,7 +3,7 @@
 > Complemento operacional de `ARCHITECTURE.md`. Define **como** os agentes trocam trabalho na prática.
 > Regra de ouro: **artifacts são arquivos no disco, não JSON no contexto.** O Orchestrator nunca carrega o conteúdo bruto de um subagente — só referências leves.
 >
-> **Dono:** Tech Lead · **Revisão:** semestral, ou a cada mudança no protocolo · **Última revisão:** 2026-09-24
+> **Dono:** Tech Lead · **Revisão:** semestral, ou a cada mudança no protocolo · **Última revisão:** 2026-09-29
 
 ---
 
@@ -76,7 +76,7 @@ A mensagem final do subagente ao Orchestrator deve conter **apenas** este bloco 
 agent: coder
 model: claude-opus-5-5   # ID exato do modelo em que o agente REALMENTE rodou (ver ADR-001)
 task_id: 2026-06-29_auth-jwt
-status: completed        # completed | blocked | needs_review
+status: completed        # completed | blocked | needs_review | checkpoint (ADR-009, §7.1)
 artifact_path: tasks/2026-06-29_auth-jwt/artifacts/coder.md
 files_changed: [src/auth/login.ts, src/auth/jwt.ts]
 next_agent: reviewer
@@ -173,6 +173,18 @@ Governança completa em `SKILLS-GOVERNANCE.md`. No handoff:
 - Commits frequentes; merge/review antes de integrar.
 - Nunca dois agentes escrevendo o mesmo arquivo ao mesmo tempo.
 
+- **Teto de agentes simultâneos:** `paralelismo_max_agentes` do perfil do projeto (`praticas/00` → bloco `orcamento-contexto`). Sinal de limite de taxa ou espera longa → reduza o paralelismo em vez de enfileirar mais agentes (`docs/ADR-009`).
+
+### 7.1. Orçamento de contexto (`docs/ADR-009`)
+
+Limiares no bloco `orcamento-contexto` de `praticas/00`. Prática: `praticas/12-disciplina-de-saida-de-ferramenta.md`.
+
+- **Prefixo estável.** A mensagem de delegação começa pelo que não muda (regras, papel) e termina no que muda (task, caminhos, issues, estado). Nada de data, hora, contagem, status ou trecho de run-log antes do conteúdo estável.
+- **Instrução imutável durante a execução.** `CLAUDE.md`, `.claude/agents/` e o contexto da fatia não são editados enquanto houver agente rodando que os carregou. Mudança de contexto vira arquivo novo, citado na próxima delegação.
+- **Checkpoint de agente.** Executor que atinge o limiar (tool calls da faixa, ou contexto) chega a estado consistente, grava `artifacts/{agente}-checkpoint-NN.md` (modelo em `tasks/_TEMPLATE/artifacts/`) e devolve `status: checkpoint` com `artifact_path` apontando para ele. O Orchestrator delega um agente **novo** do mesmo papel com o brief, o contexto da fatia e o checkpoint. Acima de `checkpoint.max_por_fatia`, a fatia volta ao Planner. O gate continua exigindo o artifact **final** (`reviewer.md`, `security-sre.md`), nunca um checkpoint.
+- **Reviewer e Security-SRE não fazem checkpoint.** Estourou o orçamento → sinal de escopo excedido (`escopo_excedido: true` no veredito do script; `status: blocked` no fluxo manual). O Orchestrator divide a revisão. Não é reprovação e não consome rodada.
+- **Troca de sessão do Orchestrator.** Em épica ou task com várias ondas: ao fechar cada onda, ou quando a sessão passar de `sessao_orquestrador.contexto_max_tokens`, o que vier primeiro. Com todos os agentes da onda já de volta, o Orchestrator grava `tasks/{task_id}/handoff/sessao-NN.md` (modelo em `tasks/_TEMPLATE/handoff/`): só ponteiros e resumo, até `handoff_max_linhas`. A sessão nova começa por `/task retomar {task_id}`, que lê o handoff mais recente e o brief e abre artifact só sob demanda. `handoff/` é evidência da task, como `artifacts/`.
+
 ---
 
 ## 8. Checklist rápido (cole no início de cada run)
@@ -182,7 +194,9 @@ Governança completa em `SKILLS-GOVERNANCE.md`. No handoff:
 - [ ] `artifacts/recon.md` existe antes de qualquer roteamento — complexidade e sensibilidade vêm dele
 - [ ] Cada subagente grava em `artifacts/{agente}.md` e devolve só o ponteiro
 - [ ] `run-log.md` atualizado a cada handoff
-- [ ] Paralelismo só em trabalho independente, com worktree/dono único
+- [ ] Paralelismo só em trabalho independente, com worktree/dono único, até `paralelismo_max_agentes`
+- [ ] Delegação com prefixo estável; nenhum arquivo de instrução editado com agente rodando
+- [ ] Checkpoint → agente novo do mesmo papel; épica/ondas → handoff de sessão (§7.1)
 - [ ] Skills checadas (reuso-primeiro); candidates registrados, não criados no meio da task
 - [ ] `artifacts/reviewer.md` existe antes de `done`
 - [ ] Task sensível → `artifacts/security-sre.md` com `APROVADO` antes de `done`

@@ -167,11 +167,13 @@ OBJETIVO: fazer o login funcionar
 
 ## Gestão de Contexto Longo
 
-Quando o contexto se aproximar do limite, aplique nesta ordem:
+Limiares em `praticas/00` → bloco `orcamento-contexto`; decisão em `docs/ADR-009`; regras em `HANDOFF-PROTOCOL.md` §7.1.
 
-1. **Compactação** — resuma decisões tomadas, blockers abertos e estado atual; descarte output de ferramentas já consumido.
-2. **Note-taking externo** — persista o estado em `tasks/{task-id}/memory.md` e referencie, em vez de manter no contexto.
-3. **Subagente fresco** — se ainda assim necessário, spawn de agente novo com o resumo comprimido + referências aos artifacts, continuando de onde parou.
+1. **Sua sessão não carrega a épica inteira.** Troque de sessão ao fechar cada onda, ou quando o contexto passar de `sessao_orquestrador.contexto_max_tokens` (o hook `context-budget` avisa), o que vier primeiro. Antes, espere **todos** os agentes da onda devolverem o ponteiro; então grave `tasks/{task-id}/handoff/sessao-NN.md` pelo modelo — estado de cada fatia com ponteiro do último artifact, decisões com link, pendências, próxima ação exata, leituras de cota —, só ponteiros e resumo, até `handoff_max_linhas`. Diga ao dev: `/clear` e depois `/task retomar {task-id}`.
+2. **Retomada:** a sessão nova lê o handoff mais recente e o `brief.md`. Artifact, só sob demanda e por faixa.
+3. **Subagente em checkpoint** (`status: checkpoint`): delegue um agente **novo** do mesmo papel com o brief, o contexto da fatia e o checkpoint. Acima de `checkpoint.max_por_fatia`, a fatia volta ao Planner. Reviewer ou Security-SRE com escopo excedido: divida a revisão.
+4. **Delegação com prefixo estável:** regras e papel primeiro; task, caminhos e estado no fim. Não edite `CLAUDE.md`, definições de agente nem contexto da fatia com agente rodando — mudança vira arquivo novo.
+5. **Paralelismo:** no máximo `paralelismo_max_agentes`. Limite de taxa ou espera longa → reduza; não enfileire mais.
 
 ---
 

@@ -59,7 +59,7 @@ DEBUGGER  DOCUMENTER   DEVOPS  DATA-ENGINEER AI-ENGINEER SECURITY-SRE
 3. **Escopo limitado por ferramenta** — cada agente só tem acesso às ferramentas do seu papel. O Reviewer não tem ferramenta de edição de código (sem `Edit`); grava só o próprio artifact (`tasks/{id}/artifacts/reviewer.md` — o `Write` é geral, a restrição é do manual, não da ferramenta) e lê o que precisar (`Read`/`Glob`/`Grep`/`Bash`); o Planner não executa comandos; o Debugger não corrige em produção (entrega diagnóstico ao Coder).
 4. **Handoff estruturado** — o trabalho passa de agente para agente via artifacts gravados em disco, com rastro auditável (`tasks/{id}/run-log.md`). Nada se perde em "telefone sem fio".
 
-O Orchestrator continua no topo do time, mas deixou de ser o ponto de entrada literal: sob o `docs/ADR-005-orquestracao-nativa-do-fluxo.md`, quem abre a task é a skill `/task` (`.claude/workflows/gbpa-task.js`), que roda o recon e roteia por código — vigência plena depende do patch pendente em `docs/patches/GOVERNANCE.proposto.md` e do piloto. O fluxo manual pelo Orchestrator segue como fallback quando o Workflow não está disponível.
+O Orchestrator continua no topo do time, mas deixou de ser o ponto de entrada literal: sob o `docs/ADR-005-orquestracao-nativa-do-fluxo.md`, quem abre a task é a skill `/task` (`.claude/workflows/gbpa-task.js`), que roda o recon e roteia por código — o `GOVERNANCE.md` já traz o fluxo por script (patch aplicado em 2026-09-29); a vigência plena depende do piloto. O fluxo manual pelo Orchestrator segue como fallback quando o Workflow não está disponível.
 
 Detalhe completo: [multi-agents/ARCHITECTURE.md](multi-agents/ARCHITECTURE.md) e [multi-agents/HANDOFF-PROTOCOL.md](multi-agents/HANDOFF-PROTOCOL.md).
 
@@ -167,7 +167,9 @@ Ajustar uma trava é, ele próprio, um fluxo com gate: a mudança nasce em branc
 | [docs/ADR-003-agentes-sdd-dados-ia.md](docs/ADR-003-agentes-sdd-dados-ia.md) | Escopo e modelos do Spec-Writer, Data-Engineer e AI-Engineer |
 | [docs/ADR-004-conformidade-iso.md](docs/ADR-004-conformidade-iso.md) | Como o playbook se posiciona perante ISO 27001 e ISO 42001 |
 | [docs/ADR-005-orquestracao-nativa-do-fluxo.md](docs/ADR-005-orquestracao-nativa-do-fluxo.md) | Por que o fluxo roda como script nativo do Claude Code (`/task`), e não por orquestrador externo |
-| [docs/ADR-006-uso-proprio-de-assinatura-individual.md](docs/ADR-006-uso-proprio-de-assinatura-individual.md) | Quando a automação com a própria assinatura, em servidor próprio, dispensa a API key — e as cinco condições que a sustentam |
+| [docs/ADR-007-roteamento-multi-provedor.md](docs/ADR-007-roteamento-multi-provedor.md) | Roteamento de papel para lista ordenada de (provedor, modelo) — proposto |
+| [docs/ADR-008-contrato-de-telemetria.md](docs/ADR-008-contrato-de-telemetria.md) | Contrato de telemetria do fluxo: evento, hook emissor e `decisions.md` — proposto |
+| [docs/ADR-009-eficiencia-de-contexto-e-cache.md](docs/ADR-009-eficiencia-de-contexto-e-cache.md) | Como o fluxo reduz escrita e releitura de cache e o tamanho do contexto, e como medir |
 | [docs/ISO-MAPPING.md](docs/ISO-MAPPING.md) | Rastreabilidade controle → evidência → status; o documento que vai ao auditor |
 | [docs/EVIDENCIAS-E-METRICAS.md](docs/EVIDENCIAS-E-METRICAS.md) | O que é evidência, por quanto tempo se retém, e como medir se o playbook funciona |
 | [praticas/README.md](praticas/README.md) | Biblioteca de boas práticas: código, arquitetura, repos, infra, segurança |

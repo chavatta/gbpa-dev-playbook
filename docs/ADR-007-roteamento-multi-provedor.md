@@ -4,7 +4,7 @@
 **Data:** 2026-09-24
 **Decisores:** Tech Lead
 **Revisão:** trimestral, junto com o ADR-001
-**Relacionado:** generaliza o ADR-001 **sem alterá-lo nem superá-lo**: o ADR-001 continua valendo como o caso de um provedor só (lista de um elemento = `model:` do frontmatter). Complementa os ADR-002/003, porque as listas também valem para os agentes que eles criaram, e o ADR-005: o `gbpa-task.js` é o caso de um provedor. Depende do ADR-006 (proposto em PR paralelo) para qualquer execução fora do runtime nativo feita por assinatura. Aplica `praticas/10` §2, §3 e §5. Neste mesmo PR, acrescenta a `multi-agents/HANDOFF-PROTOCOL.md` §3.2 os campos **opcionais** `provider` e `needs_human`.
+**Relacionado:** generaliza o ADR-001 **sem alterá-lo nem superá-lo**: o ADR-001 continua valendo como o caso de um provedor só (lista de um elemento = `model:` do frontmatter). Complementa os ADR-002/003, porque as listas também valem para os agentes que eles criaram, e o ADR-005: o `gbpa-task.js` é o caso de um provedor. Qualquer execução fora do runtime nativo feita por assinatura depende de exceção formal registrada em ADR do projeto que a adotar. Aplica `praticas/10` §2, §3 e §5. Neste mesmo PR, acrescenta a `multi-agents/HANDOFF-PROTOCOL.md` §3.2 os campos **opcionais** `provider` e `needs_human`.
 **Confiança:** média. Nenhum fallback entre provedores rodou ainda numa task real, e o sinal de limite e a exposição do modelo não estão confirmados em todos os runtimes (os pontos `[VERIFICAR-EMPÍRICO]` abaixo).
 
 ## Contexto
@@ -15,7 +15,7 @@ O ADR-001 amarra cada papel a **um** modelo de **um** fornecedor pelo `model:` d
 2. **A autoverificação bloqueia o fallback legítimo.** Rodar em outro provedor é, pela letra do ADR-001, "modelo divergente", e o agente devolve `blocked` justamente quando a troca foi intencional.
 3. **Sem lugar para registrar o provedor.** O ponteiro tem `model`, mas não tem provedor, e o mesmo modelo pode ser servido por runtimes e cobranças diferentes. A troca de provedor acaba silenciosa.
 
-Restrições que continuam valendo: ID completo, nunca alias (ADR-001, revisão de 2026-09-23); orquestração fora do runtime nativo exige API key ou exceção formal (ADR-005, ADR-006); classes de dado e avaliação de provedor (`praticas/10`); o gate como nó mais caro de errar (ADR-001: "um falso APROVADO é o erro mais caro do fluxo").
+Restrições que continuam valendo: ID completo, nunca alias (ADR-001, revisão de 2026-09-23); orquestração fora do runtime nativo exige API key ou exceção formal em ADR (ADR-005); classes de dado e avaliação de provedor (`praticas/10`); o gate como nó mais caro de errar (ADR-001: "um falso APROVADO é o erro mais caro do fluxo").
 
 ## Decisão
 
@@ -187,7 +187,7 @@ Troca de provedor ou de modelo sem esses registros é, por definição, divergê
 
 - **O script é o caso de um provedor.** Os `agentType` sufixados (`architect-opus`, `planner-opus`, `spec-writer-opus`, `coder-opus`, `tester-opus`, `reviewer-opus`, `security-sre-fable`) equivalem cada um à lista `[claude-code:<model: do frontmatter>]`. O script continua válido sem mudança.
 - **O script não faz fallback entre provedores.** Um limite no runtime nativo faz o run falhar. O script já trata agente sem retorno devolvendo `blocked` ("sem retorno"), e a decisão seguinte é humana. Se `.claude/routing.yaml` tiver listas com vários provedores, o script executa só a entrada nativa que corresponde ao `agentType`. As demais são inelegíveis para ele (`executor_incapaz`). O script nunca simula outro provedor.
-- **Executar outros provedores exige outro executor**, fora do runtime nativo. Pela regra do ADR-005, ele só é conforme com API key ou sob a exceção de uso próprio (ADR-006, proposto). **Este ADR não autoriza, sozinho, orquestração externa.**
+- **Executar outros provedores exige outro executor**, fora do runtime nativo. Pela regra do ADR-005, ele só é conforme com API key ou sob exceção formal registrada em ADR do projeto. **Este ADR não autoriza, sozinho, orquestração externa.**
 - **Ponteiro no script:** o schema `POINTER` não declara `additionalProperties: false`, então aceita `provider` e `needs_human` sem quebrar. Declará-los como propriedades opcionais do schema fica para a mudança que ativar o roteamento no script (zona protegida, Tech Lead).
 - **Frontmatter em outros runtimes.** O `model:` do frontmatter é a entrada preferida do runtime nativo e não deve ser o mecanismo de seleção de modelo em outro runtime: o executor passa a entrada roteada explicitamente no lançamento. Há runtime de terceiro cuja documentação diz que lê `.claude/agents/` e respeita o campo `model`. `[VERIFICAR-EMPÍRICO]`: a precedência entre a flag de modelo do lançamento e o frontmatter, em cada runtime. **Degradação:** se o frontmatter prevalecer, a autoverificação (§5) e a conferência do medido acusam a divergência e bloqueiam. Nunca passa em silêncio.
 - **Nome sufixado:** o sufixo do `name:` (ADR-001) continua indicando a entrada nativa preferida. As listas não mudam nomes nem `artifact_path`.

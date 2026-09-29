@@ -5,6 +5,11 @@
 // O script decide (roteamento, teto do loop, forma da verificação, gate). Os agentes executam e gravam
 // os artifacts em tasks/{id}/artifacts/ — o script não toca disco (evidência ISO fica onde está).
 // Quem grava run-log.md é a sessão principal (escritor único, GOVERNANCE §4.3) a partir de `events`.
+//
+// Eficiência de contexto (docs/ADR-009): todo prompt começa pelo texto ESTÁVEL (regras, papel) e termina
+// no que varia (task_id, caminhos, issues, checkpoint) — prefixo igual entre agentes do mesmo tipo é
+// releitura de cache, não escrita. Os limiares vêm de args.orcamento (bloco orcamento-contexto de
+// praticas/00, lido pela skill /task); o script não lê disco.
 
 export const meta = {
   name: 'gbpa-task',
@@ -25,13 +30,18 @@ if (!args || typeof args.task_id !== 'string' || !/^\d{4}-\d{2}-\d{2}_[a-z0-9][a
 const T = args.task_id
 const DIR = `tasks/${T}`
 const MAX_ROUNDS = 2            // HANDOFF-PROTOCOL §4.7: 2 reprovações ⇒ o problema não é implementação
+const O = (args.orcamento && typeof args.orcamento === 'object') ? args.orcamento : {}
+// Fallbacks só para quando a skill não passar o orçamento; o valor oficial é o do perfil (praticas/00).
+const MAX_CHECKPOINTS = Number.isInteger(O.checkpoint && O.checkpoint.max_por_fatia) ? O.checkpoint.max_por_fatia : 3
+const MAX_PARALELO = Number.isInteger(O.paralelismo_max_agentes) && O.paralelismo_max_agentes > 0 ? O.paralelismo_max_agentes : 4
+let checkpoints = 0             // por task (= por fatia): acima de MAX_CHECKPOINTS a fatia volta ao Planner
 const events = []               // a sessão principal anexa isto ao run-log.md
 const note = (agent, status, ref, extra) => events.push({ agent, status, ref: ref || '-', ...extra })
 // Sensibilidade efetiva: brief OU recon (decisão 2). Vai em TODO retorno, não só no `done`:
 // quando o recon eleva, a sessão principal grava `Sensível: sim` no brief — é o brief que o
 // hook check-reviewer-gate.mjs e a métrica M2 leem.
 let sensitive = args.sensitive === true
-const result = (o) => ({ task_id: T, sensitive, ...o, events })
+const result = (o) => ({ task_id: T, sensitive, checkpoints, ...o, events })
 
 // ---------- contratos (HANDOFF-PROTOCOL §3.2 como schema) ----------
 const POINTER = {
@@ -41,7 +51,7 @@ const POINTER = {
     agent: { type: 'string', description: 'nome-base: coder, reviewer, planner…' },
     model: { type: 'string', description: 'ID exato do modelo em que rodou, lido no system prompt (ex.: claude-opus-5-5, claude-fable-5-1)' },
     task_id: { type: 'string' },
-    status: { type: 'string', enum: ['completed', 'blocked', 'needs_review'] },
+    status: { type: 'string', enum: ['completed', 'blocked', 'needs_review', 'checkpoint'], description: 'checkpoint = parou no limiar de orçamento com artifact {agente}-checkpoint-NN.md gravado (ADR-009)' },
     artifact_path: { type: 'string' },
     files_changed: { type: 'array', items: { type: 'string' } },
     next_agent: { type: 'string' },
@@ -99,6 +109,7 @@ const VERDICT = {
       },
     },
     artifact_path: { type: 'string' },
+    escopo_excedido: { type: 'boolean', description: 'opcional (ADR-009): o review estourou o orçamento de contexto; o escopo precisa ser dividido. Nunca é aprovação.' },
   },
 }
 const SLICES = {
@@ -121,13 +132,35 @@ const SLICES = {
 }
 
 // ---------- preâmbulo comum a todo agente ----------
-const RULES = `Task ${T}. Leia primeiro ${DIR}/brief.md e ${DIR}/artifacts/recon.md (se existir).
-Regras (GOVERNANCE.md §3, §4, §7): opere só no seu escopo; grave TODO o conteúdo no artifact indicado (formato do seu manual em multi-agents/agents/) e devolva SÓ o objeto estruturado pedido; um dono por arquivo; nunca coloque dado real de cliente ou pessoal no artifact; confirme no seu system prompt o modelo que te alimenta e declare-o.`
+// ESTÁVEL: nada de task_id, data, contagem ou caminho aqui (ADR-009, prefixo estável).
+const limiarTxt = (() => {
+  const c = O.checkpoint && O.checkpoint.tool_calls_por_faixa
+  const l = O.comandos_longos || {}
+  const s = O.saida_ferramenta || {}
+  const faixas = c ? Object.entries(c).map(([k, v]) => `${k} ${v}`).join(', ') : null
+  return [
+    faixas ? `limiar de checkpoint por tool calls, por faixa de complexidade: ${faixas}` : 'limiares de checkpoint: praticas/00 → bloco orcamento-contexto',
+    O.checkpoint && O.checkpoint.contexto_agente_tokens ? `ou contexto acima de ${O.checkpoint.contexto_agente_tokens} tokens` : '',
+    l.background_acima_segundos ? `comando com duração esperada acima de ${l.background_acima_segundos} s roda em background com consulta a cada ${l.polling_segundos || '≤120'} s, ou com timeout explícito; nunca passe de ${l.sem_chamada_max_segundos || 270} s sem chamada ao modelo` : '',
+    s.leitura_max_linhas_sem_justificativa ? `não leia arquivo inteiro acima de ${s.leitura_max_linhas_sem_justificativa} linhas sem justificativa; saída acima de ${s.saida_para_arquivo_linhas || 150} linhas vai para arquivo em artifacts/` : '',
+  ].filter(Boolean).join('; ')
+})()
+const RULES = `Regras (GOVERNANCE.md §3, §4, §7): opere só no seu escopo; grave TODO o conteúdo no artifact indicado (formato do seu manual em multi-agents/agents/) e devolva SÓ o objeto estruturado pedido; um dono por arquivo; nunca coloque dado real de cliente ou pessoal no artifact; confirme no seu system prompt o modelo que te alimenta e declare-o.
+Contexto (praticas/12, docs/ADR-009): busque (rg/grep) antes de ler e leia por faixa de linhas; teste, lint e análise estática só no modo quiet (scripts/quiet/, só falhas e resumo); nunca traga log completo, lockfile, arquivo gerado, minificado ou binário para o contexto; não edite CLAUDE.md, definições de agente nem o contexto da fatia durante a execução — mudança de contexto vira arquivo novo; ${limiarTxt}.
+Checkpoint (executores; Reviewer e Security-SRE não usam): ao atingir o limiar, chegue a estado consistente (código compilando, ou mudança pequena isolada e anotada), grave artifacts/{agente}-checkpoint-NN.md pelo modelo de tasks/_TEMPLATE/ e devolva o ponteiro com status "checkpoint" e artifact_path apontando para ele.`
+
+// A parte que varia vem por último: task, caminhos e instruções da vez.
+const daTask = (instrucoes) => `
+## Esta task
+Task ${T}. Leia primeiro ${DIR}/brief.md e ${DIR}/artifacts/recon.md (se existir).
+${instrucoes}`
 
 const reviewPrompt = (lens, manual, artifact) => `${RULES}
-Você é o ${lens} (multi-agents/agents/${manual}). Revise o diff da task — os arquivos em files_changed de ${DIR}/artifacts/coder.md — com a lente: ${lens}.
-Grave em ${DIR}/artifacts/${artifact}. A PRIMEIRA LINHA do artifact é exatamente "**Veredito:** APROVADO" ou "**Veredito:** REPROVADO (n issues)" — o hook check-reviewer-gate.mjs depende disso; não use a palavra APROVADO em nenhum outro trecho.
-Qualquer issue CRITICAL ou HIGH ⇒ REPROVADO. Não existe "aprovado com ressalvas".`
+Você é o ${lens} (multi-agents/agents/${manual}). Revise o diff da task — os arquivos em files_changed do artifact do Coder — com a lente: ${lens}.
+A PRIMEIRA LINHA do artifact é exatamente "**Veredito:** APROVADO" ou "**Veredito:** REPROVADO (n issues)" — o hook check-reviewer-gate.mjs depende disso; não use a palavra APROVADO em nenhum outro trecho.
+Qualquer issue CRITICAL ou HIGH ⇒ REPROVADO. Não existe "aprovado com ressalvas".
+Se o escopo não couber no seu orçamento de contexto, não aprove por amostragem: devolva escopo_excedido: true com aprovado: false, e o orquestrador divide a revisão.
+${daTask(`Diff: files_changed de ${DIR}/artifacts/coder.md. Grave em ${DIR}/artifacts/${artifact}.`)}`
 
 // Campos opcionais do ponteiro que a sessão principal precisa ver: onde o agente rodou e se pede decisão humana.
 // Vão nos events e no retorno de blocked; nenhum deles muda o roteamento — quem decide o que fazer é a sessão principal.
@@ -135,12 +168,38 @@ const pointerExtras = (p) => ({
   ...(typeof p.provider === 'string' && p.provider !== '' ? { provider: p.provider } : {}),
   ...(p.needs_human ? { needs_human: p.needs_human } : {}),
 })
+// Checkpoint (ADR-009, Frente 5): o agente parou no limiar com o checkpoint gravado. Um agente NOVO do
+// mesmo papel continua a partir dele, com o mesmo prompt + o ponteiro do checkpoint. Acima de
+// MAX_CHECKPOINTS na task, a fatia está grande demais: devolve `refatiar` e quem decide é o Planner.
 const pointer = async (name, prompt, opts) => {
-  const p = await agent(prompt, { schema: POINTER, ...opts })
+  let p = await agent(prompt, { schema: POINTER, ...opts })
+  while (p && p.status === 'checkpoint') {
+    note(name, 'checkpoint', p.artifact_path, pointerExtras(p))
+    checkpoints++
+    if (checkpoints > MAX_CHECKPOINTS) return { ...p, status: 'refatiar' }
+    p = await agent(`${prompt}
+CONTINUAÇÃO ${checkpoints}: um agente anterior do seu papel parou no limiar de orçamento. Leia ${p.artifact_path} (o checkpoint) e continue de onde ele parou. Não repita leituras já resumidas lá, a menos que precise do trecho exato.`,
+    { schema: POINTER, ...opts, label: `${opts.label || name} · continuação ${checkpoints}` })
+  }
   if (!p) { note(name, 'sem retorno', '-'); return null }
   note(name, p.status, p.artifact_path, pointerExtras(p))
   return p
 }
+// Fatia grande demais para os checkpoints permitidos: volta ao Planner (não é reprovação nem bloqueio de código).
+const refatiar = (em, p) => result({
+  status: 'escalado', para: 'planner', em,
+  motivo: `mais de ${MAX_CHECKPOINTS} checkpoint(s) na task — a fatia é grande demais; o Planner fatia de novo (ADR-009)`,
+  checkpoint: p.artifact_path,
+})
+// Teto de agentes simultâneos (perfil do projeto). Acima dele, lotes em sequência — fila custa menos que
+// cache reescrito por limite de taxa.
+const paralelo = async (jobs) => {
+  const out = []
+  for (let i = 0; i < jobs.length; i += MAX_PARALELO) out.push(...await parallel(jobs.slice(i, i + MAX_PARALELO)))
+  return out
+}
+const parou = (p) => !p || p.status === 'blocked' || p.status === 'refatiar'
+const saida = (em, p) => (p && p.status === 'refatiar' ? refatiar(em, p) : blockedAt(em, p))
 // Agente sem retorno ou bloqueado: devolve os blockers dele e, se houver, o pedido de decisão humana.
 const blockedAt = (em, p) => result({
   status: 'blocked', em, blockers: p ? p.blockers : ['sem retorno'],
@@ -152,8 +211,8 @@ try {
   phase('Recon')
   const recon = await agent(`${RULES}
 Você é o Architect em MODO LEVANTAMENTO (multi-agents/agents/01-architect.md → "Modo levantamento (recon)"). NÃO projete, NÃO proponha solução.
-Leia o brief e o código relevante do repositório e responda só o que o roteamento precisa: complexidade real (épica = não cabe num PR de 200–400 linhas, GOVERNANCE §2.5), se é sensível e por quê, se merece spec formal, se há migração de dados, arquivos prováveis.
-Grave o levantamento em ${DIR}/artifacts/recon.md, no máximo 30 linhas.`,
+Leia o brief e o código relevante do repositório e responda só o que o roteamento precisa: complexidade real (épica = não cabe num PR de 200–400 linhas, GOVERNANCE §2.5), se é sensível e por quê, se merece spec formal, se há migração de dados, arquivos prováveis. Grave a linha "Complexidade: <valor>" no levantamento.
+${daTask(`Grave o levantamento em ${DIR}/artifacts/recon.md, no máximo 30 linhas.`)}`,
     { agentType: 'architect-opus', schema: RECON, effort: 'low', label: 'recon' })
   if (!recon) throw new Error('recon sem retorno — veja /workflows')
   note('architect(recon)', 'completed', 'artifacts/recon.md')
@@ -166,13 +225,14 @@ Grave o levantamento em ${DIR}/artifacts/recon.md, no máximo 30 linhas.`,
     phase('Plan')
     const out = await agent(`${RULES}
 Você é o Planner (multi-agents/agents/02-planner.md). O recon classificou a task como ÉPICA.
-Fatie em tasks independentes, cada uma cabendo num PR de 200–400 linhas (GOVERNANCE §2.5), com objetivo verificável e arquivos disjuntos entre fatias (GOVERNANCE §4.1). Grave em ${DIR}/artifacts/planner.md.`,
+Fatie em tasks independentes, cada uma cabendo num PR de 200–400 linhas (GOVERNANCE §2.5), com objetivo verificável e arquivos disjuntos entre fatias (GOVERNANCE §4.1). Agrupe as fatias em ondas que respeitem o teto de agentes simultâneos do perfil do projeto.
+${daTask(`Grave em ${DIR}/artifacts/planner.md.`)}`,
       { agentType: 'planner-opus', schema: SLICES, phase: 'Plan', label: 'fatiar épica' })
     note('planner', out ? 'completed' : 'sem retorno', 'artifacts/planner.md')
     if (!out || !out.slices.length) return result({ status: 'blocked', em: 'planner', blockers: ['fatiamento da épica sem retorno'] })
     return result({
       status: 'fatiada', slices: out ? out.slices : [],
-      next: 'Abra uma /task por fatia. A task-mãe não recebe código.',
+      next: 'Abra uma /task por fatia. A task-mãe não recebe código. Ao fechar cada onda, grave o handoff da sessão (tasks/{id}/handoff/) e retome em sessão nova (ADR-009).',
     })
   }
 
@@ -181,19 +241,22 @@ Fatie em tasks independentes, cada uma cabendo num PR de 200–400 linhas (GOVER
     phase('Plan')
     if (recon.needs_spec) {
       const s = await pointer('spec-writer', `${RULES}
-Você é o Spec-Writer (multi-agents/agents/09-spec-writer.md). Escreva a spec verificável da task (critérios Given/When/Then, contratos, fora de escopo) em ${DIR}/artifacts/spec-writer.md.`,
+Você é o Spec-Writer (multi-agents/agents/09-spec-writer.md). Escreva a spec verificável da task (critérios Given/When/Then, contratos, fora de escopo).
+${daTask(`Grave em ${DIR}/artifacts/spec-writer.md.`)}`,
         { agentType: 'spec-writer-opus', phase: 'Plan', label: 'spec' })
-      if (!s || s.status === 'blocked') return blockedAt('spec-writer', s)
+      if (parou(s)) return saida('spec-writer', s)
     }
     const a = await pointer('architect', `${RULES}
-Você é o Architect (multi-agents/agents/01-architect.md). Projete a solução a partir do brief, do recon${recon.needs_spec ? ' e da spec (artifacts/spec-writer.md)' : ''}. Grave em ${DIR}/artifacts/architect.md no formato do seu manual.`,
+Você é o Architect (multi-agents/agents/01-architect.md). Projete a solução a partir do brief e do recon, no formato do seu manual.
+${daTask(`${recon.needs_spec ? `Use também a spec (${DIR}/artifacts/spec-writer.md). ` : ''}Grave em ${DIR}/artifacts/architect.md.`)}`,
       { agentType: 'architect-opus', phase: 'Plan', label: 'design' })
-    if (!a || a.status === 'blocked') return blockedAt('architect', a)
+    if (parou(a)) return saida('architect', a)
 
     const p = await pointer('planner', `${RULES}
-Você é o Planner (multi-agents/agents/02-planner.md). Decomponha ${DIR}/artifacts/architect.md em tarefas sequenciadas com critérios de aceitação. Grave em ${DIR}/artifacts/planner.md.`,
+Você é o Planner (multi-agents/agents/02-planner.md). Decomponha o design em tarefas sequenciadas com critérios de aceitação.
+${daTask(`Design: ${DIR}/artifacts/architect.md. Grave em ${DIR}/artifacts/planner.md.`)}`,
       { agentType: 'planner-opus', phase: 'Plan', label: 'plan' })
-    if (!p || p.status === 'blocked') return blockedAt('planner', p)
+    if (parou(p)) return saida('planner', p)
   }
 
   // ---------- P2: loop com teto ----------
@@ -212,24 +275,26 @@ Você é o Planner (multi-agents/agents/02-planner.md). Decomponha ${DIR}/artifa
       : 'O Tester não roda nesta rodada: se a mudança pede teste, ou se algum issue aponta arquivo de teste, o dono é você.'
     const jobs = [
       () => pointer('coder', `${RULES}
-Você é o Coder (multi-agents/agents/03-coder.md). Implemente a task conforme ${recon.complexity === 'trivial' ? 'o brief' : `${DIR}/artifacts/planner.md`}.
-${testOwner} Grave em ${DIR}/artifacts/coder.md com files_changed completo.${fix}`,
+Você é o Coder (multi-agents/agents/03-coder.md). Implemente a task conforme o plano e grave o artifact com files_changed completo.
+${daTask(`Plano: ${recon.complexity === 'trivial' ? 'o brief' : `${DIR}/artifacts/planner.md`}. ${testOwner} Grave em ${DIR}/artifacts/coder.md.${fix}`)}`,
         { agentType: 'coder-opus', phase: 'Code', label: `coder r${round}` }),
     ]
     if (testerRuns) {
       jobs.push(() => pointer('tester', `${RULES}
 Você é o Tester (multi-agents/agents/05-tester.md). Escreva os testes da task a partir da spec/plano — NÃO a partir da implementação, que está sendo escrita em paralelo agora.
-Edite SÓ arquivos de teste (um dono por arquivo, GOVERNANCE §4.1). Grave em ${DIR}/artifacts/tester.md.`,
+Edite SÓ arquivos de teste (um dono por arquivo, GOVERNANCE §4.1).
+${daTask(`Grave em ${DIR}/artifacts/tester.md.`)}`,
         { agentType: 'tester-opus', phase: 'Code', label: 'tester' }))
     }
-    const done = await parallel(jobs)            // barreira justificada: o review precisa do código pronto
+    const done = await paralelo(jobs)            // barreira justificada: o review precisa do código pronto
     const coder = done[0]
-    if (!coder || coder.status === 'blocked') return blockedAt('coder', coder)
+    if (parou(coder)) return saida('coder', coder)
+    if (done[1] && done[1].status === 'refatiar') return refatiar('tester', done[1])
 
     // ---------- P3 + P4: verificação proporcional ao risco ----------
     phase('Review')
     if (sensitive) {
-      const lenses = (await parallel([
+      const lenses = (await paralelo([
         () => agent(reviewPrompt('Reviewer — correção, qualidade e arquitetura', '04-reviewer.md', 'reviewer.md'),
           { agentType: 'reviewer-opus', schema: VERDICT, phase: 'Review', label: 'lente: correção' }),
         () => agent(reviewPrompt('Security-SRE — segurança, secrets, supply chain, superfície', '12-security-sre.md', 'security-sre.md'),
@@ -246,7 +311,7 @@ Edite SÓ arquivos de teste (um dono por arquivo, GOVERNANCE §4.1). Grave em ${
           blockers: [`${3 - lenses.length} de 3 lentes sem retorno na rodada ${round} — rode de novo`],
         })
       }
-      verdict = { aprovado: lenses.every(v => v.aprovado), issues: lenses.flatMap(v => v.issues) }
+      verdict = { aprovado: lenses.every(v => v.aprovado), issues: lenses.flatMap(v => v.issues), escopo_excedido: lenses.some(v => v.escopo_excedido) }
     } else {
       const v = await agent(reviewPrompt('Reviewer — correção, segurança e qualidade', '04-reviewer.md', 'reviewer.md'),
         { agentType: 'reviewer-opus', schema: VERDICT, phase: 'Review', label: `review r${round}` })
@@ -256,6 +321,14 @@ Edite SÓ arquivos de teste (um dono por arquivo, GOVERNANCE §4.1). Grave em ${
       }
       verdict = v
       note('reviewer', verdict.aprovado ? 'APROVADO' : 'REPROVADO', v.artifact_path)
+    }
+    // Gate estourou o orçamento: sinal de escopo demais, não de código ruim. Não consome rodada do Coder
+    // e nunca vira aprovação — quem divide a revisão é a sessão principal (ADR-009, Frente 5).
+    if (verdict.escopo_excedido) {
+      return result({
+        status: 'blocked', em: 'review', escopo_excedido: true, issues: verdict.issues,
+        blockers: ['o review excedeu o orçamento de contexto — divida a revisão (por grupos de files_changed) ou refatie a task'],
+      })
     }
     if (verdict.aprovado) break
     log(`Rodada ${round}: REPROVADO (${verdict.issues.length} issue(s))`)
@@ -272,9 +345,10 @@ Edite SÓ arquivos de teste (um dono por arquivo, GOVERNANCE §4.1). Grave em ${
   // ---------- decisão 3: contra-verificador cego, só em task sensível ----------
   if (sensitive) {
     const blind = await agent(`${RULES}
-Você é um Reviewer INDEPENDENTE (multi-agents/agents/04-reviewer.md). NÃO leia ${DIR}/artifacts/reviewer.md, security-sre.md nem tester-review.md — você não pode ser ancorado por veredito anterior.
-Leia só o brief e o diff (files_changed em artifacts/coder.md). Sua missão é REFUTAR a aprovação: procure o defeito que passou. Em dúvida, reprove.
-Grave em ${DIR}/artifacts/reviewer-cego.md (primeira linha "**Veredito:** APROVADO" ou "**Veredito:** REPROVADO (n issues)").`,
+Você é um Reviewer INDEPENDENTE (multi-agents/agents/04-reviewer.md). NÃO leia reviewer.md, security-sre.md nem tester-review.md da task — você não pode ser ancorado por veredito anterior.
+Leia só o brief e o diff (files_changed do artifact do Coder). Sua missão é REFUTAR a aprovação: procure o defeito que passou. Em dúvida, reprove.
+Primeira linha do artifact: "**Veredito:** APROVADO" ou "**Veredito:** REPROVADO (n issues)".
+${daTask(`Diff: files_changed de ${DIR}/artifacts/coder.md. Grave em ${DIR}/artifacts/reviewer-cego.md.`)}`,
       { agentType: 'reviewer-opus', schema: VERDICT, phase: 'Review', label: 'refutador cego', effort: 'high' })
     // Fail-closed: sem retorno do refutador, a aprovação não foi contra-verificada — não é `done`.
     if (!blind) {

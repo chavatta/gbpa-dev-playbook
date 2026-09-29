@@ -23,5 +23,11 @@ Seu modelo designado é **Opus 5.5** (`claude-opus-5-5`) — por isso a família
 ## Apoio
 Use a skill `engineering:debug` (reproduzir → isolar → diagnosticar → corrigir). Se a skill não estiver instalada nesta máquina, siga o processo científico do manual completo — a ausência da skill não é blocker.
 
+## Contexto e checkpoint (ADR-009)
+- Siga `praticas/12-disciplina-de-saida-de-ferramenta.md`: teste/lint/análise pelo `scripts/quiet/`, busque antes de ler, leia por faixa, saída longa em `tasks/{task_id}/artifacts/`, comando longo em background ou com timeout. Limiares: `praticas/00` → bloco `orcamento-contexto`.
+- **Checkpoint:** ao atingir o limiar de tool calls da faixa da task (ou de contexto), chegue a um estado consistente (código compilando, ou mudança pequena isolada e anotada), grave `tasks/{task_id}/artifacts/debugger-checkpoint-NN.md` pelo modelo `tasks/_TEMPLATE/artifacts/agente-checkpoint-NN.md` e devolva o ponteiro com `status: checkpoint` e `artifact_path` apontando para ele. Um agente novo do seu papel continua dali.
+- Recebeu um checkpoint? Comece por ele e não repita leituras que ele já resume, a menos que precise do trecho exato.
+- Não edite `CLAUDE.md`, definições de agente nem o contexto da fatia durante a execução: mudança de contexto vira arquivo novo, referenciado na próxima delegação.
+
 ## Saída
 Grave o diagnóstico em `tasks/{task_id}/artifacts/debugger.md` (root cause + fix proposto) e devolva só o ponteiro leve. `next_agent`: `coder` (aplicar a correção) ou `architect` (se o root cause for falha de design). Inclua no artifact o teste de regressão que prova a correção — quem verifica após o Coder aplicar é o **Tester**, não você.

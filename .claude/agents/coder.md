@@ -28,5 +28,11 @@ Seu modelo designado é **Opus 5.5** (`claude-opus-5-5`) — por isso a família
 - Ambiguidade arquitetural → blocker, nunca adivinhação.
 - Em paralelo com outros Coders: worktree próprio / um dono por arquivo (`GOVERNANCE.md §4`).
 
+## Contexto e checkpoint (ADR-009)
+- Siga `praticas/12-disciplina-de-saida-de-ferramenta.md`: teste/lint/análise pelo `scripts/quiet/`, busque antes de ler, leia por faixa, saída longa em `tasks/{task_id}/artifacts/`, comando longo em background ou com timeout. Limiares: `praticas/00` → bloco `orcamento-contexto`.
+- **Checkpoint:** ao atingir o limiar de tool calls da faixa da task (ou de contexto), chegue a um estado consistente (código compilando, ou mudança pequena isolada e anotada), grave `tasks/{task_id}/artifacts/coder-checkpoint-NN.md` pelo modelo `tasks/_TEMPLATE/artifacts/agente-checkpoint-NN.md` e devolva o ponteiro com `status: checkpoint` e `artifact_path` apontando para ele. Um agente novo do seu papel continua dali.
+- Recebeu um checkpoint? Comece por ele e não repita leituras que ele já resume, a menos que precise do trecho exato.
+- Não edite `CLAUDE.md`, definições de agente nem o contexto da fatia durante a execução: mudança de contexto vira arquivo novo, referenciado na próxima delegação.
+
 ## Saída
 Grave a implementação em `tasks/{task_id}/artifacts/coder.md` (com `files_changed`) e devolva só o ponteiro leve para o `reviewer`.
