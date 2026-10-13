@@ -680,6 +680,29 @@ test('eventos entregues têm envelope v1 bem formado (ULID × ts, tipo, origem, 
   }
 })
 
+test('SubagentStop com ponteiro checkpoint no nível minimal: checkpoint:true, sem status e sem raw', async () => {
+  const ws = workspace()
+  const collector = await startCollector()
+  const env = ws.env({ PLAYBOOK_TELEMETRY_URL: collector.url, PLAYBOOK_TELEMETRY_DETAIL: 'minimal' })
+  const pointer = { agent: 'coder', status: 'checkpoint', artifact_path: `tasks/${TASK}/artifacts/coder-cp-01.md` }
+  const payload = {
+    session_id: 's',
+    cwd: ws.root,
+    hook_event_name: 'SubagentStop',
+    agent_id: 'agent-suite',
+    agent_type: 'coder',
+    last_assistant_message: `fim\n\n\`\`\`json\n${JSON.stringify(pointer)}\n\`\`\``,
+  }
+  assertSilentSuccess(await runEmitter(env, payload), 'SubagentStop')
+  const pointers = [...collector.stored.values()].filter((event) => event.type === 'handoff.pointer')
+  assert(pointers.length === 1, `ponteiros no coletor: ${pointers.length}`)
+  const data = pointers[0].data
+  assert(data.checkpoint === true && data.valid === true, `data: ${JSON.stringify(data)}`)
+  assert(!('status' in data), `status no fio: ${data.status}`)
+  assert(!('raw' in data), 'raw saiu no nível minimal')
+  assert(data.artifact_path === pointer.artifact_path, `artifact_path: ${data.artifact_path}`)
+})
+
 // ---------------------------------------------------------------------------------------------------------------------
 // Execução
 
