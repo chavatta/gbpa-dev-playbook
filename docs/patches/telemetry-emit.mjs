@@ -1,4 +1,4 @@
-// telemetry-emit.mjs 0.1.0 — emissor genérico de telemetria do playbook (playbook.telemetry/v1)
+// telemetry-emit.mjs 0.2.0 — emissor genérico de telemetria do playbook (playbook.telemetry/v1)
 // Licença: proprietária, uso interno (UNLICENSED). Arquivo gerado por build: não edite à mão.
 
 // src/emit.ts
@@ -59,7 +59,7 @@ function serializedByteLength(value) {
 }
 
 // src/constants.ts
-var EMITTER_VERSION = "0.1.0";
+var EMITTER_VERSION = "0.2.0";
 var BUDGET = {
   /** Prazo total padrão; `--budget-ms` só pode diminuir. */
   defaultMs: 1500,
@@ -629,6 +629,12 @@ import { isAbsolute as isAbsolute2, normalize } from "node:path";
 
 // ../event-schema/dist/src/enums.js
 var POINTER_STATUS = ["completed", "blocked", "needs_review"];
+var HANDOFF_POINTER_STATUS = [
+  "completed",
+  "blocked",
+  "needs_review",
+  "checkpoint"
+];
 var TASK_SOURCES = ["env", "branch", "path_write", "sticky", "path_read", "portal", "file"];
 var DETAIL_LEVELS = ["minimal", "standard", "verbose"];
 
@@ -3535,6 +3541,7 @@ var FENCE = /```([A-Za-z]*)[ \t]*\r?\n([\s\S]*?)```/g;
 var LOOKS_LIKE_POINTER = /["']?(?:agent|next_agent)["']?\s*:/;
 var HAS_STATUS = /["']?status["']?\s*:/;
 var RUNTIME_ID = /^[a-z0-9][a-z0-9-]{0,31}$/;
+var CHECKPOINT = HANDOFF_POINTER_STATUS[3];
 function looksLikePointer(block) {
   return LOOKS_LIKE_POINTER.test(block) && HAS_STATUS.test(block);
 }
@@ -3595,8 +3602,12 @@ function needsHuman(value) {
     blocking: typeof value.blocking === "boolean" ? value.blocking : void 0
   });
 }
+function wireStatusFields(status, artifactPath) {
+  if (status === CHECKPOINT) return artifactPath === void 0 ? {} : { checkpoint: true };
+  return status !== void 0 && POINTER_STATUS.includes(status) ? { status } : {};
+}
 function normalizedFields(pointer) {
-  const status = text(pointer.status);
+  const artifactPath = text(pointer.artifact_path);
   const provider = text(pointer.provider) ?? text(pointer.provider_used);
   const taskId = text(pointer.task_id);
   return compact({
@@ -3604,8 +3615,8 @@ function normalizedFields(pointer) {
     model: text(pointer.model) ?? text(pointer.model_used),
     provider: provider !== void 0 && RUNTIME_ID.test(provider) ? provider : void 0,
     task_id: taskId !== void 0 && GENERIC_TASK_ID.test(taskId) ? taskId : void 0,
-    status: status !== void 0 && POINTER_STATUS.includes(status) ? status : void 0,
-    artifact_path: text(pointer.artifact_path),
+    ...wireStatusFields(text(pointer.status), artifactPath),
+    artifact_path: artifactPath,
     files_changed: stringArray(pointer.files_changed),
     next_agent: text(pointer.next_agent),
     context_for_next: text(pointer.context_for_next),
@@ -3613,6 +3624,10 @@ function normalizedFields(pointer) {
     skill_candidates: stringArray(pointer.skill_candidates),
     needs_human: needsHuman(pointer.needs_human)
   });
+}
+function statusErrors(pointer, fields) {
+  if (fields.status !== void 0 || fields.checkpoint === true) return [];
+  return text(pointer.status) === CHECKPOINT ? ["checkpoint_requires_artifact_path"] : ["invalid_status"];
 }
 function extractPointer(message) {
   const source = message.length > MAX_SCAN_CHARS ? message.slice(-MAX_SCAN_CHARS) : message;
@@ -3630,10 +3645,7 @@ function extractPointer(message) {
   }
   if (!isRecord(parsed)) return { raw, fields: {}, valid: false, errors: ["not_object"] };
   const fields = normalizedFields(parsed);
-  const errors = [
-    ...fields.agent === void 0 ? ["missing_agent"] : [],
-    ...fields.status === void 0 ? ["invalid_status"] : []
-  ];
+  const errors = [...fields.agent === void 0 ? ["missing_agent"] : [], ...statusErrors(parsed, fields)];
   return { raw, fields, valid: errors.length === 0, errors };
 }
 function lastAssistantText(tail) {
