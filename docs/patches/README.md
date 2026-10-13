@@ -6,7 +6,11 @@ Arquivos que agentes não podem escrever (`GOVERNANCE.md` §6.2: `GOVERNANCE.md`
 
 ## Pendente
 
-Nada. Os três lotes anteriores (travas de 2026-09-23, contrato de telemetria do ADR-008 e orçamento de contexto do ADR-009) foram aplicados em 2026-09-29 — ver "Histórico". As suítes `test-*.mjs` ficam aqui como teste de regressão das travas.
+| Destino | Proposto | O que muda | Prova |
+|---|---|---|---|
+| `.claude/hooks/telemetry-emit.mjs` | `docs/patches/telemetry-emit.mjs` | Emissor genérico sem vestígios do consumidor (comentários e a regra de redação de token próprio dele); no Windows e no macOS o caminho do spool externo é comparado com a raiz sem caixa e em NFC; a contenção é conferida de novo logo antes de criar o diretório e com o arquivo aberto (troca de ancestral por link entre o preparo e a gravação manda o evento ao cache). Contrato (`evento.schema.json`) sem mudança | `node docs/patches/test-telemetry-emit.mjs docs/patches/telemetry-emit.mjs` 19/19 no Linux (20/20 em sistema de arquivos sem caixa); a versão em produção também passa 19/19, porque o caso novo só roda sem caixa |
+
+Os três lotes anteriores (travas de 2026-09-23, contrato de telemetria do ADR-008 e orçamento de contexto do ADR-009) foram aplicados em 2026-09-29 — ver "Histórico". As suítes `test-*.mjs` ficam aqui como teste de regressão das travas.
 
 ## Como aplicar um patch
 

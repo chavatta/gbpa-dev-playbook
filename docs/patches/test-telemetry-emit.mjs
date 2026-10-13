@@ -1,5 +1,6 @@
 /**
- * Suíte do emissor de telemetria do playbook (eventos.md §9.1 e §18; SPEC FR-EVT-05/07/08).
+ * Suíte do emissor de telemetria do playbook: as garantias de `docs/telemetria/README.md` ("Emissor" e "Spool local")
+ * e do ADR-008 §3 e §4 (nunca bloqueia, prazo, disjuntor, drenagem sem perda nem duplicata, spool fora do projeto).
  *
  *   node test-telemetry-emit.mjs <caminho-do-telemetry-emit.mjs>
  *
@@ -8,11 +9,11 @@
  * Sai com 0 se tudo passar e 1 se algo falhar; a saída é TAP.
  */
 import { execFileSync, spawn } from 'node:child_process'
-import { linkSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
+import { existsSync, linkSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 import { createServer as createHttpServer } from 'node:http'
 import { createServer as createTcpServer } from 'node:net'
 import { cpus, loadavg, tmpdir } from 'node:os'
-import { join, resolve } from 'node:path'
+import { basename, dirname, join, resolve } from 'node:path'
 
 const emitterArg = process.argv[2]
 if (emitterArg === undefined) {
@@ -22,11 +23,11 @@ if (emitterArg === undefined) {
 const EMITTER = resolve(emitterArg)
 const TASK = '2026-09-24_suite'
 const BUDGET_MS = 1500
-/** De fora, criar e encerrar o processo custa mais sob carga; o prazo estrito vale no relógio do emissor (§9.3). */
+/** De fora, criar e encerrar o processo custa mais sob carga; o prazo estrito vale no relógio do emissor. */
 const SPAWN_SLACK_MS = 600
 /**
  * Carregado antes do emissor (`--import`, Node ≥ 18.18): na saída, escreve no fd 3 o relógio do próprio processo
- * (`performance.now()`, ms desde `performance.timeOrigin`), que é o t = 0 do orçamento (eventos.md §9.3). Não muda o
+ * (`performance.now()`, ms desde `performance.timeOrigin`), que é o t = 0 do orçamento de tempo. Não muda o
  * emissor; só expõe a medida que ele mesmo usa para o prazo.
  */
 const EXIT_CLOCK = `data:text/javascript,${encodeURIComponent(
@@ -101,7 +102,7 @@ function toolPayload(root, extra = {}) {
 
 function runEmitter(env, payload, { stdin = 'close', args = [], cwd = tmpdir() } = {}) {
   // Serializado antes do spawn, como no helper do Vitest: serializar 300 mil chaves depois do spawn, sob carga, atrasava
-  // o primeiro byte além dos 300 ms sem bytes do §9.3 (passo 3), e o cenário media a suíte em vez do emissor.
+  // o primeiro byte além dos 300 ms que o emissor espera pelo payload, e o cenário media a suíte em vez do emissor.
   const text = JSON.stringify(payload)
   return new Promise((done) => {
     const started = performance.now()
@@ -430,7 +431,7 @@ test('50 processos concorrentes gravando e drenando: nenhuma perda silenciosa e 
   for (const result of drainers) assertSilentSuccess(result, 'drenador')
   // Com a máquina saturada pelos 100 processos, parte dos eventos ao vivo vai ao spool (sem tempo para rede) e, se o
   // coletor demorou, o disjuntor pode ter aberto (janelas de 15 s, 30 s, 60 s): as invocações seguintes drenam até
-  // esvaziar (FR-EVT-08). A paciência é por prazo (três janelas seguidas e folga), não por número de rodadas.
+  // esvaziar. A paciência é por prazo (três janelas seguidas e folga), não por número de rodadas.
   let extra = 0
   const expected = () => 100 + extra
   const patience = performance.now() + 150_000
@@ -538,6 +539,35 @@ test('spool externo (PLAYBOOK_TELEMETRY_SPOOL_DIR + PLAYBOOK_RUN_ID): nada no wo
     for (const line of lines) assertEnvelope(line)
   }
 })
+
+/** O diretório temporário está num sistema de arquivos que não distingue caixa (padrão no Windows e no macOS). */
+function caseInsensitiveTmp() {
+  const probe = mkdtempSync(join(tmpdir(), 'telemetry-suite-Caixa-'))
+  try {
+    return existsSync(join(dirname(probe), basename(probe).toLowerCase()))
+  } finally {
+    rmSync(probe, { recursive: true, force: true })
+  }
+}
+
+if (caseInsensitiveTmp()) {
+  // Sem distinção de caixa, `<RAIZ>/spool` é um diretório dentro do projeto: o emissor tem de reconhecê-lo como tal.
+  test('spool externo com a raiz em outra grafia (sistema de arquivos sem caixa): cache, nada no worktree', async () => {
+    const ws = workspace()
+    const respelled = join(dirname(ws.root), basename(ws.root).toUpperCase(), 'spool')
+    const tree = () => readdirSync(ws.root, { recursive: true }).map(String).sort().join('\n')
+    const before = tree()
+    const env = ws.env({
+      PLAYBOOK_TELEMETRY_URL: 'spool',
+      PLAYBOOK_TELEMETRY_SPOOL_DIR: respelled,
+      PLAYBOOK_RUN_ID: 'run_01J8Z3NDEKTSV4RRFFQ69G5FAV',
+      PLAYBOOK_TELEMETRY_SCOPE: 'all',
+    })
+    assertSilentSuccess(await runEmitter(env, toolPayload(ws.root), { cwd: ws.root }), 'outra grafia')
+    assert(tree() === before, 'outra grafia: o worktree mudou')
+    assert(Object.keys(strayLines(ws)).length === 1, 'outra grafia: o evento não foi ao cache')
+  })
+}
 
 if (process.platform !== 'win32') {
   // Arquivo especial plantado no worktree pelo agente observado: um `open` síncrono num FIFO sem leitor travaria o
