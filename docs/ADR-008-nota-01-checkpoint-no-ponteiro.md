@@ -16,7 +16,7 @@ Sem nada no evento, o checkpoint fica invisível ou vira ponteiro inválido: um 
 1. **Campo novo, opcional, em `data` do `handoff.pointer`:** `checkpoint`, booleano fixo em `true` (`{"type": "boolean", "const": true}`). É o caso de campo opcional em `data` do ADR-008 §2, sem exceção: fica na v1.
 2. **Regra do emissor:** ponteiro com `status: checkpoint` e `artifact_path` com conteúdo sai com `checkpoint: true` e **sem** `status`, e é válido. Os outros 3 status saem como hoje, sem `checkpoint`. Checkpoint sem `artifact_path` (vazio ou só espaços) é ponteiro inválido (`checkpoint_requires_artifact_path`), sem `status` e sem `checkpoint`.
 3. **Regra do consumidor:** `checkpoint: true` sem `status` é um ponteiro de checkpoint. Se um emissor mandar os dois, vale o `status`. O schema não impõe a exclusão mútua, para a mudança continuar só aditiva.
-4. **O enum do `status` não muda:** segue com os 3 valores. O barramento (`bus.message`) herda o campo pelo mesmo bloco de campos do ponteiro, mas não produz checkpoint: checkpoint é continuação do mesmo papel, não passagem a outro.
+4. **O enum do `status` não muda:** segue com os 3 valores. O barramento (`bus.handoff`, em `data.pointer`) herda o campo pelo mesmo bloco de campos do ponteiro, mas não produz checkpoint: checkpoint é continuação do mesmo papel, não passagem a outro.
 5. **Emissor:** a versão 0.2.0 de `docs/patches/telemetry-emit.mjs` aplica a regra 2, com caso novo na suíte. Aplicar em `.claude/hooks/` segue o `docs/patches/README.md` (zona protegida, Tech Lead).
 
 ## Compatibilidade
@@ -35,7 +35,7 @@ Sem nada no evento, o checkpoint fica invisível ou vira ponteiro inválido: um 
 
 ## Consequências
 
-- O `evento.schema.json` muda (8 linhas: o campo no `data` do `handoff.pointer` e no bloco comum de ponteiro que o `bus.message` usa) e a cópia é conferida por `sha256` com o gerador, como sempre.
+- O `evento.schema.json` muda (8 linhas: o campo no `data` do `handoff.pointer` e no bloco comum de ponteiro que o `bus.handoff` usa em `data.pointer`) e a cópia é conferida por `sha256` com o gerador, como sempre.
 - Ficam dois campos para um fato (`status` e `checkpoint`). É o custo de ficar na v1; a regra de precedência resolve o caso de os dois virem juntos.
 
 ## Revisão
