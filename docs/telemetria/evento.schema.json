@@ -1205,6 +1205,10 @@
           "type": "string",
           "enum": ["completed", "blocked", "needs_review"]
         },
+        "checkpoint": {
+          "type": "boolean",
+          "const": true
+        },
         "artifact_path": {
           "type": "string",
           "maxLength": 256
@@ -3146,6 +3150,10 @@
         "status": {
           "type": "string",
           "enum": ["completed", "blocked", "needs_review"]
+        },
+        "checkpoint": {
+          "type": "boolean",
+          "const": true
         },
         "artifact_path": {
           "type": "string",
