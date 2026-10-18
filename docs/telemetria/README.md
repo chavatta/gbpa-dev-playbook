@@ -1,6 +1,6 @@
 # Telemetria do playbook — contrato `playbook.telemetry/v1`
 
-> **Dono:** Tech Lead · **Revisão:** a cada mudança do schema (ADR novo que complementa o `docs/ADR-008`) · **Última revisão:** 2026-09-26
+> **Dono:** Tech Lead · **Revisão:** a cada mudança do schema (ADR novo que complementa o `docs/ADR-008`) · **Última revisão:** 2026-10-13
 
 Formato comum dos eventos que os hooks do fluxo emitem para um **coletor HTTP opcional**. Sem coletor configurado, nada é emitido e nada muda no projeto. Decisão e racional: [`docs/ADR-008`](../ADR-008-contrato-de-telemetria.md).
 
@@ -18,6 +18,7 @@ Formato comum dos eventos que os hooks do fluxo emitem para um **coletor HTTP op
 - **`data` por tipo, tolerante:** o schema de cada tipo valida os campos conhecidos e preserva os desconhecidos, para que consumidor antigo aceite emissor mais novo dentro da mesma major.
 - **Tipos** (`type`, enum fechado): `session.start`, `session.end`, `prompt.submit`, `tool.pre`, `tool.post`, `tool.fail`, `subagent.start`, `subagent.stop`, `handoff.pointer`, `permission.request`, `permission.resolved`, `notification`, `decision.requested`, `decision.answered`, `bus.message`, `bus.handoff`, `bus.claim`, `progress.report`, `usage.report`, `limit.hit`, `limit.status`, `flow.step`, `gate.verdict`, `task.indexed`, `run.state`, `compact`, `error`, `alert`.
 - **Invariantes fora do JSON Schema:** o tempo do ULID de `event_id` corresponde a `ts` (1 ms de tolerância); o evento serializado tem no máximo 64 KiB, e `data` no máximo 48 KiB.
+- **Checkpoint no `handoff.pointer`:** o `status` do ponteiro no evento tem 3 valores (`completed`, `blocked`, `needs_review`). O ponteiro de checkpoint do ADR-009 sai com `checkpoint: true` e **sem** `status`; se um emissor mandar os dois, vale o `status`. Campo opcional, aditivo na v1: [nota 01 do ADR-008](../ADR-008-nota-01-checkpoint-no-ponteiro.md).
 - **`portal` nos vocabulários** (`source.kind`, `data.task_source`, `error.scope`, `flow.step.origin`, `prompt.submit.origin`) é um **papel**, não um produto. É o orquestrador ou painel que lança as execuções e recebe os eventos, no mesmo nível de `hook`, `adapter`, `indexer` e `collector`. Neste documento e no ADR-008, esse papel se chama "orquestrador".
 
 Qualquer validador JSON Schema 2020-12 serve para conferir um evento contra o arquivo. O consumidor aplica também as duas invariantes acima.
