@@ -1,4 +1,4 @@
-// telemetry-emit.mjs 0.2.0 — emissor genérico de telemetria do playbook (playbook.telemetry/v1)
+// telemetry-emit.mjs 0.2.1 — emissor genérico de telemetria do playbook (playbook.telemetry/v1)
 // Licença: proprietária, uso interno (UNLICENSED). Arquivo gerado por build: não edite à mão.
 
 // src/emit.ts
@@ -59,7 +59,7 @@ function serializedByteLength(value) {
 }
 
 // src/constants.ts
-var EMITTER_VERSION = "0.2.0";
+var EMITTER_VERSION = "0.2.1";
 var BUDGET = {
   /** Prazo total padrão; `--budget-ms` só pode diminuir. */
   defaultMs: 1500,
@@ -1639,6 +1639,15 @@ var SCHEMA_V1 = "playbook.telemetry/v1";
 
 // src/drain.ts
 var DRAINING_INFIX = ".draining-";
+function containmentOf(deps) {
+  let lost = false;
+  return {
+    holds(opened) {
+      if (!lost && deps.contained !== void 0 && !deps.contained(opened)) lost = true;
+      return !lost;
+    }
+  };
+}
 var SIDE_SUFFIXES = [".sent", ".batch-max"];
 function drainingFiles(spoolPath) {
   const prefix = `${basename2(spoolPath)}${DRAINING_INFIX}`;
@@ -1651,15 +1660,24 @@ function drainingFiles(spoolPath) {
 function hasPending(spoolPath) {
   return (fileSize(spoolPath) ?? 0) > 0 || drainingFiles(spoolPath).length > 0;
 }
-function acquireLock(lockPath, deps) {
+function acquireLock(lockPath, deps, containment) {
   const content = JSON.stringify({ pid: deps.pid, host: deps.host, ts: deps.now() });
-  const created = createExclusive(lockPath, content);
-  if (created !== "exists") return created;
+  const create = () => {
+    if (!containment.holds()) return "uncontained";
+    const created = createExclusive(lockPath, content);
+    if (created !== true) return created === "exists" ? "exists" : "busy";
+    return containment.holds() ? "acquired" : "uncontained";
+  };
+  const first = create();
+  if (first !== "exists") return first;
   const observed = entryIdentity(lockPath);
-  if (observed === null) return false;
+  if (observed === null) return "busy";
   const stale = !observed.regular || deps.now() - observed.mtimeMs > SPOOL.lockStaleMs;
-  if (!stale || !retireStaleLock(lockPath, observed, deps.ulid())) return false;
-  return createExclusive(lockPath, content) === true;
+  if (!stale) return "busy";
+  if (!containment.holds()) return "uncontained";
+  if (!retireStaleLock(lockPath, observed, deps.ulid())) return "busy";
+  const second = create();
+  return second === "exists" ? "busy" : second;
 }
 function retireStaleLock(lockPath, observed, suffix) {
   const aside = `${lockPath}.stale-${suffix}`;
@@ -1676,7 +1694,8 @@ function readInteger(path) {
   const content = readSmallText(path, 64)?.trim();
   return content !== void 0 && /^\d{1,15}$/.test(content) ? Number(content) : null;
 }
-function cleanup(draining) {
+function cleanup(draining, containment) {
+  if (!containment.holds()) return;
   removeQuietly(draining);
   for (const suffix of SIDE_SUFFIXES) removeQuietly(`${draining}${suffix}`);
 }
@@ -1728,39 +1747,44 @@ function collectBatch(chunk, maxEvents, fileEnded, settled) {
 function settledAt(mtimeMs, deps) {
   return mtimeMs < deps.now() - SPOOL.drainingSettleMs;
 }
-function pickDraining(spoolPath, deps) {
+function pickDraining(spoolPath, deps, containment) {
   for (const candidate of drainingFiles(spoolPath)) {
     const current = fileIdentity(candidate);
     if (current === null) continue;
     if ((readInteger(`${candidate}.sent`) ?? 0) < current.size) return candidate;
-    if (settledAt(current.mtimeMs, deps)) cleanup(candidate);
+    if (settledAt(current.mtimeMs, deps)) cleanup(candidate, containment);
   }
-  if ((fileSize(spoolPath) ?? 0) === 0) return null;
+  if ((fileSize(spoolPath) ?? 0) === 0 || !containment.holds()) return null;
   const renamed = `${spoolPath}${DRAINING_INFIX}${deps.ulid()}`;
   return renameQuietly(spoolPath, renamed) ? renamed : null;
 }
-function requeue(spoolPath, lines) {
-  if (lines.length === 0) return 0;
-  const result = appendExclusive(spoolPath, () => lines.map((line) => `${line}
-`).join(""));
+function requeue(spoolPath, lines, containment) {
+  if (lines.length === 0 || !containment.holds()) return 0;
+  const result = appendExclusive(
+    spoolPath,
+    (_size, opened) => containment.holds(opened) ? lines.map((line) => `${line}
+`).join("") : null
+  );
   return result === null || result === "refused" ? 0 : lines.length;
 }
-function confirm(draining, read, offset, batch, deps) {
+function confirm(draining, read, offset, batch, deps, containment) {
   const current = fileIdentity(draining);
   const unchanged = current !== null && current.dev === read.dev && current.ino === read.ino && current.size === read.size && settledAt(current.mtimeMs, deps);
   const droppedPartial = batch.partialBytes > 0 && unchanged;
   const to = offset + batch.consumed + (droppedPartial ? batch.partialBytes : 0);
-  if (to > offset) writeAtomic(`${draining}.sent`, String(to), `${deps.pid}-${deps.ulid()}`);
-  if (unchanged && to >= read.size) cleanup(draining);
+  if (to > offset && containment.holds()) writeAtomic(`${draining}.sent`, String(to), `${deps.pid}-${deps.ulid()}`);
+  if (unchanged && to >= read.size) cleanup(draining, containment);
   return { droppedPartial };
 }
 async function drainOnce(spoolPath, deps) {
   const lockPath = `${spoolPath}.lock`;
-  if (!acquireLock(lockPath, deps)) return { status: "busy" };
+  const containment = containmentOf(deps);
+  const lock = acquireLock(lockPath, deps, containment);
+  if (lock !== "acquired") return { status: lock };
   deps.onLock?.(lockPath);
   try {
-    const draining = pickDraining(spoolPath, deps);
-    if (draining === null) return { status: "empty" };
+    const draining = pickDraining(spoolPath, deps, containment);
+    if (draining === null) return containment.holds() ? { status: "empty" } : { status: "uncontained" };
     const offset = readInteger(`${draining}.sent`) ?? 0;
     const maxEvents = Math.max(
       1,
@@ -1770,7 +1794,7 @@ async function drainOnce(spoolPath, deps) {
     if (range === null || offset >= range.size) return { status: "empty" };
     const fileEnded = offset + range.data.length >= range.size;
     const batch = collectBatch(range.data, maxEvents, fileEnded, settledAt(range.identity.mtimeMs, deps));
-    const settle = () => confirm(draining, range.identity, offset, batch, deps).droppedPartial ? 1 : 0;
+    const settle = () => confirm(draining, range.identity, offset, batch, deps, containment).droppedPartial ? 1 : 0;
     if (batch.lines.length === 0) return { status: "skipped", skipped: batch.skipped + settle() };
     const outcome = await deps.post(`[${batch.lines.join(",")}]`);
     switch (outcome.kind) {
@@ -1778,7 +1802,8 @@ async function drainOnce(spoolPath, deps) {
         const retry = outcome.rejected.filter((rejection) => rejection.retryable).map((rejection) => rejection.index);
         const requeued = requeue(
           spoolPath,
-          retry.flatMap((index) => batch.lines[index] === void 0 ? [] : [batch.lines[index]])
+          retry.flatMap((index) => batch.lines[index] === void 0 ? [] : [batch.lines[index]]),
+          containment
         );
         const skipped = batch.skipped + settle();
         return { status: "sent", sent: batch.lines.length, skipped, requeued, outcome };
@@ -1791,13 +1816,15 @@ async function drainOnce(spoolPath, deps) {
         if (batch.lines.length === 1) {
           return { status: "sent", sent: 0, skipped: batch.skipped + 1 + settle(), requeued: 0, outcome };
         }
-        writeAtomic(`${draining}.batch-max`, String(Math.floor(batch.lines.length / 2)), `${deps.pid}-${deps.ulid()}`);
+        if (containment.holds()) {
+          writeAtomic(`${draining}.batch-max`, String(Math.floor(batch.lines.length / 2)), `${deps.pid}-${deps.ulid()}`);
+        }
         return { status: "kept", sent: 0, outcome };
       default:
         return { status: "kept", sent: 0, outcome };
     }
   } finally {
-    removeQuietly(lockPath);
+    if (containment.holds()) removeQuietly(lockPath);
     deps.onLock?.(null);
   }
 }
@@ -4451,6 +4478,7 @@ var EmitterRun = class {
   settled = false;
   /** O prazo venceu antes de o evento existir: termina só com trabalho local (spool), sem rede. */
   expired = false;
+  /** Lock da drenagem em curso e o destino dele (a remoção no prazo confere a contenção do spool externo). */
   activeLock = null;
   debug = { log: () => void 0 };
   /** Configuração lida no início de `run()`; o caminho tardio precisa dela sem o payload. */
@@ -4469,7 +4497,7 @@ var EmitterRun = class {
    */
   flushPending(reason) {
     if (this.activeLock !== null) {
-      removeQuietly(this.activeLock);
+      if (containmentHolds(this.activeLock.target)) removeQuietly(this.activeLock.path);
       this.activeLock = null;
     }
     if (this.pending === null) {
@@ -4752,8 +4780,9 @@ var EmitterRun = class {
       pid: deps.pid,
       host: deps.hostName,
       onLock: (lockPath) => {
-        this.activeLock = lockPath;
+        this.activeLock = lockPath === null ? null : { path: lockPath, target };
       },
+      contained: (opened) => containmentHolds(target, opened),
       post: async (body) => {
         timeoutMs = this.remainingMs() - BUDGET.networkMarginMs;
         outcome = timeoutMs < BUDGET.minPostMs ? { kind: "retry", reason: "no_time", local: true } : await deps.post(url, body, { token, timeoutMs, replay: true, nowMs: deps.wallMs() });
