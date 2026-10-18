@@ -1,4 +1,4 @@
-// telemetry-emit.mjs 0.1.0 — emissor genérico de telemetria do playbook (playbook.telemetry/v1)
+// telemetry-emit.mjs 0.2.0 — emissor genérico de telemetria do playbook (playbook.telemetry/v1)
 // Licença: proprietária, uso interno (UNLICENSED). Arquivo gerado por build: não edite à mão.
 
 // src/emit.ts
@@ -59,7 +59,7 @@ function serializedByteLength(value) {
 }
 
 // src/constants.ts
-var EMITTER_VERSION = "0.1.0";
+var EMITTER_VERSION = "0.2.0";
 var BUDGET = {
   /** Prazo total padrão; `--budget-ms` só pode diminuir. */
   defaultMs: 1500,
@@ -103,7 +103,7 @@ var PAYLOAD = {
   responseMaxBytes: 64 * 1024,
   /** Arquivo pequeno lido pela detecção de projeto e de task (`.git`, `HEAD`, `config`, estado). */
   smallFileMaxBytes: 64 * 1024,
-  /** Cauda do transcript do subagente lida para achar o ponteiro (eventos.md §12.1.2). */
+  /** Cauda do transcript do subagente lida para achar o ponteiro de handoff. */
   transcriptTailBytes: 64 * 1024,
   /**
    * Teto de cada texto livre do agente (comando, padrão de busca, caminho, descrição, prévia) antes de qualquer
@@ -419,7 +419,7 @@ function appendExclusive(path, content) {
     fd = openSync(path, constants.O_WRONLY | constants.O_APPEND | constants.O_CREAT | NOFOLLOW | NONBLOCK, 384);
     const stat = fstatSync(fd);
     if (!soleFile(stat)) return null;
-    const text2 = content(stat.size);
+    const text2 = content(stat.size, identityOf(stat));
     if (text2 === null) return "refused";
     if (text2 !== "") writeAll(fd, Buffer.from(text2, "utf8"));
     return { sizeBefore: stat.size };
@@ -629,6 +629,12 @@ import { isAbsolute as isAbsolute2, normalize } from "node:path";
 
 // ../event-schema/dist/src/enums.js
 var POINTER_STATUS = ["completed", "blocked", "needs_review"];
+var HANDOFF_POINTER_STATUS = [
+  "completed",
+  "blocked",
+  "needs_review",
+  "checkpoint"
+];
 var TASK_SOURCES = ["env", "branch", "path_write", "sticky", "path_read", "portal", "file"];
 var DETAIL_LEVELS = ["minimal", "standard", "verbose"];
 
@@ -1312,7 +1318,7 @@ function shannonEntropy(text2) {
   return bits;
 }
 
-// ../core/dist/src/redact/patterns.js
+// ../core/dist/src/redact/patterns-generic.js
 var marker = (id) => `[REDACTED:${id}]`;
 var REDACTION_MARKER = /\[REDACTED:[a-z0-9_]+\]/;
 var MARKER_PREFIX = "[REDACTED:";
@@ -1393,7 +1399,7 @@ var highEntropy = (run, _groups, offset, text2) => {
 };
 var MYSQL_PASSWORD_FLAG = /(\s)-p(?!\s)\S+/g;
 var checkedDigits = (id, valid) => (match) => valid(match) ? marker(id) : match;
-var REDACTION_RULES = [
+var FORMAT_RULES = [
   {
     id: "private_key",
     patterns: [
@@ -1419,8 +1425,9 @@ var REDACTION_RULES = [
   { id: "slack_token", patterns: [/\bxox[abprs]-[A-Za-z0-9-]{10,}\b/g], replace: whole("slack_token") },
   { id: "aws_access_key_id", patterns: [/\b(?:AKIA|ASIA)[0-9A-Z]{16}\b/g], replace: whole("aws_access_key_id") },
   { id: "npm_token", patterns: [/\bnpm_[A-Za-z0-9]{36}\b/g], replace: whole("npm_token") },
-  { id: "stripe_key", patterns: [/\b(?:sk|rk)_(?:live|test)_[A-Za-z0-9]{16,}\b/g], replace: whole("stripe_key") },
-  { id: "hub_token", patterns: [/chh_[a-z]{1,8}_[A-Za-z0-9_-]{32,}/g], replace: whole("hub_token") },
+  { id: "stripe_key", patterns: [/\b(?:sk|rk)_(?:live|test)_[A-Za-z0-9]{16,}\b/g], replace: whole("stripe_key") }
+];
+var CONTEXT_RULES = [
   {
     id: "auth_header",
     patterns: [
@@ -1506,6 +1513,7 @@ var REDACTION_RULES = [
     replace: whole("email")
   }
 ];
+var REDACTION_RULES = [...FORMAT_RULES, ...CONTEXT_RULES];
 
 // ../core/dist/src/redact/redact.js
 function applyRule(text2, rule) {
@@ -1801,7 +1809,7 @@ function getDataSpec(type) {
   let spec = cache.get(type);
   if (spec === void 0) {
     const raw = DATA_SPECS[type];
-    if (raw === void 0) throw new Error("tipo de evento sem especificação: " + type);
+    if (raw === void 0) throw new Error("tipo de evento fora do contrato: " + type);
     spec = { type, required: raw.required, fields: new Map(raw.fields) };
     cache.set(type, spec);
   }
@@ -3533,6 +3541,7 @@ var FENCE = /```([A-Za-z]*)[ \t]*\r?\n([\s\S]*?)```/g;
 var LOOKS_LIKE_POINTER = /["']?(?:agent|next_agent)["']?\s*:/;
 var HAS_STATUS = /["']?status["']?\s*:/;
 var RUNTIME_ID = /^[a-z0-9][a-z0-9-]{0,31}$/;
+var CHECKPOINT = HANDOFF_POINTER_STATUS[3];
 function looksLikePointer(block) {
   return LOOKS_LIKE_POINTER.test(block) && HAS_STATUS.test(block);
 }
@@ -3593,8 +3602,12 @@ function needsHuman(value) {
     blocking: typeof value.blocking === "boolean" ? value.blocking : void 0
   });
 }
+function wireStatusFields(status, artifactPath) {
+  if (status === CHECKPOINT) return artifactPath === void 0 ? {} : { checkpoint: true };
+  return status !== void 0 && POINTER_STATUS.includes(status) ? { status } : {};
+}
 function normalizedFields(pointer) {
-  const status = text(pointer.status);
+  const artifactPath = text(pointer.artifact_path);
   const provider = text(pointer.provider) ?? text(pointer.provider_used);
   const taskId = text(pointer.task_id);
   return compact({
@@ -3602,8 +3615,8 @@ function normalizedFields(pointer) {
     model: text(pointer.model) ?? text(pointer.model_used),
     provider: provider !== void 0 && RUNTIME_ID.test(provider) ? provider : void 0,
     task_id: taskId !== void 0 && GENERIC_TASK_ID.test(taskId) ? taskId : void 0,
-    status: status !== void 0 && POINTER_STATUS.includes(status) ? status : void 0,
-    artifact_path: text(pointer.artifact_path),
+    ...wireStatusFields(text(pointer.status), artifactPath),
+    artifact_path: artifactPath,
     files_changed: stringArray(pointer.files_changed),
     next_agent: text(pointer.next_agent),
     context_for_next: text(pointer.context_for_next),
@@ -3611,6 +3624,10 @@ function normalizedFields(pointer) {
     skill_candidates: stringArray(pointer.skill_candidates),
     needs_human: needsHuman(pointer.needs_human)
   });
+}
+function statusErrors(pointer, fields) {
+  if (fields.status !== void 0 || fields.checkpoint === true) return [];
+  return text(pointer.status) === CHECKPOINT ? ["checkpoint_requires_artifact_path"] : ["invalid_status"];
 }
 function extractPointer(message) {
   const source = message.length > MAX_SCAN_CHARS ? message.slice(-MAX_SCAN_CHARS) : message;
@@ -3628,10 +3645,7 @@ function extractPointer(message) {
   }
   if (!isRecord(parsed)) return { raw, fields: {}, valid: false, errors: ["not_object"] };
   const fields = normalizedFields(parsed);
-  const errors = [
-    ...fields.agent === void 0 ? ["missing_agent"] : [],
-    ...fields.status === void 0 ? ["invalid_status"] : []
-  ];
+  const errors = [...fields.agent === void 0 ? ["missing_agent"] : [], ...statusErrors(parsed, fields)];
   return { raw, fields, valid: errors.length === 0, errors };
 }
 function lastAssistantText(tail) {
@@ -3727,7 +3741,7 @@ function agentResultEvents(p) {
         tokens,
         tokens_raw: Object.keys(raw).length > 0 ? raw : void 0,
         cost_kind: "none",
-        // Chave natural por subagente (eventos.md §3.6): sem ela, dois subagentes da mesma run colidiriam.
+        // Chave natural por subagente: sem ela, dois subagentes da mesma execução colidiriam.
         message_id: toolUseId ?? agentId
       })
     });
@@ -4267,19 +4281,40 @@ function cacheTarget(location) {
   const dir = cacheDir(location);
   return { kind: "cache", path: join6(dir, `spool-${location.rootHash.slice(0, 16)}.jsonl`), createDir: dir };
 }
-function externalSpoolDir(dir, root) {
+var CASE_INSENSITIVE_PLATFORMS = /* @__PURE__ */ new Set(["win32", "darwin"]);
+function comparablePath(path, platform) {
+  return CASE_INSENSITIVE_PLATFORMS.has(platform) ? path.normalize("NFC").toUpperCase().toLowerCase() : path;
+}
+function isWithin(dir, root, platform) {
+  const comparableDir = comparablePath(dir, platform);
+  const comparableRoot = comparablePath(root, platform);
+  const rootPrefix = comparableRoot.endsWith(sep) ? comparableRoot : `${comparableRoot}${sep}`;
+  return comparableDir === comparableRoot || comparableDir.startsWith(rootPrefix);
+}
+function externalSpoolDir(dir, root, platform) {
   const realDir = resolveRealDir(dir);
   const realRoot2 = resolveRealDir(root);
   if (realDir === null || realRoot2 === null) return null;
-  const rootPrefix = realRoot2.endsWith(sep) ? realRoot2 : `${realRoot2}${sep}`;
-  return realDir === realRoot2 || realDir.startsWith(rootPrefix) ? null : realDir;
+  return isWithin(realDir, realRoot2, platform) ? null : realDir;
+}
+function containmentHolds(target, opened) {
+  const containment = target.containment;
+  if (containment === void 0) return true;
+  if (externalSpoolDir(containment.dir, containment.root, containment.platform) !== target.createDir) return false;
+  if (opened === void 0) return true;
+  const named = fileIdentity(target.path);
+  return named !== null && named.dev === opened.dev && named.ino === opened.ino;
 }
 function spoolTargets(location) {
   const runSpool = location.runSpool;
   if (runSpool.kind === "run") {
-    const dir = externalSpoolDir(runSpool.dir, location.root);
+    const dir = externalSpoolDir(runSpool.dir, location.root, location.platform);
     if (dir === null) return [cacheTarget(location)];
-    return [{ kind: "run", path: join6(dir, `${runSpool.runId}.jsonl`), createDir: dir }, cacheTarget(location)];
+    const containment = { dir: runSpool.dir, root: location.root, platform: location.platform };
+    return [
+      { kind: "run", path: join6(dir, `${runSpool.runId}.jsonl`), createDir: dir, containment },
+      cacheTarget(location)
+    ];
   }
   if (runSpool.kind === "invalid") return [cacheTarget(location)];
   const targets = [];
@@ -4316,10 +4351,12 @@ function limitedContent(events, size, marker2, writer) {
 function appendToSpool(targets, events, writer) {
   if (events.length === 0) return null;
   for (const target of targets) {
+    if (!containmentHolds(target)) continue;
     if (target.createDir !== void 0 && !ensureDir(target.createDir)) continue;
     const marker2 = fullMarker(writer, target.path);
     let written = 0;
-    const result = appendExclusive(target.path, (size) => {
+    const result = appendExclusive(target.path, (size, opened) => {
+      if (!containmentHolds(target, opened)) return null;
       const content = limitedContent(events, size, marker2, writer);
       written = content.written;
       return content.text;
@@ -4605,9 +4642,9 @@ var EmitterRun = class {
     return { events, sha256Hex };
   }
   /**
-   * Fim sem payload utilizável (vazio, acima de 8 MiB, JSON inválido, pipe sem EOF, erro de leitura): não há evento
-   * (eventos.md §3.2). O log de depuração registra o motivo e o tamanho lido, nunca o conteúdo. Se o prazo já tinha
-   * vencido e o payload não chegou inteiro, a perda foi do prazo: fica a linha `deadline_before_payload`.
+   * Fim sem payload utilizável (vazio, acima de 8 MiB, JSON inválido, pipe sem EOF, erro de leitura): não há evento.
+   * O log de depuração registra o motivo e o tamanho lido, nunca o conteúdo. Se o prazo já tinha vencido e o payload
+   * não chegou inteiro, a perda foi do prazo: fica a linha `deadline_before_payload`.
    */
   noPayload(input, reason) {
     this.debug.log("no_payload", { reason, size: stdinSize(input) });
@@ -4618,7 +4655,7 @@ var EmitterRun = class {
    * O prazo venceu antes de o evento existir (máquina sem CPU: o processo ganhou a CPU tarde, e o payload ainda não
    * tinha sido lido ou mapeado quando chegou a parada tardia). Síncrono e sem rede, como o `tooComplex`: runtime e
    * evento das flags, raiz pelo `cwd` do processo, nenhum conteúdo do payload. Vai só ao spool, fora do filtro de
-   * escopo (saúde do emissor); no modo no-op (§9.5) nada é gravado, só o log de depuração.
+   * escopo (saúde do emissor); no modo no-op (sem URL do coletor) nada é gravado, só o log de depuração.
    */
   recordDeadline(reason) {
     const config = this.config;
@@ -4695,9 +4732,9 @@ var EmitterRun = class {
     }
   }
   /**
-   * Um lote do primeiro spool com pendência, se sobrar tempo (eventos.md §9.3, passo 10). Numa run do portal o token
-   * é da run e o servidor amarra o lote a ela: só o spool da própria run é drenado (linhas de outro contexto seriam
-   * rejeitadas com `run_mismatch` e perdidas). Fora de run, o spool de run nunca aparece nos destinos.
+   * Um lote do primeiro spool com pendência, se sobrar tempo (último passo da invocação). Numa execução orquestrada o
+   * token pode ser da execução, e o coletor, amarrar o lote a ela: só o spool da própria execução é drenado (linhas de
+   * outro contexto seriam recusadas e perdidas). Fora dela, o spool externo nunca aparece nos destinos.
    */
   async drain(url, token, breakerFile, runScoped) {
     if (this.expired || this.remainingMs() < BUDGET.drainMinRemainingMs) return void 0;
