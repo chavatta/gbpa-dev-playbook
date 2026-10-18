@@ -12,14 +12,14 @@ O orquestrador emite `run.state` com a linhagem da run: `retry_of_run_id` (nova 
 ## Decisão
 
 1. **Três campos opcionais em `data` do `run.state`:** `retry_of_run_id`, `resumed_from_run_id` e `continues_run_id`, todos string no formato de run id (`^run_[0-9A-HJKMNP-TV-Z]{26}$`). É o caso de campo opcional em `data` do ADR-008 §2: fica na v1.
-2. **Regra do consumidor:** a linhagem não tem chave estrangeira. Valor presente fora do formato é descartado, com registro de anomalia; não é motivo para recusar o evento inteiro.
+2. **Regra do consumidor:** a linhagem não tem chave estrangeira, mas o formato é contrato. O validador recusa o evento inteiro quando um dos três campos está presente fora do formato (outro tipo, `null` ou padrão errado): é o que faz qualquer validador JSON Schema 2020-12 com o `pattern` do item 1. O consumidor que projeta eventos sem revalidá-los (replay de evento gravado antes desta nota) descarta o valor fora do formato e registra anomalia.
 
 ## Compatibilidade
 
 | | Consumidor antigo | Consumidor novo |
 |---|---|---|
 | **Emissor antigo** | Como hoje | Como hoje: os emissores existentes já mandam run id no formato |
-| **Emissor novo** | Preserva os campos (o `data` é tolerante) | Valida o formato pelo schema |
+| **Emissor novo** | Preserva os campos (o `data` é tolerante) | Valida o formato pelo schema: linhagem fora do formato recusa o evento inteiro |
 
 ## Consequências
 
