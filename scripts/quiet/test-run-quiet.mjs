@@ -54,6 +54,11 @@ caso("CLI: metacaractere de shell fora de aspas é recusado com código 2", () =
   assert(r.status === 2 && /metacaractere de shell/.test(r.stderr), r.stderr);
 });
 
+caso("CLI: comando inexistente sai com 127 e diz o motivo", () => {
+  const r = spawnSync(process.execPath, [join(AQUI, "run-quiet.mjs"), "teste", "--", "comando-que-nao-existe-xyz", "a"], { encoding: "utf8" });
+  assert(r.status === 127 && /não foi possível executar comando-que-nao-existe-xyz/.test(r.stdout), r.stdout + r.stderr);
+});
+
 caso("CLI: devolve o código do comando e aponta o arquivo completo", () => {
   const r = spawnSync(process.execPath, [join(AQUI, "run-quiet.mjs"), "teste", "--", "node -e \"for(let i=0;i<300;i++)console.log('ok',i);console.error('FAIL x');process.exit(3)\""], { encoding: "utf8" });
   assert(r.status === 3, `código ${r.status}`);

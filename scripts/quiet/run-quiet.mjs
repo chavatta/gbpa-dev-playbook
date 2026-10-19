@@ -10,6 +10,10 @@
 //
 // Com --task, a saída completa fica em tasks/<task_id>/artifacts/<tipo>-<hora>.log (evidência da task);
 // sem, no diretório temporário do sistema. O código de saída é o do comando.
+//
+// Roda SEM shell: aspas valem, mas pipe, `&&`, redirecionamento, `$VAR`, `VAR=x cmd` e glob não. Comando
+// composto vira um script do projeto (ex.: `npm test`). No Windows, sem shell, `npm`/`pnpm` (que são .cmd)
+// não resolvem: passe o executável real depois de `--` ou use um script node.
 
 import { spawn } from "node:child_process";
 import { readFileSync, writeFileSync, mkdirSync } from "node:fs";
@@ -84,7 +88,7 @@ export async function main(tipo, argv) {
   // Sem shell: vários argumentos depois de `--` já são o argv; uma string só (do `--` ou de
   // comandos_quiet) é dividida respeitando aspas, e metacaractere de shell fora de aspas é recusado.
   const args = depois.length > 1 ? depois : dividir(cmd);
-  if (!args) { console.error(`Comando de ${tipo} com metacaractere de shell (| & ; < > $ \` ( )) fora de aspas: o run-quiet não usa shell. Use um script do projeto (ex.: "npm test") ou passe os argumentos separados depois de --.`); return 2; }
+  if (!args) { console.error(`Comando de ${tipo} vazio, com aspas não fechadas ou com metacaractere de shell (| & ; < > $ \` ( )) fora de aspas: o run-quiet não usa shell. Use um script do projeto (ex.: "npm test") ou passe os argumentos separados depois de --.`); return 2; }
   if (task && !/^\d{4}-\d{2}-\d{2}_[a-z0-9][a-z0-9-]*$/.test(task)) { console.error("--task no formato AAAA-MM-DD_slug"); return 2; }
 
   const dir = task ? join(raiz, "tasks", task, "artifacts") : tmpdir();
@@ -92,11 +96,16 @@ export async function main(tipo, argv) {
   const arquivo = join(dir, `${tipo}-${new Date().toISOString().replace(/[:.]/g, "-")}.log`);
   const partes = [];
   const code = await new Promise((ok) => {
-    const p = spawn(args[0], args.slice(1), { cwd: raiz, env: { ...process.env, FORCE_COLOR: "0", NO_COLOR: "1", CI: process.env.CI || "1" } });
+    let fim = false;
+    const terminar = (c) => { if (!fim) { fim = true; ok(c); } };
+    const falhaAoIniciar = (e) => { partes.push(Buffer.from(`run-quiet: não foi possível executar ${args[0]}: ${e.message}\n`)); terminar(127); };
+    let p;
+    try { p = spawn(args[0], args.slice(1), { cwd: raiz, env: { ...process.env, FORCE_COLOR: "0", NO_COLOR: "1", CI: process.env.CI || "1" } }); }
+    catch (e) { falhaAoIniciar(e); return; }
     p.stdout.on("data", (d) => partes.push(d));
     p.stderr.on("data", (d) => partes.push(d));
-    p.on("close", (c) => ok(c ?? 1));
-    p.on("error", () => ok(127));
+    p.on("error", falhaAoIniciar);
+    p.on("close", (c) => terminar(c ?? 1));
   });
   const texto = Buffer.concat(partes).toString("utf8").replace(/\x1b\[[0-9;]*m/g, "");
   writeFileSync(arquivo, texto);
