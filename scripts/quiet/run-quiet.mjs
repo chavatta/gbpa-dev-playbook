@@ -48,16 +48,43 @@ export function resumir(linhas, max) {
   return out.slice(0, max);
 }
 
+// Divide uma linha de comando em argv: espaço separa, aspas simples são literais, aspas duplas
+// aceitam \" e \\. Devolve null se houver metacaractere de shell fora de aspas.
+export function dividir(linha) {
+  const args = [];
+  let atual = "", tem = false, aspa = null;
+  for (let i = 0; i < linha.length; i++) {
+    const c = linha[i];
+    if (aspa === "'") { if (c === "'") aspa = null; else atual += c; }
+    else if (aspa === '"') {
+      if (c === '"') aspa = null;
+      else if (c === "\\" && (linha[i + 1] === '"' || linha[i + 1] === "\\")) atual += linha[++i];
+      else atual += c;
+    } else if (c === "'" || c === '"') { aspa = c; tem = true; }
+    else if (/\s/.test(c)) { if (tem) args.push(atual); atual = ""; tem = false; }
+    else if ("|&;<>$`()".includes(c)) return null;
+    else { atual += c; tem = true; }
+  }
+  if (aspa) return null;
+  if (tem) args.push(atual);
+  return args.length > 0 ? args : null;
+}
+
 export async function main(tipo, argv) {
   const raiz = process.cwd();
   const cfg = perfil(raiz);
   const max = cfg.saida_ferramenta?.quiet_max_linhas ?? 60;
   const sep = argv.indexOf("--");
-  const cmd = sep >= 0 ? argv.slice(sep + 1).join(" ") : (cfg.comandos_quiet?.[tipo] || "");
+  const depois = sep >= 0 ? argv.slice(sep + 1) : [];
+  const cmd = depois.length > 0 ? depois.join(" ") : (cfg.comandos_quiet?.[tipo] || "");
   const ti = argv.indexOf("--task");
   const task = ti >= 0 && (sep < 0 || ti < sep) ? argv[ti + 1] : null;
   if (!["teste", "lint", "analise"].includes(tipo)) { console.error("tipo: teste | lint | analise"); return 2; }
   if (!cmd) { console.error(`Sem comando de ${tipo}: preencha comandos_quiet.${tipo} no bloco orcamento-contexto de praticas/00, ou passe-o depois de --.`); return 2; }
+  // Sem shell: vários argumentos depois de `--` já são o argv; uma string só (do `--` ou de
+  // comandos_quiet) é dividida respeitando aspas, e metacaractere de shell fora de aspas é recusado.
+  const args = depois.length > 1 ? depois : dividir(cmd);
+  if (!args) { console.error(`Comando de ${tipo} com metacaractere de shell (| & ; < > $ \` ( )) fora de aspas: o run-quiet não usa shell. Use um script do projeto (ex.: "npm test") ou passe os argumentos separados depois de --.`); return 2; }
   if (task && !/^\d{4}-\d{2}-\d{2}_[a-z0-9][a-z0-9-]*$/.test(task)) { console.error("--task no formato AAAA-MM-DD_slug"); return 2; }
 
   const dir = task ? join(raiz, "tasks", task, "artifacts") : tmpdir();
@@ -65,7 +92,7 @@ export async function main(tipo, argv) {
   const arquivo = join(dir, `${tipo}-${new Date().toISOString().replace(/[:.]/g, "-")}.log`);
   const partes = [];
   const code = await new Promise((ok) => {
-    const p = spawn(cmd, { shell: true, cwd: raiz, env: { ...process.env, FORCE_COLOR: "0", NO_COLOR: "1", CI: process.env.CI || "1" } });
+    const p = spawn(args[0], args.slice(1), { cwd: raiz, env: { ...process.env, FORCE_COLOR: "0", NO_COLOR: "1", CI: process.env.CI || "1" } });
     p.stdout.on("data", (d) => partes.push(d));
     p.stderr.on("data", (d) => partes.push(d));
     p.on("close", (c) => ok(c ?? 1));

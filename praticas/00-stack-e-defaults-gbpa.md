@@ -156,7 +156,7 @@ Limiares de consumo de contexto do fluxo multi-agent (`docs/ADR-009`). O bloco J
 | `comandos_longos.background_acima_segundos` | 180 | Comando com duração esperada acima de ~3 min roda em background (ou com timeout explícito) | |
 | `comandos_longos.polling_segundos` | 120 | Intervalo entre consultas ao comando em background; cada consulta é uma releitura barata que mantém o cache vivo | |
 | `comandos_longos.sem_chamada_max_segundos` | 270 | O cache dos subagentes tem vida de 5 min contada do início da chamada; 270 s deixa margem. Passou disso, a próxima chamada reescreve o contexto inteiro | |
-| `comandos_quiet.*` | vazio | O projeto preenche o comando de teste, lint e análise estática que o wrapper `*-quiet` roda (`scripts/quiet/`) | |
+| `comandos_quiet.*` | vazio | O projeto preenche o comando de teste, lint e análise estática que o wrapper `*-quiet` roda (`scripts/quiet/`). O wrapper roda **sem shell**: aspas valem, mas pipe, `&&`, redirecionamento e `$` são recusados. Comando composto vira um script do projeto (ex.: `npm test`) | |
 | `telemetria.razao_cache_alerta` | 1,5 | Razão saudável ≈ 1 (cada token escrito uma vez). 1,5 tolera recomeços legítimos (compactação, 1ª chamada) | |
 | `telemetria.fator_excesso_cache` | 1,1 | Folga de 10 % sobre o contexto final antes de contar a escrita como excesso | |
 | `telemetria.saida_implausivel_*` | 20 / 10 | Média abaixo de 20 tokens de saída por chamada, em execução com mais de 10 chamadas, indica transcrição com saída parcial | |

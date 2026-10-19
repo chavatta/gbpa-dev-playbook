@@ -3,7 +3,7 @@
 import { spawnSync } from "node:child_process";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
-import { resumir } from "./run-quiet.mjs";
+import { dividir, resumir } from "./run-quiet.mjs";
 
 const AQUI = dirname(fileURLToPath(import.meta.url));
 let ok = 0, falhas = 0;
@@ -33,6 +33,25 @@ caso("reconhece falhas de ecossistemas diferentes", () => {
 caso("muitas falhas: respeita o teto e diz quantas ficaram no arquivo", () => {
   const out = resumir([...L(10, (i) => `ERROR caso ${i}`), ...L(100, () => "ERROR repetido"), ...L(20)], 20);
   assert(out.length <= 20 && out.some((l) => /\+\d+ linhas de falha no arquivo/.test(l)), out.join("|"));
+});
+
+caso("dividir: aspas, escapes e recusa de metacaractere de shell", () => {
+  const eq = (a, b) => JSON.stringify(a) === JSON.stringify(b);
+  assert(eq(dividir("npm  run test"), ["npm", "run", "test"]), "espaços");
+  assert(eq(dividir(`node -e "a;b|c" 'x y'`), ["node", "-e", "a;b|c", "x y"]), "aspas");
+  assert(eq(dividir(`echo "a\\"b"`), ["echo", 'a"b']), "escape em aspas duplas");
+  assert(eq(dividir(`echo ""`), ["echo", ""]), "argumento vazio entre aspas");
+  for (const m of ["a | b", "a && b", "a; b", "a > f", "echo $HOME", "echo `id`", "a $(id)", `echo "x`]) assert(dividir(m) === null, `devia recusar: ${m}`);
+});
+
+caso("CLI: argumentos separados depois de -- rodam sem shell", () => {
+  const r = spawnSync(process.execPath, [join(AQUI, "run-quiet.mjs"), "teste", "--", process.execPath, "-e", "console.log('a;b|c')"], { encoding: "utf8" });
+  assert(r.status === 0 && /a;b\|c/.test(r.stdout), r.stdout + r.stderr);
+});
+
+caso("CLI: metacaractere de shell fora de aspas é recusado com código 2", () => {
+  const r = spawnSync(process.execPath, [join(AQUI, "run-quiet.mjs"), "teste", "--", "echo a | cat"], { encoding: "utf8" });
+  assert(r.status === 2 && /metacaractere de shell/.test(r.stderr), r.stderr);
 });
 
 caso("CLI: devolve o código do comando e aponta o arquivo completo", () => {
