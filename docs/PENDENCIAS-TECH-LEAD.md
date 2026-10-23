@@ -1,6 +1,6 @@
 # Pendências para o Tech Lead
 
-> **Dono:** Tech Lead · **Revisão:** esvaziar conforme resolvido — pendência é dívida, não acervo · **Última revisão:** 2026-09-29
+> **Dono:** Tech Lead · **Revisão:** esvaziar conforme resolvido — pendência é dívida, não acervo · **Última revisão:** 2026-10-23
 
 Mecanismos de harness que o playbook usa sem prova no runtime em que vão rodar, e o que fazer com eles. Cada item diz o fallback em vigor enquanto a pendência não fecha.
 
@@ -15,6 +15,14 @@ Validado em 2026-09-29, Claude Code **2.1.220** e **2.1.284** (CLI alinhada ao a
 | 5 | Transcrições de agente de Workflow ficam em `<sessão>/subagents/` como as de subagente comum? | Idem item 2 | O relatório de custos acha a sessão principal de qualquer forma; subagentes fora do lugar esperado ficariam de fora | `node scripts/telemetria/relatorio-custos.mjs --task <id>` depois da `/task` real: os papéis do script precisam aparecer |
 | 6 | Plano de medição do ADR-009 | Depende de 2–3 fatias reais | — | Medir quando houver as fatias, preencher a revisão do ADR-009, decidir se vira definitivo |
 
+## ADR-010 — família por alias, Sonnet nos executores e Security-SRE pelo plano
+
+| # | Pendência | Por que não foi validado | Fallback em vigor | Como fechar |
+|---|---|---|---|---|
+| 8 | Security-SRE em Opus nos planos sem Fable incluído, também em agente de **Workflow** | **2026-10-23, máquina Pro, Claude Code 2.1.309:** o `ANTHROPIC_DEFAULT_FABLE_MODEL` do `settings.local.json` **não** remapeia o alias `fable` de subagente (a chamada foi como `claude-fable-5-1` e voltou 429, sem gasto). Corrigido no mesmo dia com `model: "opus"` por chamada (`gbpa-task.js` com `args.plano`, regra no Orchestrator), aplicado e provado em subagente comum (`claude-opus-5-5`, autoverificação ok). Falta provar a troca por chamada em agente de **Workflow** | Se o Workflow ignorar o `model` da chamada, a lente de segurança vai como Fable, volta 429 sem gasto e a `/task` sai `blocked` em `lentes` (falha de execução, não aprovação). Até provar, Security-SRE confiável só em máquina Max ou por delegação direta | Numa máquina Pro, uma `/task` pequena marcada como sensível: em `/workflows`, `lente: segurança` tem de rodar em Opus. A mesma `/task` prova a escalada do Coder (`coder r1` em Opus) |
+| 9 | `claude auth status --json` traz `subscriptionType` nas máquinas da equipe | Neste ambiente (token OAuth de sessão na nuvem) o campo não veio. **2026-10-23, máquina Pro:** veio `pro`, e o 429 do Fable confirmou que a conta é Pro (detecção certa no lado Pro); há relatos de Max aparecendo como `pro` | O script pede `--plano` quando o campo falta, e o erro de detecção cai no lado barato (Opus) | Rodar o script em uma máquina Pro e uma Max e conferir a detecção |
+| 10 | Piloto do Coder em Sonnet 5.5 | Depende de fatias reais (junto com a pendência 6) | Escalada para Opus em fatia de alto risco | Comparar taxa de reprovação Coder→Reviewer e custo por fatia concluída com o Coder em Opus; recuo pelo critério do ADR-010 |
+
 ## Resolvidas
 
 | Data | Pendência | Como fechou |
@@ -22,3 +30,4 @@ Validado em 2026-09-29, Claude Code **2.1.220** e **2.1.284** (CLI alinhada ao a
 | 2026-09-29 | Aplicar o patch do hook `context-budget.mjs` (com os lotes de 2026-09-23 e do ADR-008) | Aplicado pelo Tech Lead. Suítes contra `.claude/hooks/` 100%; em sessão nova, force push bloqueado, aviso de orçamento e spool de telemetria funcionando (`docs/patches/README.md`, Histórico) |
 | 2026-09-29 | Correção da medição do `context-budget.mjs` (falso positivo de resultado grande) | Aplicada pelo Tech Lead; 20/20 contra `.claude/hooks/` |
 | 2026-09-29 | Versão da CLI ≠ versão do app desktop | CLI alinhada ao app (2.1.284) e `scripts/smoke-harness.mjs` rodado de novo: 7/7. Repetir a cada troca de versão (`EVIDENCIAS-E-METRICAS.md` §4) |
+| 2026-10-23 | 7 — Aplicar o patch do ADR-010 (13 agentes e `gbpa-task.js`) | Aplicado pelo Tech Lead, junto com a correção da pendência 8. `test-gbpa-task` 44/44 contra `.claude/workflows/`; os 13 trios `name`/`model`/`effort` conferidos; em sessão nova, `planner-sonnet` em `claude-sonnet-5-5` e `documenter-haiku` em `claude-haiku-5-5`, sem bloqueio |

@@ -40,7 +40,7 @@ gbpa-dev-playbook/
 │   ├── quiet/                     # test-quiet, lint-quiet, analise-quiet: só falhas e resumo (praticas/12)
 │   └── telemetria/                # Relatório de custos: custo por tipo em dólar, razão de cache, cache quebrado
 ├── docs/
-│   ├── ADR-001-modelos-por-agente.md … ADR-009-eficiencia-de-contexto-e-cache.md
+│   ├── ADR-001-modelos-por-agente.md … ADR-010-familias-e-esforco-por-agente.md
 │   ├── ISO-MAPPING.md             # Rastreabilidade ISO 27001 / ISO 42001 → evidência → status
 │   ├── EVIDENCIAS-E-METRICAS.md   # Retenção de evidência, métricas do playbook, cadência de revisão
 │   ├── COMPETENCIA.md             # Registro de quem leu o onboarding e quando (ISO 42001 A.4.6)
@@ -83,7 +83,7 @@ Depois abra o Claude Code na raiz do repo — agentes, gates e travas carregam a
 
 ## Requisitos
 
-- [Claude Code](https://claude.com/claude-code) (plano com acesso aos modelos Opus 5.5 / Fable 5.1 / Haiku 4.5)
+- [Claude Code](https://claude.com/claude-code), plano pago com acesso a Opus, Sonnet e Haiku. O Fable (Security-SRE) entra no plano Max e em assento premium; no Pro, o Security-SRE roda em Opus. Declare o plano da máquina com `node scripts/plano-assinatura.mjs` (`docs/ADR-010`)
 - [Node.js](https://nodejs.org) ≥ 18 (runtime dos hooks — multiplataforma)
 - Git + GitHub CLI (`gh`)
 

@@ -1,6 +1,6 @@
 # Patches em arquivos protegidos
 
-> **Dono:** Tech Lead · **Revisão:** esvaziar conforme aplicado — patch pendente é dívida, não acervo · **Última revisão:** 2026-09-29
+> **Dono:** Tech Lead · **Revisão:** esvaziar conforme aplicado — patch pendente é dívida, não acervo · **Última revisão:** 2026-10-23
 
 Arquivos que agentes não podem escrever (`GOVERNANCE.md` §6.2: `GOVERNANCE.md`, `.claude/settings.json`, `.claude/hooks/`, `.claude/workflows/`, `.claude/agents/`) chegam aqui prontos e testados, para o **Tech Lead aplicar à mão, no próprio terminal, fora da sessão do agente** — de dentro do Claude Code a própria trava bloqueia a cópia, e é para bloquear.
 
@@ -31,6 +31,8 @@ git diff --no-index GOVERNANCE.md docs/patches/GOVERNANCE.proposto.md
 git diff --no-index .claude/settings.json docs/patches/settings.proposto.json
 ```
 
+Patch de agentes ou do script do `/task`: `git diff --no-index .claude/agents docs/patches/agents` e `git diff --no-index .claude/workflows/gbpa-task.js docs/patches/gbpa-task.js`.
+
 **3. Copiar** — numa branch, fora do Claude Code, para o destino da tabela do patch.
 
 **4. Fechar o ciclo:** rodar a suíte de novo contra `.claude/hooks/` (tem de dar 100%), apagar daqui os arquivos propostos — as suítes `test-*.mjs` ficam —, registrar a linha no "Histórico" abaixo e **reiniciar as sessões do Claude Code**: hooks e `settings.json` carregam no startup. Depois de reiniciar, confira que os gates continuam disparando (peça na sessão `git push --dry-run --force origin HEAD`: tem de ser bloqueado — e, se passar, o `--dry-run` garante que nada foi enviado).
@@ -59,3 +61,5 @@ As suítes são o teste de regressão das travas — toda mudança futura acresc
 | 2026-08-31 | `block-dangerous-git.mjs` — casamento por posição de comando, ofuscação por aspas, wrappers, escrita em zona protegida via shell; `GOVERNANCE.md` §7 | 60 casos (38/45 na versão anterior) |
 | 2026-09-29 | Três lotes de uma vez. **Travas (2026-09-23):** `block-dangerous-git.mjs` (falsos positivos e onze bypasses; zona protegida estendida a `.claude/workflows/` e `.claude/agents/`), `check-reviewer-gate.mjs` (veredito lido na primeira linha de fato), `protect-guardrails.mjs` (as duas pastas novas), `settings.json` (deny nas pastas novas e em `Read` de `.env`), `GOVERNANCE.md` (fluxo por script, zona protegida). **Telemetria (ADR-008):** `telemetry-emit.mjs` e as entradas dele nos 13 eventos. **Orçamento de contexto (ADR-009):** `context-budget.mjs` e a entrada dele em `PostToolUse` | Contra `.claude/hooks/` depois de copiar: block-dangerous-git 145/145, check-reviewer-gate 14/14, protect-guardrails 22/22, telemetry-emit 19/19, context-budget 17/17, `test-gbpa-task` 30/30. Em sessão nova: force push bloqueado; nota `[orçamento de contexto]` e registro em `.claude/context-budget.jsonl` com `seq 1 10000`; spool de telemetria recebendo `session.*`, `tool.*`, `prompt.submit`, `notification` |
 | 2026-09-29 | `context-budget.mjs` — mede só o que o modelo lê do resultado (`stdout`/`stderr` no Bash, conteúdo no Read, nada em Write/Edit); a versão anterior contava `bashEditDiff` e o conteúdo do Write e dava falso positivo | 20/20 contra `.claude/hooks/` (17/20 na versão anterior); `scripts/smoke-harness.mjs` 7/7 |
+| 2026-10-23 | ADR-010 — 13 agentes (família, effort, piso, nomes -sonnet) e gbpa-task.js (agentType -sonnet, escalada do Coder) | test-gbpa-task 36/36 contra .claude/workflows/ |
+| 2026-10-23 | ADR-010, pendência 8 — `gbpa-task.js` chama o Security-SRE com `model: 'opus'` em `pro`, `team-standard` e `enterprise-standard` (plano em `args.plano`); `orchestrator.md` e `security-sre.md` com a troca feita por quem chama. Motivo: o `env` do `settings.local.json` não remapeia o alias `fable` de subagente (máquina Pro, Claude Code 2.1.309, 429 sem gasto) | `test-gbpa-task` 44/44 contra `.claude/workflows/`; `test-plano-assinatura` 19/19; em sessão nova, `planner-sonnet` em `claude-sonnet-5-5`, `documenter-haiku` em `claude-haiku-5-5` e `security-sre-fable` com `model: opus` em `claude-opus-5-5`. As suítes de hook seguem 100%, menos `telemetry-emit` 16/18 no Windows (casos 11 e 12, anterior ao ADR-010) |

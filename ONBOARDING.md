@@ -25,6 +25,7 @@ Um padrão de desenvolvimento com IA baseado em **um time de agentes especializa
 2. Instale o [Node.js](https://nodejs.org) ≥ 18 (`brew install node` / `winget install OpenJS.NodeJS.LTS`) — os hooks são scripts Node e rodam idênticos em macOS, Linux e Windows, sem configuração por sistema.
 3. Clone o repo do projeto (que já contém a pasta `.claude/` deste playbook).
 4. Abra o Claude Code **na raiz do repo** — os agentes, travas e hooks carregam automaticamente no startup (os hooks usam caminho relativo; abrir fora da raiz os desativa).
+4b. **Declare o plano da assinatura desta máquina:** `node scripts/plano-assinatura.mjs`. O script lê o plano em `claude auth status` e grava em `.claude/settings.local.json` (não versionado) qual modelo o Security-SRE usa: Fable no Max e em assento premium, Opus no Pro e em assento standard, onde o Fable sairia em crédito avulso. Em Team e Enterprise, informe o assento com `--assento premium` ou `--assento standard`. Se o plano detectado estiver errado, declare à mão com `--plano`. Depois **reinicie o Claude Code**. O `/task` confere isso antes de rodar (`docs/ADR-010`).
 5. **(Tech Lead, uma vez por repo)** Ative **branch protection** em `main`/`master` no GitHub: PR obrigatório, ≥1 aprovação, status checks verdes onde houver CI, force push e deleção bloqueados (Settings → Branches, ou `gh api`). Os hooks locais do playbook são a segunda linha de defesa — a trava que não se contorna é a do servidor, e ela não vem no clone.
 
    **Repo com um só mantenedor:** o GitHub não permite aprovar o próprio PR, então exigir 1 aprovação faria todo merge depender do bypass de admin — e trava que só se cumpre por bypass ensina a equipe a usar bypass. Nesse caso, configure **0 aprovações mantendo o PR obrigatório**: nada entra em `main` por push direto e o histórico de revisão continua registrado. Suba para **1 aprovação + `enforce_admins`** assim que houver um segundo revisor. É configuração de transição — formalizada em `GOVERNANCE.md` §2.6 (patch pendente em `docs/patches/`).
@@ -50,23 +51,25 @@ Para adotar o playbook em um repo que ainda não o tem: copie `.claude/`, `multi
 
 ## 3. Os 13 agentes e seus modelos
 
-| Agente | Modelo | Função | Quando entra |
+| Agente | Família | Função | Quando entra |
 |---|---|---|---|
-| `orchestrator` | Opus 5.5 | Decompõe, delega, coordena, sintetiza | Sempre — ponto de entrada |
-| `architect` | Opus 5.5 | Design e decisões técnicas | Feature nova, refactor, decisão de stack |
-| `planner` | Opus 5.5 | Fatia design em tasks INVEST com critérios | Depois do Architect |
-| `coder` | Opus 5.5 | Implementa a spec | Depois do Planner |
-| `reviewer` | Opus 5.5 | **Gate de qualidade obrigatório** | Depois do Coder, sempre |
-| `tester` | Opus 5.5 | Testes e validação | Em paralelo ou após o Coder |
-| `debugger` | Opus 5.5 | Root cause de bugs | Teste falhou / bug reportado |
-| `documenter` | Haiku 4.5 | Docs técnicos | Após aprovação do Reviewer |
-| `devops` | Opus 5.5 | CI/CD, deploy, infra | Tasks de infra |
-| `spec-writer` | Opus 5.5 | Spec formal e verificável antes de arquitetura e código (SDD) | Primeiro passo de feature não-trivial |
-| `data-engineer` | Opus 5.5 | Schema Postgres, migrations expand-contract, RLS, pgvector | Camada de dados é o foco da task |
-| `ai-engineer` | Opus 5.5 | RAG, agentes, prompts, evals, guardrails | Task envolve subsistema de IA/LLM |
-| `security-sre` | Fable 5.1 | **Gate de segurança sistêmico** (threat model, supply chain, secrets, pipeline) + prontidão de produção | Task toca auth, dados pessoais, dinheiro, superfície externa ou infra |
+| `orchestrator` | Opus | Decompõe, delega, coordena, sintetiza | Sempre — ponto de entrada |
+| `architect` | Opus | Design e decisões técnicas | Feature nova, refactor, decisão de stack |
+| `planner` | Sonnet | Fatia design em tasks INVEST com critérios | Depois do Architect |
+| `coder` | Sonnet · Opus na escalada | Implementa a spec | Depois do Planner |
+| `reviewer` | Opus | **Gate de qualidade obrigatório** | Depois do Coder, sempre |
+| `tester` | Sonnet | Testes e validação | Em paralelo ou após o Coder |
+| `debugger` | Opus | Root cause de bugs | Teste falhou / bug reportado |
+| `documenter` | Haiku | Docs técnicos | Após aprovação do Reviewer |
+| `devops` | Sonnet | CI/CD, deploy, infra | Tasks de infra |
+| `spec-writer` | Opus | Spec formal e verificável antes de arquitetura e código (SDD) | Primeiro passo de feature não-trivial |
+| `data-engineer` | Opus | Schema Postgres, migrations expand-contract, RLS, pgvector | Camada de dados é o foco da task |
+| `ai-engineer` | Opus | RAG, agentes, prompts, evals, guardrails | Task envolve subsistema de IA/LLM |
+| `security-sre` | Fable · Opus no Pro | **Gate de segurança sistêmico** (threat model, supply chain, secrets, pipeline) + prontidão de produção | Task toca auth, dados pessoais, dinheiro, superfície externa ou infra |
 
-Por que esses modelos: [docs/ADR-001-modelos-por-agente.md](docs/ADR-001-modelos-por-agente.md), [docs/ADR-002-agente-security-sre.md](docs/ADR-002-agente-security-sre.md) e [docs/ADR-003-agentes-sdd-dados-ia.md](docs/ADR-003-agentes-sdd-dados-ia.md).
+A família entra sem versão: cada versão nova chega sozinha, e o agente bloqueia se rodar abaixo do piso (Opus, Sonnet e Haiku ≥ 5.5, Fable ≥ 5.1). Esforço e escalada do Coder: `DESENVOLVIMENTO-COM-IA.md` §3.
+
+Por que esses modelos: [docs/ADR-010-familias-e-esforco-por-agente.md](docs/ADR-010-familias-e-esforco-por-agente.md), [docs/ADR-001-modelos-por-agente.md](docs/ADR-001-modelos-por-agente.md), [docs/ADR-002-agente-security-sre.md](docs/ADR-002-agente-security-sre.md) e [docs/ADR-003-agentes-sdd-dados-ia.md](docs/ADR-003-agentes-sdd-dados-ia.md).
 
 ---
 

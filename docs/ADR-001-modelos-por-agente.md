@@ -1,10 +1,10 @@
 # ADR-001 — Modelo de IA por Agente
 
-**Status:** Aceito — complementado por ADR-002 (Security-SRE) e ADR-003 (Spec-Writer, Data-Engineer, AI-Engineer); **revisado em 2026-09-23: Opus 5.5 em todos os agentes, exceto o Security-SRE (Fable 5.1) e o Documenter (Haiku 4.5)** (seção "Revisão de 2026-09-23")
+**Status:** Aceito — complementado por ADR-002 (Security-SRE) e ADR-003 (Spec-Writer, Data-Engineer, AI-Engineer); **revisado em 2026-09-23: Opus 5.5 em todos os agentes, exceto o Security-SRE (Fable 5.1) e o Documenter (Haiku 4.5)** (seção "Revisão de 2026-09-23") · **revisado em 2026-10-23 pelo ADR-010: família por alias com piso de versão, `effort` explícito, Planner/Tester/DevOps/Coder em Sonnet 5.5 (Coder escala para Opus em fatia de alto risco) e Security-SRE em Fable ou Opus conforme o plano da assinatura**
 **Data:** 2026-07-31
 **Decisores:** Tech Lead
 **Revisão:** trimestral
-**Última revisão:** 2026-09-23
+**Última revisão:** 2026-10-23
 
 > **Nota (2026-08-04):** este ADR cobre os 9 agentes originais. O quadro atual é de **13 agentes** (1 orchestrator + 12 especialistas); os modelos dos 4 agentes posteriores estão nos ADRs 002 e 003, que seguem o mesmo racional. O quadro consolidado está em `DESENVOLVIMENTO-COM-IA.md §3`.
 
@@ -79,6 +79,15 @@ Os arquivos em `.claude/agents/` mantêm o **sufixo de modelo** no nome (`review
   - **Gate no mesmo modelo que o código que audita.** O racional original era um Reviewer *mais* capaz que o Coder. Agora os dois rodam em Opus 5.5 e tendem a compartilhar pontos cegos. A única verificação fora da família Opus é a lente do Security-SRE (Fable 5.1), em task sensível. O refutador cego (ADR-005) também ajuda, mas por outro mecanismo: ele roda como `reviewer-opus`, no mesmo modelo, e o que o protege da ancoragem é não ler os vereditos anteriores, não a diversidade de modelo. Em task não-sensível, o dev responsável lê o diff antes do ready (`GOVERNANCE.md` §2.2).
 - **Sessões abertas:** a definição dos agentes carrega no startup do Claude Code — reinicie as sessões para que os nomes `-opus` e os modelos fixados valham.
 - **Evidência antiga não muda:** artifacts em `tasks/` anteriores a esta revisão registram `fable` nos quatro agentes de topo e `sonnet` nos oito executores, porque foi nesses modelos que rodaram.
+
+## Revisão de 2026-10-23 — ADR-010
+
+Decidida pelo Tech Lead e registrada em `docs/ADR-010-familias-e-esforco-por-agente.md`, que tem o racional, as fontes e o patch. Em resumo:
+
+- **"ID completo, não alias" deixa de valer.** O frontmatter declara a família (`opus`, `sonnet`, `haiku`, `fable`), e a autoverificação passa a conferir a família e um piso de versão. O controle sobre trocar o modelo de um gate fica no piso, no ID exato registrado no ponteiro e no recuo por `ANTHROPIC_DEFAULT_*_MODEL`.
+- **Executores em Sonnet 5.5:** Planner, Tester, DevOps e Coder. É o recuo que a revisão de 2026-09-23 já previa, e o Coder entra junto com escalada para Opus por fatia. Com isso o Reviewer volta a ser mais forte que o código que audita.
+- **Security-SRE pelo plano:** Fable onde o plano o inclui, Opus no Pro e em assento standard (`scripts/plano-assinatura.mjs`).
+- **Nomes:** `planner-sonnet`, `tester-sonnet`, `devops-sonnet`, `coder-sonnet`; os arquivos mantêm o nome-base, como manda a seção "Nomenclatura".
 
 ## Notas operacionais
 
