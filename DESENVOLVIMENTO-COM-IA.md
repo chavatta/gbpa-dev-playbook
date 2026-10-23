@@ -67,25 +67,25 @@ Detalhe completo: [multi-agents/ARCHITECTURE.md](multi-agents/ARCHITECTURE.md) e
 
 ## 3. O modelo certo para cada função
 
-Modelos de IA têm capacidades e custos diferentes. Desde 2026-09-23, quase todo o time roda no modelo mais capaz disponível (**Opus 5.5**), por decisão do Tech Lead. Ficam de fora o gate de segurança, em **Fable 5.1**, que é outra família e não compartilha os pontos cegos do resto do time, e a documentação, em **Haiku 4.5**, que é alto volume sobre insumo já aprovado. O racional e o custo em cota estão no ADR-001.
+Modelos de IA têm capacidades e custos diferentes. Desde 2026-10-23 (ADR-010), cada agente declara uma **família** de modelo, e não uma versão fixa. Quando sai uma versão nova da família, ela entra sozinha, e cada agente bloqueia se rodar abaixo do piso (Opus ≥ 5.5, Sonnet ≥ 5.5, Haiku ≥ 5.5, Fable ≥ 5.1). O **Opus** fica onde o erro é caro de reverter ou passa despercebido: decomposição, spec, design, dados, IA e o gate de review. O **Sonnet 5.5** fica com quem trabalha sob spec fechada e com gate logo depois, e o Coder sobe para Opus quando a fatia é de alto risco. O gate de segurança roda em **Fable**, outra família, quando o plano da assinatura inclui Fable; no Pro, roda em Opus. Todo agente declara o esforço (`effort`), para que ele não dependa da configuração de cada máquina.
 
-| Agente | Modelo | Por quê |
+| Agente | Família (esforço) | Por quê |
 |---|---|---|
-| Orchestrator | **Opus 5.5** | A decomposição define a qualidade de tudo que vem depois |
-| Architect | **Opus 5.5** | Decisões de arquitetura são caras de reverter |
-| Reviewer | **Opus 5.5** | É o gate: um falso "aprovado" é o erro mais caro do fluxo |
-| Planner | Opus 5.5 | Estrutura trabalho sobre o design; erro de plano custa uma volta inteira do fluxo |
-| Coder | Opus 5.5 | Implementa a spec no mesmo nível do Reviewer que o audita — menos retrabalho |
-| Tester | Opus 5.5 | Testa a partir da spec, em paralelo ao Coder; também é uma das lentes em task sensível |
-| Debugger | Opus 5.5 | Diagnóstico de causa-raiz é raciocínio, não execução |
-| DevOps | Opus 5.5 | Pipeline e infra errados atingem todas as tasks seguintes |
-| Documenter | Haiku 4.5 | Alto volume, insumo já aprovado |
-| Spec-Writer | Opus 5.5 | A spec é o contrato de tudo que vem depois; uma ambiguidade nela vira retrabalho em todos os agentes seguintes |
-| Data-Engineer | Opus 5.5 | Migration e RLS erradas são caras de reverter e podem expor dado entre tenants |
-| AI-Engineer | Opus 5.5 | Prompt, RAG e evals mal desenhados falham em silêncio: o sistema responde, só que errado |
-| Security-SRE | **Fable 5.1** | É um gate: um falso "aprovado" de segurança é vulnerabilidade em produção. Só entra em tasks sensíveis, o que limita o custo |
+| Orchestrator | **Opus** (high) | A decomposição define a qualidade de tudo que vem depois |
+| Spec-Writer | **Opus** (high) | A spec é o contrato de tudo que vem depois; uma ambiguidade nela vira retrabalho em todos os agentes seguintes |
+| Architect | **Opus** (high) | Decisões de arquitetura são caras de reverter |
+| Reviewer | **Opus** (high) | É o gate: um falso "aprovado" é o erro mais caro do fluxo. Volta a ser mais forte que o Coder que audita |
+| Debugger | **Opus** (high) | Diagnóstico de causa-raiz é raciocínio aberto, sem spec que o guie |
+| Data-Engineer | **Opus** (high) | Migration e RLS erradas são caras de reverter e podem expor dado entre tenants |
+| AI-Engineer | **Opus** (high) | Prompt, RAG e evals mal desenhados falham em silêncio: o sistema responde, só que errado |
+| Planner | Sonnet (high) | Fatia trabalho sobre um design já decidido |
+| Tester | Sonnet (high) | Testa critérios de aceitação já escritos; também é a lente de reprodução em task sensível |
+| DevOps | Sonnet (high) | Procedural, com checklist pré-deploy; o Sonnet 5.5 lidera em agente de terminal |
+| Coder | Sonnet (high) → **Opus** na escalada | Implementa a spec sob o gate do Reviewer. Sobe para Opus em task sensível, migração de dados, complexidade `complexa` ou rodada depois de um REPROVADO |
+| Documenter | Haiku (medium) | Alto volume, insumo já aprovado |
+| Security-SRE | **Fable** (high) · Opus no Pro | É um gate: um falso "aprovado" de segurança é vulnerabilidade em produção. No Pro e em assento standard o Fable sai em crédito avulso, e a máquina aponta o alias `fable` para o Opus (`scripts/plano-assinatura.mjs`) |
 
-Racional completo e alternativas descartadas: [docs/ADR-001-modelos-por-agente.md](docs/ADR-001-modelos-por-agente.md), [docs/ADR-002-agente-security-sre.md](docs/ADR-002-agente-security-sre.md) e [docs/ADR-003-agentes-sdd-dados-ia.md](docs/ADR-003-agentes-sdd-dados-ia.md).
+Racional completo e alternativas descartadas: [docs/ADR-010-familias-e-esforco-por-agente.md](docs/ADR-010-familias-e-esforco-por-agente.md), [docs/ADR-001-modelos-por-agente.md](docs/ADR-001-modelos-por-agente.md), [docs/ADR-002-agente-security-sre.md](docs/ADR-002-agente-security-sre.md) e [docs/ADR-003-agentes-sdd-dados-ia.md](docs/ADR-003-agentes-sdd-dados-ia.md).
 
 ---
 
@@ -93,7 +93,7 @@ Racional completo e alternativas descartadas: [docs/ADR-001-modelos-por-agente.m
 
 | Risco real de dev com IA | Nossa mitigação |
 |---|---|
-| Código errado ou alucinado que "parece certo" | **Reviewer obrigatório** (Opus 5.5): nenhuma task fecha sem `artifacts/reviewer.md` com aprovação explícita — verificado por hook, não por boa vontade |
+| Código errado ou alucinado que "parece certo" | **Reviewer obrigatório** (Opus): nenhuma task fecha sem `artifacts/reviewer.md` com aprovação explícita — verificado por hook, não por boa vontade |
 | Ação destrutiva no repositório | Hooks **bloqueiam** push em `main`/`master` (inclusive `HEAD:main`), force push, `rm -rf`, `git reset --hard` |
 | Mudança grande demais para revisar | Planner fatia em mudanças de ~200–400 linhas; diff maior que isso é sinalizado no review |
 | Escopo descontrolado (IA "aproveita para arrumar" o que ninguém pediu) | Delegação com **LIMITES explícitos**; um dono por arquivo; agente fora do escopo = anti-padrão registrado |
@@ -170,7 +170,7 @@ Ajustar uma trava é, ele próprio, um fluxo com gate: a mudança nasce em branc
 | [docs/ADR-007-roteamento-multi-provedor.md](docs/ADR-007-roteamento-multi-provedor.md) | Roteamento de papel para lista ordenada de (provedor, modelo) — proposto |
 | [docs/ADR-008-contrato-de-telemetria.md](docs/ADR-008-contrato-de-telemetria.md) | Contrato de telemetria do fluxo: evento, hook emissor e `decisions.md` — proposto |
 | [docs/ADR-009-eficiencia-de-contexto-e-cache.md](docs/ADR-009-eficiencia-de-contexto-e-cache.md) | Como o fluxo reduz escrita e releitura de cache e o tamanho do contexto, e como medir |
-| [docs/ADR-010-familias-e-esforco-por-agente.md](docs/ADR-010-familias-e-esforco-por-agente.md) | Família de modelo por alias com piso de versão, esforço explícito e executores em Sonnet 5.5 — proposto |
+| [docs/ADR-010-familias-e-esforco-por-agente.md](docs/ADR-010-familias-e-esforco-por-agente.md) | Família de modelo por alias com piso de versão, esforço explícito, executores em Sonnet 5.5 e Security-SRE pelo plano da assinatura |
 | [docs/ISO-MAPPING.md](docs/ISO-MAPPING.md) | Rastreabilidade controle → evidência → status; o documento que vai ao auditor |
 | [docs/EVIDENCIAS-E-METRICAS.md](docs/EVIDENCIAS-E-METRICAS.md) | O que é evidência, por quanto tempo se retém, e como medir se o playbook funciona |
 | [praticas/README.md](praticas/README.md) | Biblioteca de boas práticas: código, arquitetura, repos, infra, segurança |

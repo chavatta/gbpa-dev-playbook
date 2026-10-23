@@ -29,7 +29,7 @@ async function run({ args, answers }) {
     const label = opts.label || "?";
     const m = /^coder r(\d+)/.exec(label);
     if (m) round = Number(m[1]);
-    calls.push({ label, prompt, agentType: opts.agentType, schema: opts.schema });
+    calls.push({ label, prompt, agentType: opts.agentType, schema: opts.schema, model: opts.model });
     const key = Object.keys(answers).find((k) => label === k || label.startsWith(k + " "));
     const a = key === undefined ? undefined : answers[key];
     if (Array.isArray(a)) return a.length > 1 ? a.shift() : a[0];   // sequência por chamada; o último se repete
@@ -171,7 +171,7 @@ const CASES = [
       const cont = r.calls.find((c) => /continuação 1/.test(c.label));
       return r.res.status === "done" && r.res.checkpoints === 1
         && r.res.events.some((e) => e.agent === "coder" && e.status === "checkpoint" && e.ref === "artifacts/coder-checkpoint-01.md")
-        && cont && cont.agentType === "coder-opus" && /CONTINUAÇÃO 1[\s\S]*artifacts\/coder-checkpoint-01\.md/.test(cont.prompt)
+        && cont && cont.agentType === "coder-sonnet" && /CONTINUAÇÃO 1[\s\S]*artifacts\/coder-checkpoint-01\.md/.test(cont.prompt)
         && cont.prompt.startsWith(r.calls.find((c) => c.label === "coder r1").prompt);
     }],
 
@@ -217,6 +217,44 @@ const CASES = [
         recon: RECON(), design: PTR("architect"), plan: PTR("planner"), coder: PTR("coder"), tester: PTR("tester"),
         "lente: correção": OK("reviewer"), "lente: segurança": OK("security-sre"), "lente: reprodução": OK("tester"), "refutador cego": OK("reviewer") } },
     (r) => r.res.status === "done" && Math.max(...r.lotes) <= 2 && r.labels.filter((l) => l.startsWith("lente")).length === 3],
+
+  // ---------- ADR-010: família por papel e escalada do Coder ----------
+  ["agentType por família: Planner, Coder e Tester em -sonnet; Architect, Reviewer e Spec-Writer em -opus; Security-SRE em -fable",
+    { args: { task_id: T, sensitive: true }, answers: {
+        recon: RECON({ needs_spec: true }), spec: PTR("spec-writer"), design: PTR("architect"), plan: PTR("planner"), coder: PTR("coder"), tester: PTR("tester"),
+        "lente: correção": OK("reviewer"), "lente: segurança": OK("security-sre"), "lente: reprodução": OK("tester"), "refutador cego": OK("reviewer") } },
+    (r) => {
+      const tipo = (l) => r.calls.find((c) => c.label === l).agentType;
+      return r.res.status === "done" && tipo("plan") === "planner-sonnet" && tipo("coder r1") === "coder-sonnet" && tipo("tester") === "tester-sonnet"
+        && tipo("lente: reprodução") === "tester-sonnet" && tipo("spec") === "spec-writer-opus" && tipo("design") === "architect-opus"
+        && tipo("lente: correção") === "reviewer-opus" && tipo("refutador cego") === "reviewer-opus" && tipo("lente: segurança") === "security-sre-fable"
+        && r.calls.every((c) => c.label.startsWith("coder") || c.model === undefined);
+    }],
+
+  ["fatia média não sensível: Coder fica em Sonnet (sem model na chamada)",
+    { args: { task_id: T }, answers: { recon: RECON(), design: PTR("architect"), plan: PTR("planner"), coder: PTR("coder"), tester: PTR("tester"), review: OK("reviewer") } },
+    (r) => r.res.status === "done" && r.calls.find((c) => c.label === "coder r1").model === undefined],
+
+  ["task sensível escala o Coder para Opus",
+    { args: { task_id: T, sensitive: true }, answers: {
+        recon: RECON({ complexity: "trivial" }), coder: PTR("coder"),
+        "lente: correção": OK("reviewer"), "lente: segurança": OK("security-sre"), "lente: reprodução": OK("tester"), "refutador cego": OK("reviewer") } },
+    (r) => r.res.status === "done" && r.calls.find((c) => c.label === "coder r1").model === "opus"],
+
+  ["migração de dados escala o Coder para Opus",
+    { args: { task_id: T }, answers: { recon: RECON({ data_migration: true }), design: PTR("architect"), plan: PTR("planner"), coder: PTR("coder"), tester: PTR("tester"), review: OK("reviewer") } },
+    (r) => r.res.status === "done" && r.calls.find((c) => c.label === "coder r1").model === "opus"],
+
+  ["complexidade complexa escala o Coder para Opus, também na continuação de checkpoint",
+    { args: { task_id: T }, answers: { recon: RECON({ complexity: "complexa" }), design: PTR("architect"), plan: PTR("planner"), coder: [CP("coder"), PTR("coder")], tester: PTR("tester"), review: OK("reviewer") } },
+    (r) => r.res.status === "done" && r.calls.filter((c) => c.label.startsWith("coder")).every((c) => c.model === "opus")
+      && r.calls.filter((c) => c.label.startsWith("coder")).length === 2],
+
+  ["rodada 2 depois de REPROVADO escala o Coder; rodada 1 não",
+    { args: { task_id: T }, answers: { recon: RECON(), design: PTR("architect"), plan: PTR("planner"), coder: PTR("coder"), tester: PTR("tester"),
+        review: (n) => (n === 1 ? NOK("reviewer") : OK("reviewer")) } },
+    (r) => r.res.status === "done" && r.calls.find((c) => c.label === "coder r1").model === undefined
+      && r.calls.find((c) => c.label === "coder r2").model === "opus"],
 ];
 
 let pass = 0;

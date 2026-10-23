@@ -1,6 +1,6 @@
 # Patches em arquivos protegidos
 
-> **Dono:** Tech Lead · **Revisão:** esvaziar conforme aplicado — patch pendente é dívida, não acervo · **Última revisão:** 2026-09-29
+> **Dono:** Tech Lead · **Revisão:** esvaziar conforme aplicado — patch pendente é dívida, não acervo · **Última revisão:** 2026-10-23
 
 Arquivos que agentes não podem escrever (`GOVERNANCE.md` §6.2: `GOVERNANCE.md`, `.claude/settings.json`, `.claude/hooks/`, `.claude/workflows/`, `.claude/agents/`) chegam aqui prontos e testados, para o **Tech Lead aplicar à mão, no próprio terminal, fora da sessão do agente** — de dentro do Claude Code a própria trava bloqueia a cópia, e é para bloquear.
 
@@ -9,6 +9,7 @@ Arquivos que agentes não podem escrever (`GOVERNANCE.md` §6.2: `GOVERNANCE.md`
 | Destino | Proposto | O que muda | Prova |
 |---|---|---|---|
 | `.claude/hooks/telemetry-emit.mjs` | `docs/patches/telemetry-emit.mjs` | **Versão 0.2.1.** A contenção do spool externo é conferida de novo antes de cada escrita da drenagem do spool externo e no watchdog (troca de ancestral por link durante a drenagem ou depois do prazo não escreve fora da raiz; o evento fica no cache). Herdado da 0.2.0: ponteiro de checkpoint (`artifact_path` não vazio) no `handoff.pointer` sai sem `status` e com o campo aditivo `checkpoint: true` (v1, mudança aditiva do `evento.schema.json`; no nível `minimal` também, sem `raw`). Herdado da 0.1.0: emissor genérico sem vestígios do consumidor (comentários e a regra de redação de token próprio dele); no Windows e no macOS o caminho do spool externo é comparado com a raiz sem caixa e em NFC; a contenção é conferida de novo logo antes de criar o diretório e com o arquivo aberto (troca de ancestral por link entre o preparo e a gravação manda o evento ao cache). Contrato: campo aditivo `checkpoint` (nota 01 do ADR-008) | `node docs/patches/test-telemetry-emit.mjs docs/patches/telemetry-emit.mjs` 20/20 no Linux em 2026-10-19 (o caso 20 é o checkpoint no `minimal`; mais um em sistema de arquivos sem caixa). Idêntico ao bundle `packages/telemetry-hook/dist/telemetry-emit.mjs` do portal (fatia FIX-HOOK-DRAIN). Instalar a 0.2.1 em `.claude/hooks/` |
+| `.claude/agents/*.md` (13) e `.claude/workflows/gbpa-task.js` | `docs/patches/agents/*.md` e `docs/patches/gbpa-task.js` | **ADR-010.** Agentes: `model:` passa de ID fixo para família (`opus`, `sonnet`, `haiku`, `fable`); `effort:` explícito em todos (`high`; Documenter `medium`); `name` de Planner, Tester, DevOps e Coder passa a `-sonnet`; a autoverificação confere família + piso de versão, o Coder aceita Opus na escalada e o Security-SRE confere o plano em `GBPA_PLANO`; o Orchestrator ganha a regra de escalada do Coder. Script: `agentType` `planner-sonnet`, `coder-sonnet`, `tester-sonnet`; o Coder recebe `model: 'opus'` em task sensível, migração de dados, complexidade `complexa` ou rodada 2; descrição do campo `model` do ponteiro. Os arquivos mantêm o nome-base | `node scripts/test-gbpa-task.mjs docs/patches/gbpa-task.js` 36/36 em 2026-10-23; contra a produção, 30/36 (falham só os 6 casos do ADR-010, que dependem do patch). Os agentes são gerados a partir dos de produção, com diff de ~10 linhas cada: `git diff --no-index .claude/agents docs/patches/agents`. **Aplicar os dois juntos** (o script chama os nomes novos) e, depois, cada dev roda `node scripts/plano-assinatura.mjs` e reinicia o Claude Code |
 
 Os três lotes anteriores (travas de 2026-09-23, contrato de telemetria do ADR-008 e orçamento de contexto do ADR-009) foram aplicados em 2026-09-29 — ver "Histórico". As suítes `test-*.mjs` ficam aqui como teste de regressão das travas.
 
@@ -30,6 +31,8 @@ node scripts/test-gbpa-task.mjs
 git diff --no-index GOVERNANCE.md docs/patches/GOVERNANCE.proposto.md
 git diff --no-index .claude/settings.json docs/patches/settings.proposto.json
 ```
+
+Patch de agentes ou do script do `/task`: `git diff --no-index .claude/agents docs/patches/agents` e `git diff --no-index .claude/workflows/gbpa-task.js docs/patches/gbpa-task.js`.
 
 **3. Copiar** — numa branch, fora do Claude Code, para o destino da tabela do patch.
 

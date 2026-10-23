@@ -83,7 +83,7 @@ Depois abra o Claude Code na raiz do repo — agentes, gates e travas carregam a
 
 ## Requisitos
 
-- [Claude Code](https://claude.com/claude-code) (plano com acesso aos modelos Opus 5.5 / Fable 5.1 / Haiku 4.5)
+- [Claude Code](https://claude.com/claude-code), plano pago com acesso a Opus, Sonnet e Haiku. O Fable (Security-SRE) entra no plano Max e em assento premium; no Pro, o Security-SRE roda em Opus. Declare o plano da máquina com `node scripts/plano-assinatura.mjs` (`docs/ADR-010`)
 - [Node.js](https://nodejs.org) ≥ 18 (runtime dos hooks — multiplataforma)
 - Git + GitHub CLI (`gh`)
 

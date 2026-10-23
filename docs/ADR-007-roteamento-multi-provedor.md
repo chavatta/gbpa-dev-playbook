@@ -56,7 +56,7 @@ api:                              # obrigatório para CADA provedor de tipo api 
 | API | Todo provedor `api` citado tem `orcamento_usd` com as três janelas (§4) |
 | Camadas | Efetivo = playbook ← projeto (o projeto troca a lista **inteira** de um papel, não entradas soltas). Um orquestrador externo pode ter camada própria, desde que registre a lista efetiva usada em cada task (§7) |
 
-**Caso de um provedor (ADR-001 intacto).** Sem `.claude/routing.yaml`, ou com o papel ausente dele, a lista do papel é `[claude-code:<model: do frontmatter>]`. É exatamente o comportamento de hoje. O alias do Documenter (`haiku`, mantido de propósito pelo ADR-001) só é aceito nessa lista derivada. Entrada escrita na tabela exige ID completo.
+**Caso de um provedor (ADR-001 intacto).** Sem `.claude/routing.yaml`, ou com o papel ausente dele, a lista do papel é `[claude-code:<model: do frontmatter>]`. É exatamente o comportamento de hoje. Desde o ADR-010 todo frontmatter declara a família (`opus`, `sonnet`, `haiku`, `fable`), então a lista derivada carrega o alias, e só ela o aceita. Entrada escrita na tabela continua exigindo ID completo. Se este ADR for aceito, a regra "Coerência com o frontmatter" passa a comparar a família da primeira entrada nativa com o alias do frontmatter, e não o ID.
 
 **Local e trava.** O arquivo decide qual modelo audita qual código, então é alvo a proteger, pelo mesmo raciocínio do ADR-005 sobre `.claude/workflows/`. Ao aceitar este ADR, `.claude/routing.yaml` entra na zona protegida contra escrita por agentes (patch de `settings.proposto.json`, aplicado pelo Tech Lead). Mudar lista é mudança de governança (ADR-001, "Notas operacionais").
 
@@ -185,7 +185,7 @@ Troca de provedor ou de modelo sem esses registros é, por definição, divergê
 
 ### 9. Interação com o `gbpa-task.js` (ADR-005) e com o frontmatter
 
-- **O script é o caso de um provedor.** Os `agentType` sufixados (`architect-opus`, `planner-opus`, `spec-writer-opus`, `coder-opus`, `tester-opus`, `reviewer-opus`, `security-sre-fable`) equivalem cada um à lista `[claude-code:<model: do frontmatter>]`. O script continua válido sem mudança.
+- **O script é o caso de um provedor.** Os `agentType` sufixados (`architect-opus`, `planner-sonnet`, `spec-writer-opus`, `coder-sonnet`, `tester-sonnet`, `reviewer-opus`, `security-sre-fable`; nomes do ADR-010) equivalem cada um à lista `[claude-code:<model: do frontmatter>]`. O script continua válido sem mudança.
 - **O script não faz fallback entre provedores.** Um limite no runtime nativo faz o run falhar. O script já trata agente sem retorno devolvendo `blocked` ("sem retorno"), e a decisão seguinte é humana. Se `.claude/routing.yaml` tiver listas com vários provedores, o script executa só a entrada nativa que corresponde ao `agentType`. As demais são inelegíveis para ele (`executor_incapaz`). O script nunca simula outro provedor.
 - **Executar outros provedores exige outro executor**, fora do runtime nativo. Pela regra do ADR-005, ele só é conforme com API key ou sob exceção formal registrada em ADR do projeto. **Este ADR não autoriza, sozinho, orquestração externa.**
 - **Ponteiro no script:** o schema `POINTER` não declara `additionalProperties: false`, então aceita `provider` e `needs_human` sem quebrar. Declará-los como propriedades opcionais do schema fica para a mudança que ativar o roteamento no script (zona protegida, Tech Lead).

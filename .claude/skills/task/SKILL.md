@@ -28,9 +28,14 @@ O roteamento, o loop e o gate são do script. Não os refaça à mão.
 - Sessão aberta na raiz do repo (hooks carregam no startup).
 - `tasks/_TEMPLATE/` presente.
 - Dynamic workflows habilitados (`/config` → Dynamic workflows). Plano pago.
+- Plano da assinatura declarado nesta máquina (`node scripts/plano-assinatura.mjs`, `docs/ADR-010`): é ele que decide se o Security-SRE roda em Fable ou em Opus.
 
 ## Procedimento
 
+0. **Confira o plano da máquina**: `node scripts/plano-assinatura.mjs --verificar`.
+   - Saída 0 → siga.
+   - Saída 1 (plano não declarado) → pare. Peça ao dev para rodar `node scripts/plano-assinatura.mjs` (com `--assento` em Team/Enterprise e `--plano` se a detecção errar) e reiniciar o Claude Code. Sem isso, o Security-SRE roda em Fable mesmo no Pro, onde o Fable sai em crédito avulso.
+   - Saída 3 (gravado, mas a sessão foi aberta antes) → pare e peça para reiniciar o Claude Code: o `env` do settings só carrega no startup.
 1. **Monte o `task_id`**: `AAAA-MM-DD_<slug>` — data de hoje via `date +%F`, slug em kebab-case. Se a pasta já existir, pare e pergunte.
 2. **Crie a pasta**: copie `tasks/_TEMPLATE/` para `tasks/{task_id}/`, **menos** os dois modelos (`handoff/sessao-NN.md` e `artifacts/agente-checkpoint-NN.md`): eles ficam só no `_TEMPLATE` e são copiados quando usados.
 3. **Preencha `brief.md`** com o que o dev disse. Se faltar o **objetivo verificável**, pergunte antes de seguir — é a única pergunta obrigatória. Campos:

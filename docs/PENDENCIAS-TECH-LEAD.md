@@ -1,6 +1,6 @@
 # Pendências para o Tech Lead
 
-> **Dono:** Tech Lead · **Revisão:** esvaziar conforme resolvido — pendência é dívida, não acervo · **Última revisão:** 2026-09-29
+> **Dono:** Tech Lead · **Revisão:** esvaziar conforme resolvido — pendência é dívida, não acervo · **Última revisão:** 2026-10-23
 
 Mecanismos de harness que o playbook usa sem prova no runtime em que vão rodar, e o que fazer com eles. Cada item diz o fallback em vigor enquanto a pendência não fecha.
 
@@ -14,6 +14,15 @@ Validado em 2026-09-29, Claude Code **2.1.220** e **2.1.284** (CLI alinhada ao a
 | 3 | Bash com `run_in_background` dentro de agente de **Workflow** | Idem | Prompt manda usar timeout explícito quando não houver background | Mesma `/task` real: um comando longo do Tester em background |
 | 5 | Transcrições de agente de Workflow ficam em `<sessão>/subagents/` como as de subagente comum? | Idem item 2 | O relatório de custos acha a sessão principal de qualquer forma; subagentes fora do lugar esperado ficariam de fora | `node scripts/telemetria/relatorio-custos.mjs --task <id>` depois da `/task` real: os papéis do script precisam aparecer |
 | 6 | Plano de medição do ADR-009 | Depende de 2–3 fatias reais | — | Medir quando houver as fatias, preencher a revisão do ADR-009, decidir se vira definitivo |
+
+## ADR-010 — família por alias, Sonnet nos executores e Security-SRE pelo plano
+
+| # | Pendência | Por que não foi validado | Fallback em vigor | Como fechar |
+|---|---|---|---|---|
+| 7 | Aplicar o patch do ADR-010 (`docs/patches/agents/`, `docs/patches/gbpa-task.js`) | Arquivos protegidos: só o Tech Lead aplica | Os agentes seguem o ADR-001 (Opus 5.5 com ID fixo) até a aplicação | `docs/patches/README.md`, linha do ADR-010 |
+| 8 | `ANTHROPIC_DEFAULT_FABLE_MODEL` no `env` do `settings.local.json` muda o alias `fable` de **subagente** (frontmatter) e de agente de **Workflow** | A documentação diz que a variável controla o alias; não rodou ainda com subagente nesta versão do CLI | A autoverificação do Security-SRE bloqueia Fable em plano sem Fable incluído antes de gastar mais que um turno | Numa máquina Pro: `node scripts/plano-assinatura.mjs`, reiniciar e delegar ao `security-sre-fable` uma pergunta curta; o ponteiro tem de trazer `claude-opus-5-5` |
+| 9 | `claude auth status --json` traz `subscriptionType` nas máquinas da equipe | Neste ambiente (token OAuth de sessão na nuvem) o campo não veio; há relatos de Max aparecendo como `pro` | O script pede `--plano` quando o campo falta, e o erro de detecção cai no lado barato (Opus) | Rodar o script em uma máquina Pro e uma Max e conferir a detecção |
+| 10 | Piloto do Coder em Sonnet 5.5 | Depende de fatias reais (junto com a pendência 6) | Escalada para Opus em fatia de alto risco | Comparar taxa de reprovação Coder→Reviewer e custo por fatia concluída com o Coder em Opus; recuo pelo critério do ADR-010 |
 
 ## Resolvidas
 

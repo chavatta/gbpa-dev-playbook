@@ -74,7 +74,7 @@ A mensagem final do subagente ao Orchestrator deve conter **apenas** este bloco 
 
 ```yaml
 agent: coder
-model: claude-opus-5-5   # ID exato do modelo em que o agente REALMENTE rodou (ver ADR-001)
+model: claude-opus-5-5   # ID exato do modelo em que o agente REALMENTE rodou, não o alias da família (ver ADR-010)
 task_id: 2026-06-29_auth-jwt
 status: completed        # completed | blocked | needs_review | checkpoint (ADR-009, §7.1)
 artifact_path: tasks/2026-06-29_auth-jwt/artifacts/coder.md
@@ -101,7 +101,7 @@ Campos opcionais:
 
 **No fluxo por script** (`/task` → `.claude/workflows/gbpa-task.js`, `docs/ADR-005`), este bloco é o JSON Schema `POINTER` do script, validado na chamada: o subagente é obrigado a devolver o objeto completo e o modelo tenta de novo se errar o formato. Ponteiro malformado deixa de existir. `provider` e `needs_human` são propriedades **opcionais** do `POINTER` (`docs/ADR-008` §6): o script as repassa nos `events` do agente e, quando o agente bloqueia, devolve `needs_human` no retorno `blocked` — a sessão principal leva a pergunta ao humano e registra a resposta em `decisions.md` (§2.1).
 
-**Sobre `agent` e `model`:** `agent` é sempre o **nome-base** (`coder`, `reviewer`, …) — sem sufixo de modelo — porque os hooks e o `artifact_path` dependem dele. `model` é o modelo em que o subagente efetivamente rodou — o **ID exato** lido no próprio system prompt (`claude-opus-5-5`, `claude-fable-5-1`, `claude-haiku-4-5-…`), não só a família: desde 2026-09-23 o ADR-001 fixa a versão dos agentes em Opus e Fable, e a evidência precisa ter a mesma granularidade da regra. Sufixo de janela de contexto (`claude-opus-5-5[1m]`) é o mesmo modelo — registre como aparece, mas não é divergência. Se divergir do modelo designado no ADR-001, o subagente devolve `status: blocked` com o blocker `"modelo divergente: esperado {X}, rodando em {Y}"` em vez de seguir — assim o downgrade silencioso vira um bloqueio visível no `run-log.md`, não um resultado de qualidade menor passando por aprovado.
+**Sobre `agent` e `model`:** `agent` é sempre o **nome-base** (`coder`, `reviewer`, …) — sem sufixo de modelo — porque os hooks e o `artifact_path` dependem dele. `model` é o modelo em que o subagente efetivamente rodou — o **ID exato** lido no próprio system prompt (`claude-opus-5-5`, `claude-sonnet-5-5`, `claude-fable-5-1`, `claude-haiku-5-5`), não só a família: desde 2026-10-23 (ADR-010) o frontmatter declara a família e um piso de versão, e só o ponteiro registra qual versão de fato rodou. Sufixo de janela de contexto (`claude-opus-5-5[1m]`) é o mesmo modelo — registre como aparece, mas não é divergência. Se estiver fora da família designada ou abaixo do piso (ADR-010), o subagente devolve `status: blocked` com o blocker `"modelo divergente: esperado {X}, rodando em {Y}"` em vez de seguir — assim o downgrade silencioso vira um bloqueio visível no `run-log.md`, não um resultado de qualidade menor passando por aprovado.
 
 ---
 
