@@ -255,6 +255,17 @@ const CASES = [
         review: (n) => (n === 1 ? NOK("reviewer") : OK("reviewer")) } },
     (r) => r.res.status === "done" && r.calls.find((c) => c.label === "coder r1").model === undefined
       && r.calls.find((c) => c.label === "coder r2").model === "opus"],
+
+  // ---------- ADR-010, pendência 8: Security-SRE pelo plano, por chamada ----------
+  ...[["pro", "opus"], ["team-standard", "opus"], ["enterprise-standard", "opus"],
+      ["max", undefined], ["team-premium", undefined], ["enterprise-premium", undefined], ["api", undefined], [undefined, undefined]]
+    .map(([plano, modelo]) => [`plano ${plano ?? "ausente"}: lente de segurança ${modelo ? "em Opus por chamada" : "no alias fable"}, demais lentes sem model`,
+      { args: { task_id: T, sensitive: true, ...(plano ? { plano } : {}) }, answers: {
+          recon: RECON({ complexity: "trivial" }), coder: PTR("coder"),
+          "lente: correção": OK("reviewer"), "lente: segurança": OK("security-sre"), "lente: reprodução": OK("tester"), "refutador cego": OK("reviewer") } },
+      (r) => r.res.status === "done" && r.calls.find((c) => c.label === "lente: segurança").model === modelo
+        && r.calls.find((c) => c.label === "lente: segurança").agentType === "security-sre-fable"
+        && r.calls.filter((c) => c.label !== "lente: segurança" && !c.label.startsWith("coder")).every((c) => c.model === undefined)]),
 ];
 
 let pass = 0;

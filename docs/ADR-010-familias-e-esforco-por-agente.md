@@ -1,6 +1,6 @@
 # ADR-010 — Família de modelo por alias, esforço explícito, executores em Sonnet 5.5 e Security-SRE pelo plano
 
-**Status:** Aceito em 2026-10-23 pelo Tech Lead. Vigora quando o patch de `docs/patches/` (agentes e `gbpa-task.js`) for aplicado; até lá, os agentes seguem o ADR-001
+**Status:** Aceito em 2026-10-23 pelo Tech Lead. Aplicado em 2026-10-23, com a correção da pendência 8 (Security-SRE em Opus por chamada; ver a nota em `scripts/plano-assinatura.mjs`, abaixo)
 **Data:** 2026-10-23
 **Decisores:** Tech Lead
 **Revisão:** trimestral, junto com o ADR-001
@@ -91,6 +91,7 @@ O frontmatter do Security-SRE continua `model: fable`. O que muda é a máquina:
 | `pro`, `team-standard`, `enterprise-standard` | crédito avulso | **Opus** (`claude-opus-5-5`) |
 
 - **`scripts/plano-assinatura.mjs`** detecta o plano por `claude auth status --json` (campo `subscriptionType`), aceita `--plano` para declarar à mão e `--assento premium|standard` para Team e Enterprise, porque o CLI não informa o assento. Ele grava em `.claude/settings.local.json` (gitignored, por máquina) o `GBPA_PLANO` e, nos planos sem Fable incluído, `ANTHROPIC_DEFAULT_FABLE_MODEL=claude-opus-5-5`. Assim o alias `fable` vira Opus **em qualquer caminho de delegação**: `/task`, Orchestrator ou chamada manual. Suíte: `node scripts/test-plano-assinatura.mjs`.
+  - **Corrigido em 2026-10-23 (pendência 8):** na validação numa máquina Pro (Claude Code 2.1.309, app desktop), o `env` do `settings.local.json` **não** remapeou o alias `fable` de subagente: a chamada foi à API como `claude-fable-5-1` e voltou 429 por falta de crédito avulso. O `GBPA_PLANO` chega à sessão; o `ANTHROPIC_DEFAULT_FABLE_MODEL` nem chega ao shell. A troca passou para **quem chama**, com `model: "opus"` por chamada, o mesmo mecanismo da escalada do Coder: o `gbpa-task.js` recebe o plano em `args.plano` (lido pela skill `/task`) e o Orchestrator lê `GBPA_PLANO` no `settings.local.json`. A troca por chamada foi provada no mesmo dia: o `security-sre-fable` delegado com `model: opus` rodou em `claude-opus-5-5` e passou a autoverificação. O script segue gravando `ANTHROPIC_DEFAULT_FABLE_MODEL`, sem efeito comprovado; o `--verificar` passou a conferir só o `GBPA_PLANO`.
 - **Por que remapear o alias, e não passar `model` em cada chamada:** a chamada manual ao Security-SRE não passa pelo script nem pelo Orchestrator. Com o remapeamento, ninguém no Pro paga crédito avulso por engano.
 - **Pré-checagem:** o `/task` roda `--verificar` antes de abrir a task. Plano não declarado (saída 1) ou sessão aberta antes da gravação (saída 3) param a task, porque o `env` do settings só carrega no startup.
 - **Autoverificação do Security-SRE:** lê `GBPA_PLANO` com `printenv`. Fable ≥ 5.1 vale quando o plano inclui Fable ou não foi declarado; Opus ≥ 5.5 vale só em plano sem Fable incluído. Fable rodando em plano sem Fable incluído, ou Opus sem plano declarado, bloqueia.

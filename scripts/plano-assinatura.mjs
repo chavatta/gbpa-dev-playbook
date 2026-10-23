@@ -61,10 +61,10 @@ const env = (s.env && typeof s.env === "object") ? s.env : {};
 if (argv.includes("--verificar")) {
   const plano = env.GBPA_PLANO;
   if (!plano) sair(1, `Plano não declarado nesta máquina. Rode: node scripts/plano-assinatura.mjs`);
-  const esperado = FABLE_INCLUSO.has(plano) ? undefined : OPUS_PARA_SRE;
   const sre = FABLE_INCLUSO.has(plano) ? "Fable" : `Opus (${OPUS_PARA_SRE})`;
-  const sessao = process.env.ANTHROPIC_DEFAULT_FABLE_MODEL;
-  if (process.env.GBPA_PLANO !== plano || (esperado ? sessao !== esperado : sessao === OPUS_PARA_SRE)) {
+  // Só GBPA_PLANO: o Claude Code não repassa ANTHROPIC_DEFAULT_FABLE_MODEL ao shell, e quem põe o
+  // Security-SRE em Opus é a chamada com `model: opus` (gbpa-task.js, Orchestrator), não o alias (pendência 8).
+  if (process.env.GBPA_PLANO !== plano) {
     sair(3, `Plano ${plano} gravado em ${SETTINGS}, mas esta sessão foi aberta antes (GBPA_PLANO=${process.env.GBPA_PLANO || "vazio"}). Reinicie o Claude Code.`);
   }
   sair(0, `Plano ${plano} · Security-SRE em ${sre}.`);

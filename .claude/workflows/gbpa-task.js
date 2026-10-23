@@ -34,6 +34,9 @@ const O = (args.orcamento && typeof args.orcamento === 'object') ? args.orcament
 // Fallbacks só para quando a skill não passar o orçamento; o valor oficial é o do perfil (praticas/00).
 const MAX_CHECKPOINTS = Number.isInteger(O.checkpoint && O.checkpoint.max_por_fatia) ? O.checkpoint.max_por_fatia : 3
 const MAX_PARALELO = Number.isInteger(O.paralelismo_max_agentes) && O.paralelismo_max_agentes > 0 ? O.paralelismo_max_agentes : 4
+// Plano da máquina (GBPA_PLANO, lido pela skill /task). Sem Fable incluído, o Security-SRE vai em Opus por
+// chamada: o env do settings não remapeia o alias `fable` de subagente (docs/ADR-010, pendência 8).
+const SRE_EM_OPUS = ['pro', 'team-standard', 'enterprise-standard'].includes(args.plano)
 let checkpoints = 0             // por task (= por fatia): acima de MAX_CHECKPOINTS a fatia volta ao Planner
 const events = []               // a sessão principal anexa isto ao run-log.md
 const note = (agent, status, ref, extra) => events.push({ agent, status, ref: ref || '-', ...extra })
@@ -49,7 +52,7 @@ const POINTER = {
   required: ['agent', 'model', 'task_id', 'status', 'artifact_path', 'files_changed', 'next_agent', 'context_for_next', 'blockers', 'skill_candidates'],
   properties: {
     agent: { type: 'string', description: 'nome-base: coder, reviewer, planner…' },
-    model: { type: 'string', description: 'ID exato do modelo em que rodou, lido no system prompt (ex.: claude-opus-5-5, claude-fable-5-1)' },
+    model: { type: 'string', description: 'ID exato do modelo em que rodou, lido no system prompt — não o alias da família (ex.: claude-opus-5-5, claude-sonnet-5-5, claude-fable-5-1)' },
     task_id: { type: 'string' },
     status: { type: 'string', enum: ['completed', 'blocked', 'needs_review', 'checkpoint'], description: 'checkpoint = parou no limiar de orçamento com artifact {agente}-checkpoint-NN.md gravado (ADR-009)' },
     artifact_path: { type: 'string' },
@@ -227,7 +230,7 @@ ${daTask(`Grave o levantamento em ${DIR}/artifacts/recon.md, no máximo 30 linha
 Você é o Planner (multi-agents/agents/02-planner.md). O recon classificou a task como ÉPICA.
 Fatie em tasks independentes, cada uma cabendo num PR de 200–400 linhas (GOVERNANCE §2.5), com objetivo verificável e arquivos disjuntos entre fatias (GOVERNANCE §4.1). Agrupe as fatias em ondas que respeitem o teto de agentes simultâneos do perfil do projeto.
 ${daTask(`Grave em ${DIR}/artifacts/planner.md.`)}`,
-      { agentType: 'planner-opus', schema: SLICES, phase: 'Plan', label: 'fatiar épica' })
+      { agentType: 'planner-sonnet', schema: SLICES, phase: 'Plan', label: 'fatiar épica' })
     note('planner', out ? 'completed' : 'sem retorno', 'artifacts/planner.md')
     if (!out || !out.slices.length) return result({ status: 'blocked', em: 'planner', blockers: ['fatiamento da épica sem retorno'] })
     return result({
@@ -255,7 +258,7 @@ ${daTask(`${recon.needs_spec ? `Use também a spec (${DIR}/artifacts/spec-writer
     const p = await pointer('planner', `${RULES}
 Você é o Planner (multi-agents/agents/02-planner.md). Decomponha o design em tarefas sequenciadas com critérios de aceitação.
 ${daTask(`Design: ${DIR}/artifacts/architect.md. Grave em ${DIR}/artifacts/planner.md.`)}`,
-      { agentType: 'planner-opus', phase: 'Plan', label: 'plan' })
+      { agentType: 'planner-sonnet', phase: 'Plan', label: 'plan' })
     if (parou(p)) return saida('planner', p)
   }
 
@@ -266,6 +269,9 @@ ${daTask(`Design: ${DIR}/artifacts/architect.md. Grave em ${DIR}/artifacts/plann
     const fix = round > 1
       ? `\nRODADA ${round}: o review REPROVOU. Corrija EXATAMENTE estes issues, nesta ordem de prioridade: ${JSON.stringify(verdict.issues)}`
       : ''
+    // Coder em Sonnet por padrão; fatia de alto risco escala para Opus nesta chamada (docs/ADR-010).
+    // Rodada > 1 só existe depois de um REPROVADO, que já exige issue CRITICAL ou HIGH.
+    const escalaCoder = sensitive || recon.data_migration || recon.complexity === 'complexa' || round > 1
     // Um dono por arquivo (GOVERNANCE §4.1): o Tester só roda em paralelo na rodada 1 de task
     // não-trivial. Fora disso o Coder é o dono também dos testes — senão issue em arquivo de
     // teste na rodada 2 não teria quem corrigisse.
@@ -277,14 +283,14 @@ ${daTask(`Design: ${DIR}/artifacts/architect.md. Grave em ${DIR}/artifacts/plann
       () => pointer('coder', `${RULES}
 Você é o Coder (multi-agents/agents/03-coder.md). Implemente a task conforme o plano e grave o artifact com files_changed completo.
 ${daTask(`Plano: ${recon.complexity === 'trivial' ? 'o brief' : `${DIR}/artifacts/planner.md`}. ${testOwner} Grave em ${DIR}/artifacts/coder.md.${fix}`)}`,
-        { agentType: 'coder-opus', phase: 'Code', label: `coder r${round}` }),
+        { agentType: 'coder-sonnet', phase: 'Code', label: `coder r${round}`, ...(escalaCoder ? { model: 'opus' } : {}) }),
     ]
     if (testerRuns) {
       jobs.push(() => pointer('tester', `${RULES}
 Você é o Tester (multi-agents/agents/05-tester.md). Escreva os testes da task a partir da spec/plano — NÃO a partir da implementação, que está sendo escrita em paralelo agora.
 Edite SÓ arquivos de teste (um dono por arquivo, GOVERNANCE §4.1).
 ${daTask(`Grave em ${DIR}/artifacts/tester.md.`)}`,
-        { agentType: 'tester-opus', phase: 'Code', label: 'tester' }))
+        { agentType: 'tester-sonnet', phase: 'Code', label: 'tester' }))
     }
     const done = await paralelo(jobs)            // barreira justificada: o review precisa do código pronto
     const coder = done[0]
@@ -298,9 +304,9 @@ ${daTask(`Grave em ${DIR}/artifacts/tester.md.`)}`,
         () => agent(reviewPrompt('Reviewer — correção, qualidade e arquitetura', '04-reviewer.md', 'reviewer.md'),
           { agentType: 'reviewer-opus', schema: VERDICT, phase: 'Review', label: 'lente: correção' }),
         () => agent(reviewPrompt('Security-SRE — segurança, secrets, supply chain, superfície', '12-security-sre.md', 'security-sre.md'),
-          { agentType: 'security-sre-fable', schema: VERDICT, phase: 'Review', label: 'lente: segurança' }),
+          { agentType: 'security-sre-fable', schema: VERDICT, phase: 'Review', label: 'lente: segurança', ...(SRE_EM_OPUS ? { model: 'opus' } : {}) }),
         () => agent(reviewPrompt('Tester — reprodução: rode os testes e tente quebrar o comportamento', '05-tester.md', 'tester-review.md'),
-          { agentType: 'tester-opus', schema: VERDICT, phase: 'Review', label: 'lente: reprodução' }),
+          { agentType: 'tester-sonnet', schema: VERDICT, phase: 'Review', label: 'lente: reprodução' }),
       ])).filter(Boolean)
       lenses.forEach(v => note(v.agent, v.aprovado ? 'APROVADO' : 'REPROVADO', v.artifact_path))
       // Verificador sem retorno é falha de execução, não de implementação: não consome rodada

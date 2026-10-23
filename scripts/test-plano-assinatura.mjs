@@ -93,8 +93,12 @@ const CASES = [
       env: { GBPA_PLANO: "pro", ANTHROPIC_DEFAULT_FABLE_MODEL: OPUS } }),
     (r) => r.code === 0 && /Opus/.test(r.out)],
 
-  ["--verificar: trocou para max mas a sessão ainda tem o override do pro → sai 3",
-    () => roda({ args: ["--verificar"], settings: { env: { GBPA_PLANO: "max" } }, env: { GBPA_PLANO: "max", ANTHROPIC_DEFAULT_FABLE_MODEL: OPUS } }),
+  ["--verificar: sessão em dia sem ANTHROPIC_DEFAULT_FABLE_MODEL no shell (o Claude Code não repassa) → sai 0",
+    () => roda({ args: ["--verificar"], settings: { env: { GBPA_PLANO: "pro", ANTHROPIC_DEFAULT_FABLE_MODEL: OPUS } }, env: { GBPA_PLANO: "pro" } }),
+    (r) => r.code === 0 && /Opus/.test(r.out)],
+
+  ["--verificar: trocou para max mas a sessão ainda tem o plano pro → sai 3",
+    () => roda({ args: ["--verificar"], settings: { env: { GBPA_PLANO: "max" } }, env: { GBPA_PLANO: "pro" } }),
     (r) => r.code === 3],
 
   ["--verificar não grava nada",

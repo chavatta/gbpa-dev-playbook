@@ -83,7 +83,7 @@ Modelos de IA têm capacidades e custos diferentes. Desde 2026-10-23 (ADR-010), 
 | DevOps | Sonnet (high) | Procedural, com checklist pré-deploy; o Sonnet 5.5 lidera em agente de terminal |
 | Coder | Sonnet (high) → **Opus** na escalada | Implementa a spec sob o gate do Reviewer. Sobe para Opus em task sensível, migração de dados, complexidade `complexa` ou rodada depois de um REPROVADO |
 | Documenter | Haiku (medium) | Alto volume, insumo já aprovado |
-| Security-SRE | **Fable** (high) · Opus no Pro | É um gate: um falso "aprovado" de segurança é vulnerabilidade em produção. No Pro e em assento standard o Fable sai em crédito avulso, e a máquina aponta o alias `fable` para o Opus (`scripts/plano-assinatura.mjs`) |
+| Security-SRE | **Fable** (high) · Opus no Pro | É um gate: um falso "aprovado" de segurança é vulnerabilidade em produção. No Pro e em assento standard o Fable sai em crédito avulso, e quem o chama (`/task` e Orchestrator) passa `model: opus` pelo plano declarado na máquina (`scripts/plano-assinatura.mjs`) |
 
 Racional completo e alternativas descartadas: [docs/ADR-010-familias-e-esforco-por-agente.md](docs/ADR-010-familias-e-esforco-por-agente.md), [docs/ADR-001-modelos-por-agente.md](docs/ADR-001-modelos-por-agente.md), [docs/ADR-002-agente-security-sre.md](docs/ADR-002-agente-security-sre.md) e [docs/ADR-003-agentes-sdd-dados-ia.md](docs/ADR-003-agentes-sdd-dados-ia.md).
 

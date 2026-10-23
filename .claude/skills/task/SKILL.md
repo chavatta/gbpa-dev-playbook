@@ -36,6 +36,7 @@ O roteamento, o loop e o gate são do script. Não os refaça à mão.
    - Saída 0 → siga.
    - Saída 1 (plano não declarado) → pare. Peça ao dev para rodar `node scripts/plano-assinatura.mjs` (com `--assento` em Team/Enterprise e `--plano` se a detecção errar) e reiniciar o Claude Code. Sem isso, o Security-SRE roda em Fable mesmo no Pro, onde o Fable sai em crédito avulso.
    - Saída 3 (gravado, mas a sessão foi aberta antes) → pare e peça para reiniciar o Claude Code: o `env` do settings só carrega no startup.
+   - Guarde o plano (`printenv GBPA_PLANO`): ele vai no `args.plano` do passo 5.
 1. **Monte o `task_id`**: `AAAA-MM-DD_<slug>` — data de hoje via `date +%F`, slug em kebab-case. Se a pasta já existir, pare e pergunte.
 2. **Crie a pasta**: copie `tasks/_TEMPLATE/` para `tasks/{task_id}/`, **menos** os dois modelos (`handoff/sessao-NN.md` e `artifacts/agente-checkpoint-NN.md`): eles ficam só no `_TEMPLATE` e são copiados quando usados.
 3. **Preencha `brief.md`** com o que o dev disse. Se faltar o **objetivo verificável**, pergunte antes de seguir — é a única pergunta obrigatória. Campos:
@@ -45,7 +46,8 @@ O roteamento, o loop e o gate são do script. Não os refaça à mão.
    - `Fluxo escolhido:` `gbpa-task (workflow)`.
 4. **Registre no run-log**: anexe a linha `| <timestamp> | orchestr. | task_created | - | brief.md |`.
 5. **Dispare o workflow** com a ferramenta Workflow, por nome, passando `args` como objeto (não como string):
-   `{ "name": "gbpa-task", "args": { "task_id": "<task_id>", "sensitive": <true|false>, "orcamento": <objeto> } }`
+   `{ "name": "gbpa-task", "args": { "task_id": "<task_id>", "sensitive": <true|false>, "plano": "<GBPA_PLANO>", "orcamento": <objeto> } }`
+   `plano` decide o modelo do Security-SRE: em `pro`, `team-standard` e `enterprise-standard` o script o chama com `model: 'opus'` (`docs/ADR-010`).
    `orcamento` é o JSON do bloco `orcamento-contexto` de `praticas/00-stack-e-defaults-gbpa.md`, como objeto — leia só esse bloco (`rg -n -A60 'orcamento-contexto:inicio' praticas/00-stack-e-defaults-gbpa.md`), não o arquivo inteiro. É dele que saem os limiares de checkpoint, o teto de paralelismo e as regras de comando longo que o script põe no prompt dos agentes (`docs/ADR-009`).
 6. **Ao receber o retorno**, anexe ao `run-log.md` uma linha por item de `events` (`| ts | agent | status | - | ref |`). Se o retorno trouxer `sensitive: true` e o brief disser `Sensível (security gate): não`, **troque para `sim`** e acrescente "— elevado pelo recon (artifacts/recon.md)": é o brief que o hook `check-reviewer-gate.mjs` e a métrica M2 leem. Nunca troque de `sim` para `não`. Depois trate o `status`:
    - `done` → anexe `| ts | orchestr. | done | done | artifacts/reviewer.md |` e sintetize (formato do `00-orchestrator.md` → "Formato de Saída"). Item de `events` com `needs_human` (pergunta que não bloqueou o agente) vai ao dev junto com a síntese, e a resposta para `decisions.md` (`HANDOFF-PROTOCOL.md` §2.1).
