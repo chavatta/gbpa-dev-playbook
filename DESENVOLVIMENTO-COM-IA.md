@@ -170,6 +170,7 @@ Ajustar uma trava é, ele próprio, um fluxo com gate: a mudança nasce em branc
 | [docs/ADR-007-roteamento-multi-provedor.md](docs/ADR-007-roteamento-multi-provedor.md) | Roteamento de papel para lista ordenada de (provedor, modelo) — proposto |
 | [docs/ADR-008-contrato-de-telemetria.md](docs/ADR-008-contrato-de-telemetria.md) | Contrato de telemetria do fluxo: evento, hook emissor e `decisions.md` — proposto |
 | [docs/ADR-009-eficiencia-de-contexto-e-cache.md](docs/ADR-009-eficiencia-de-contexto-e-cache.md) | Como o fluxo reduz escrita e releitura de cache e o tamanho do contexto, e como medir |
+| [docs/ADR-010-familias-e-esforco-por-agente.md](docs/ADR-010-familias-e-esforco-por-agente.md) | Família de modelo por alias com piso de versão, esforço explícito e executores em Sonnet 5.5 — proposto |
 | [docs/ISO-MAPPING.md](docs/ISO-MAPPING.md) | Rastreabilidade controle → evidência → status; o documento que vai ao auditor |
 | [docs/EVIDENCIAS-E-METRICAS.md](docs/EVIDENCIAS-E-METRICAS.md) | O que é evidência, por quanto tempo se retém, e como medir se o playbook funciona |
 | [praticas/README.md](praticas/README.md) | Biblioteca de boas práticas: código, arquitetura, repos, infra, segurança |
